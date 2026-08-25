@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>de</string>
+	<key>CFBundleDisplayName</key>
+	<string>ByoKey</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<!-- Richtlinie 5.1.1 / Exportbestimmungen: Die App nutzt ausschließlich
+	     Standard-HTTPS (ATS) und die System-Keychain. Kein nicht-befreite
+	     Verschlüsselung -> keine CCATS-Dokumentation nötig. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<!-- Kein NSAppTransportSecurity-Eintrag: App Transport Security bleibt
+	     vollständig aktiv, alle Verbindungen laufen über TLS. -->
+
+	<!-- Zwecktexte für den Sprachmodus.
+	     Richtlinie 5.1.1 verlangt konkrete Angaben: "für bessere Funktionen"
+	     genügt nicht. Beide Abfragen erscheinen erst, wenn der Nutzer den
+	     Sprachmodus tatsächlich öffnet – nie beim ersten Start. -->
+	<!-- Zwei Wege fuehren hierher: der Knopf „Bild sichern" (direkter
+	     PHPhotoLibrary-Aufruf mit .addOnly) und „In Fotos sichern" im
+	     Teilen-Blatt. Beide laufen im Prozess der App: ohne den Zwecktext
+	     beendet iOS die App beim Tippen. Gelesen wird aus der Mediathek
+	     nichts, deshalb steht hier ausdruecklich NICHT der Schluessel
+	     NSPhotoLibraryUsageDescription – der loeste die grosse Freigabe aus.
+	     Auch das Anhaengen eines eigenen Bildes an eine Nachricht braucht
+	     ihn nicht: dafuer laeuft PhotosPicker (PHPickerViewController) in
+	     einem eigenen Prozess. Die App bekommt genau das Bild, das der
+	     Nutzer dort antippt – und sonst nichts. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ByoKey sichert ein von dir erzeugtes Bild in deiner Fotomediathek – nur dann, wenn du „Bild sichern“ antippst oder im Teilen-Blatt „In Fotos sichern“ wählst. Von sich aus liest ByoKey nichts aus deiner Mediathek: ein Bild kommt nur herüber, wenn du es selbst im Auswahlfenster aussuchst.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ByoKey nutzt das Mikrofon nur im Sprachmodus, um deine gesprochene Frage aufzunehmen und an das gewählte KI-Modell weiterzugeben.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Die Spracherkennung wandelt deine Aufnahme in Text um. Sie läuft direkt auf diesem Gerät, solange iOS die eingestellte Sprache dafür unterstützt.</string>
+
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+	</dict>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,102 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ByoKey"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "ByoKey"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Zwecktext aus der Info.plist.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ByoKey nutzt das Mikrofon nur im Sprachmodus, um deine gesprochene Frage aufzunehmen und an das gewählte KI-Modell weiterzugeben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ByoKey uses the microphone only in voice mode, to record your spoken question and pass it on to the AI model you selected."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ByoKey używa mikrofonu wyłącznie w trybie głosowym, aby nagrać Twoje pytanie i przekazać je do wybranego modelu AI."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryAddUsageDescription" : {
+      "comment" : "Zwecktext aus der Info.plist.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ByoKey sichert ein von dir erzeugtes Bild in deiner Fotomediathek – nur dann, wenn du „Bild sichern“ antippst oder im Teilen-Blatt „In Fotos sichern“ wählst. Von sich aus liest ByoKey nichts aus deiner Mediathek: ein Bild kommt nur herüber, wenn du es selbst im Auswahlfenster aussuchst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ByoKey saves an image you generated to your photo library — only when you tap “Save image” or choose “Save Image” in the share sheet. ByoKey never reads your library on its own: an image only comes across if you pick it yourself in the picker."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ByoKey zapisuje wygenerowany przez Ciebie obraz w Twojej bibliotece zdjęć — tylko wtedy, gdy dotkniesz „Zapisz obraz” lub wybierzesz „Zapisz obraz” w oknie udostępniania. ByoKey nigdy nie odczytuje Twojej biblioteki samodzielnie: obraz trafia do aplikacji tylko wtedy, gdy sam(a) go wybierzesz."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Zwecktext aus der Info.plist.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Spracherkennung wandelt deine Aufnahme in Text um. Sie läuft direkt auf diesem Gerät, solange iOS die eingestellte Sprache dafür unterstützt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech recognition turns your recording into text. It runs directly on this device as long as iOS supports the selected language for it."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rozpoznawanie mowy zamienia Twoje nagranie w tekst. Działa bezpośrednio na tym urządzeniu, o ile iOS obsługuje w tym celu wybrany język."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

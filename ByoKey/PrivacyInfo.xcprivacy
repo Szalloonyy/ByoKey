@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Privacy Manifest. Ohne diese Datei lehnt App Store Connect den Upload
+	  mit ITMS-91053 ("Missing API declaration") ab, weil die App UserDefaults
+	  verwendet – eine "required reason API".
+
+	  Diese Angaben muessen mit den App-Privacy-Antworten in App Store Connect
+	  uebereinstimmen. Siehe Docs/COMPLIANCE.md.
+	-->
+
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<dict>
+			<!--
+			  Nachrichtentext verlaesst nach ausdruecklicher Zustimmung das
+			  Geraet Richtung KI-Anbieter. Der Entwickler selbst erhaelt
+			  nichts davon, aber die Uebertragung wird offengelegt.
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!--
+			  Bilder, die der Nutzer selbst an eine Nachricht anhaengt,
+			  gehen nach derselben ausdruecklichen Zustimmung an den
+			  gewaehlten KI-Anbieter. Eigene Kategorie, weil Apple fuer
+			  Fotos eine eigene vorsieht: "Other User Content" deckt den
+			  ausgelesenen Text von Dokumenten ab, nicht aber ein Bild.
+			  Der Entwickler erhaelt auch hiervon nichts.
+
+			  Ausgelesen wird die Fotomediathek NICHT: die Auswahl laeuft
+			  ueber PhotosPicker in einem eigenen Prozess, die App bekommt
+			  genau die Bilder, die der Nutzer antippt.
+			-->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<!-- CA92.1: Zugriff nur auf die eigenen App-Einstellungen. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
