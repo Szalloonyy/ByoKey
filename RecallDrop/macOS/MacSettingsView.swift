@@ -35,6 +35,7 @@ struct MenuBarSettingsView: View {
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var launchError: String?
     @State private var hasScreenRecording = ScreenCaptureService.hasPermission
+    @State private var shortcutMessage: String?
 
     var body: some View {
         @Bindable var settings = environment.settings
@@ -45,20 +46,24 @@ struct MenuBarSettingsView: View {
                     .onChange(of: settings.hideDockIcon) { _, hide in
                         MacAppDelegate.applyActivationPolicy(hideDockIcon: hide)
                     }
-                Toggle("Launch at Login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, enabled in
-                        do {
-                            try LaunchAtLogin.setEnabled(enabled)
-                            launchError = nil
-                        } catch {
-                            launchError = error.localizedDescription
-                            launchAtLogin = LaunchAtLogin.isEnabled
-                        }
-                    }
+                Toggle("Launch at Login", isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { setLaunchAtLogin($0) }
+                ))
                 if let launchError {
                     Text(launchError)
                         .font(.caption)
                         .foregroundStyle(.red)
+                }
+                if LaunchAtLogin.needsApproval {
+                    HStack {
+                        Text("Allow RecallDrop in Login Items to start it at login.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Open Login Items") { LaunchAtLogin.openSettings() }
+                            .controlSize(.small)
+                    }
                 }
             }
 
@@ -72,6 +77,12 @@ struct MenuBarSettingsView: View {
                                     .help("Another app already uses this shortcut.")
                             }
                             ShortcutRecorderView(combo: bindings.combo(for: action)) { combo in
+                                if let combo, let other = bindings.action(using: combo, except: action) {
+                                    shortcutMessage = "\(combo.displayString) is already used for “\(other.title)”."
+                                    NSSound.beep()
+                                    return
+                                }
+                                shortcutMessage = nil
                                 bindings.set(combo, for: action)
                                 bindings.save(to: environment.settings)
                                 HotKeyCenter.shared.apply(bindings)
@@ -79,7 +90,13 @@ struct MenuBarSettingsView: View {
                         }
                     }
                 }
+                if let shortcutMessage {
+                    Text(shortcutMessage)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
                 Button("Restore Default Shortcuts") {
+                    shortcutMessage = nil
                     bindings = HotKeyBindings()
                     bindings.save(to: environment.settings)
                     HotKeyCenter.shared.apply(bindings)
@@ -88,7 +105,7 @@ struct MenuBarSettingsView: View {
             } header: {
                 Text("Global Shortcuts")
             } footer: {
-                Text("Shortcuts work in every app. Click a shortcut and press a new combination with ⌘, ⌥ or ⌃; press Delete to turn it off.")
+                Text("Shortcuts work in every app. Click a shortcut and press a new combination that includes ⌘ or ⌃; press Delete to turn it off. A warning sign means another app already uses the combination.")
             }
 
             Section {
@@ -113,11 +130,31 @@ struct MenuBarSettingsView: View {
             launchAtLogin = LaunchAtLogin.isEnabled
         }
     }
+
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            try LaunchAtLogin.setEnabled(enabled)
+            launchError = nil
+        } catch {
+            launchError = error.localizedDescription
+        }
+        launchAtLogin = LaunchAtLogin.isEnabled
+    }
 }
 
 enum LaunchAtLogin {
+    /// Registered, including when macOS still waits for the user's approval.
     static var isEnabled: Bool {
-        SMAppService.mainApp.status == .enabled
+        let status = SMAppService.mainApp.status
+        return status == .enabled || status == .requiresApproval
+    }
+
+    static var needsApproval: Bool {
+        SMAppService.mainApp.status == .requiresApproval
+    }
+
+    static func openSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 
     static func setEnabled(_ enabled: Bool) throws {

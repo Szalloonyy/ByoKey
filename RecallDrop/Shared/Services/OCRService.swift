@@ -28,12 +28,12 @@ struct OCRResult: Sendable {
 actor OCRService {
     static let shared = OCRService()
 
-    /// Vision works best below this size; larger images are downscaled first.
-    private let maxRecognitionDimension = 4096
-
-    func recognizeText(in imageData: Data, accuracy: OCRAccuracy, languageCorrection: Bool) throws -> OCRResult {
+    /// Images are downscaled to `maxDimension` on the long edge first (Vision
+    /// works best below 4096 px; the share extension passes less to save memory).
+    func recognizeText(in imageData: Data, accuracy: OCRAccuracy, languageCorrection: Bool,
+                       maxDimension: Int = 4096) throws -> OCRResult {
         guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
-              let image = ImageProcessor.downsampledImage(from: source, maxPixelSize: maxRecognitionDimension) else {
+              let image = ImageProcessor.downsampledImage(from: source, maxPixelSize: maxDimension) else {
             throw ImageProcessingError.unreadable
         }
 

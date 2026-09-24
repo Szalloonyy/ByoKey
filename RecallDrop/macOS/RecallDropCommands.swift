@@ -33,10 +33,11 @@ struct RecallDropCommands: Commands {
 
             Divider()
 
+            // ⌥⌘D belongs to the system (Dock hiding).
             Button("Show or Hide Drop Shelf") {
                 DropShelfController.shared.toggle()
             }
-            .keyboardShortcut("d", modifiers: [.command, .option])
+            .keyboardShortcut("d", modifiers: [.command, .shift])
 
             Button("Quick Note Panel") {
                 QuickNotePanelController.shared.show()

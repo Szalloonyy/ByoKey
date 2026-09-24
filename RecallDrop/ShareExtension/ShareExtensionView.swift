@@ -22,7 +22,8 @@ struct ShareExtensionView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        if model.phase != .done {
+                        // No Cancel while saving: the items are being written right then.
+                        if model.phase != .done && model.phase != .saving {
                             Button("Cancel") { model.cancel() }
                         }
                     }
@@ -138,7 +139,7 @@ struct ShareExtensionView: View {
                     }
                 }
             }
-        } else if let url = model.payload.urls.first {
+        } else if let url = model.previewURL {
             HStack(spacing: 10) {
                 Image(systemName: "link")
                     .foregroundStyle(.white)
@@ -153,7 +154,7 @@ struct ShareExtensionView: View {
                         .lineLimit(2)
                 }
             }
-        } else if let text = model.payload.texts.first {
+        } else if let text = model.previewText {
             Text(text)
                 .font(.callout)
                 .lineLimit(6)

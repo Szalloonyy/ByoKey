@@ -26,8 +26,12 @@ final class ShareExtensionModel {
     }
 
     var phase: Phase = .loading
-    private(set) var payload = CapturedPayload()
+    /// Released after saving: shared originals can be large and extensions have little memory.
+    private var payload = CapturedPayload()
+    private(set) var summaryLine = ""
     private(set) var previewImages: [DecodedImage] = []
+    private(set) var previewURL: URL?
+    private(set) var previewText: String?
     var note = ""
     var choice: AgentChoice = .none
     var reminder: ReminderPreset?
@@ -40,6 +44,8 @@ final class ShareExtensionModel {
     @ObservationIgnored private let onComplete: () -> Void
     @ObservationIgnored private let onCancel: () -> Void
     @ObservationIgnored private var savedItemIDs: [UUID] = []
+    /// The extension request may be completed or cancelled only once.
+    @ObservationIgnored private var didEnd = false
 
     init(environment: AppEnvironment, extensionItems: [NSExtensionItem],
          onComplete: @escaping () -> Void, onCancel: @escaping () -> Void) {
@@ -51,7 +57,7 @@ final class ShareExtensionModel {
 
     var aiUnavailableReason: String? { environment.settings.aiUnavailableReason }
 
-    var summaryLine: String {
+    private static func summary(of payload: CapturedPayload) -> String {
         var parts: [String] = []
         if !payload.images.isEmpty { parts.append("\(payload.images.count) image\(payload.images.count == 1 ? "" : "s")") }
         if !payload.urls.isEmpty { parts.append("\(payload.urls.count) link\(payload.urls.count == 1 ? "" : "s")") }
@@ -73,6 +79,9 @@ final class ShareExtensionModel {
             loaded.texts.append(text)
         }
         payload = loaded
+        summaryLine = Self.summary(of: loaded)
+        previewURL = loaded.urls.first
+        previewText = loaded.texts.first
 
         let imageData = loaded.images.prefix(4).map(\.data)
         previewImages = await Task.detached(priority: .userInitiated) {
@@ -99,12 +108,13 @@ final class ShareExtensionModel {
             return
         }
         savedItemIDs = items.map(\.id)
+        payload = CapturedPayload()
 
         guard !choice.agentIDs.isEmpty else {
             // Nothing to analyze here; the app reads the text right away.
             environment.pipeline.releaseClaims(savedItemIDs)
             notifyApp()
-            onComplete()
+            end(completed: true)
             return
         }
         // The items stay claimed while this extension analyzes them.
@@ -132,15 +142,21 @@ final class ShareExtensionModel {
     }
 
     func finish() {
-        onComplete()
+        end(completed: true)
     }
 
     func cancel() {
-        if savedItemIDs.isEmpty {
-            onCancel()
-        } else {
-            // Already saved: leave pending work for the app and close normally.
+        // Already saved: leave pending work for the app and close normally.
+        end(completed: !savedItemIDs.isEmpty)
+    }
+
+    private func end(completed: Bool) {
+        guard !didEnd else { return }
+        didEnd = true
+        if completed {
             onComplete()
+        } else {
+            onCancel()
         }
     }
 

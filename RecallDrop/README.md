@@ -61,11 +61,12 @@ again after you add or remove files.
   **Share Sheet extension** saves images, links, web pages and text from any
   app, with an optional note, reminder and agent choice. Home Screen quick
   actions: New Capture, Quick Note, Search.
-- **macOS:** a **menu bar extra** that shows recent captures, each with 1-click
-  agent buttons, and accepts drops. The **Drop Shelf** is a floating panel on
-  every Space that takes images, files, links and text. You can also capture a
-  screen region, paste from the clipboard, write a quick note, drag onto the
-  main window or import files.
+- **macOS:** a **menu bar extra** with quick capture, a note field and the
+  recent captures, each with 1-click agent buttons. The **Drop Shelf**, opened
+  from the menu bar or with a shortcut, is a floating drop target on every
+  Space for images, files, links and text; drop onto an agent's tile to run
+  that agent. You can also capture a screen region, paste from the clipboard,
+  write a quick note, drag onto the main window or import files.
 - Links are enriched with their page title, description and preview image
   (Open Graph/Twitter tags, plus oEmbed for X and YouTube).
 
@@ -164,9 +165,11 @@ time. Plain HTTP is allowed only for local hosts (`NSAllowsLocalNetworking`).
 | Quick Note | ⌃⌥⌘N |
 | Show/Hide Drop Shelf | ⌃⌥⌘D |
 
-- Change or turn off the shortcuts in Settings → Menu Bar & Shortcuts. They
-  use Carbon hot keys, so they need no Accessibility permission. RecallDrop
-  shows a warning when another app already owns a shortcut.
+- Change or turn off the shortcuts in Settings → Menu Bar & Shortcuts. Each
+  shortcut needs ⌘ or ⌃. They use Carbon hot keys, so they need no
+  Accessibility permission. RecallDrop shows a warning when another app
+  already owns a shortcut. When a shortcut is used from another app, the
+  result appears in a short message at the top of the screen.
 - **Capture Screen Region** runs the system `screencapture` tool and needs the
   **Screen Recording** permission (System Settings → Privacy & Security).
   Dropping, pasting and importing screenshots work without it.

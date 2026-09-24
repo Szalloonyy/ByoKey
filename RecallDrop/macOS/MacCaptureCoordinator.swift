@@ -107,7 +107,12 @@ final class MacCaptureCoordinator {
     // MARK: Feedback
 
     private func notify(_ message: String) {
-        environment.router.showToast(message)
+        if NSApp.isActive {
+            environment.router.showToast(message)
+        } else {
+            // Started with a global shortcut from another app: no RecallDrop window is in front.
+            MacHUD.shared.show(message)
+        }
     }
 
     private func presentScreenRecordingAlert() {

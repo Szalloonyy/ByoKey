@@ -60,7 +60,10 @@ final class AgentPipeline {
     /// Requests that arrived while the item was being processed; they run next.
     @ObservationIgnored private var followUps: [UUID: FollowUp] = [:]
     @ObservationIgnored private var recheckTask: Task<Void, Never>?
-    @ObservationIgnored private let maxConcurrentJobs = 2
+    /// Jobs running at once; the share extension uses 1 to stay within its memory limit.
+    @ObservationIgnored var maxConcurrentJobs = 2
+    /// Longest image edge handed to text recognition (smaller in the share extension).
+    @ObservationIgnored var ocrMaxDimension = 4096
 
     /// Called after an item finished processing (successfully or not).
     @ObservationIgnored var onItemFinished: ((UUID) -> Void)?
@@ -366,7 +369,8 @@ final class AgentPipeline {
         let result = try await OCRService.shared.recognizeText(
             in: imageData,
             accuracy: settings.ocrAccuracy,
-            languageCorrection: settings.ocrLanguageCorrection
+            languageCorrection: settings.ocrLanguageCorrection,
+            maxDimension: ocrMaxDimension
         )
         try Task.checkCancellation()
 

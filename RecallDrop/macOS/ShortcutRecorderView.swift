@@ -3,7 +3,8 @@
 //  RecallDrop (macOS)
 //
 //  Records a global shortcut: click, then press the key combination
-//  (⌘, ⌥ or ⌃ required). Escape cancels, Delete clears.
+//  (⌘ or ⌃ required). Escape cancels, Delete clears. Global shortcuts are
+//  paused while recording, so an existing one can be pressed and re-used.
 //
 
 import AppKit
@@ -47,6 +48,16 @@ struct ShortcutRecorderView: View {
                     .strokeBorder(isRecording ? Color.accentColor : Color.clear, lineWidth: 1.5)
             }
             .onTapGesture { isRecording.toggle() }
+            .onChange(of: isRecording) { _, recording in
+                if recording {
+                    HotKeyCenter.shared.suspend()
+                } else {
+                    HotKeyCenter.shared.resume()
+                }
+            }
+            .onDisappear {
+                if isRecording { HotKeyCenter.shared.resume() }
+            }
 
             if combo != nil, !isRecording {
                 Button {

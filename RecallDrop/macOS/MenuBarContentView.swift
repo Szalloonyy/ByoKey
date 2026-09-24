@@ -2,8 +2,9 @@
 //  MenuBarContentView.swift
 //  RecallDrop (macOS)
 //
-//  The MenuBarExtra panel: a drop zone, quick capture actions, a field for
-//  fleeting ideas and the most recent captures with one-click agent runs.
+//  The MenuBarExtra panel: the Drop Shelf switch, quick capture actions, a
+//  field for fleeting ideas and the most recent captures with one-click
+//  agent runs.
 //
 
 import AppKit
@@ -19,7 +20,6 @@ struct MenuBarContentView: View {
     private var agents: [AgentConfig]
 
     @State private var noteText = ""
-    @State private var isDropTargeted = false
     @FocusState private var isNoteFocused: Bool
 
     /// Only the newest few non-archived captures, so large libraries stay cheap here.
@@ -35,7 +35,7 @@ struct MenuBarContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
-            dropZone
+            dropShelfCard
             quickActions
             noteField
             Divider()
@@ -94,29 +94,33 @@ struct MenuBarContentView: View {
         return "New captures go to \(agent)"
     }
 
-    private var dropZone: some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.4),
-                          style: StrokeStyle(lineWidth: isDropTargeted ? 2.5 : 1.5, dash: [7, 5]))
-            .background((isDropTargeted ? Color.accentColor.opacity(0.1) : Color.clear),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .frame(height: 74)
-            .overlay {
-                VStack(spacing: 4) {
-                    Image(systemName: "arrow.down.to.line.compact")
-                        .font(.title3)
-                    Text("Drop images, files or links here")
-                        .font(.callout)
+    /// The menu bar panel closes as soon as another app is clicked, so it cannot
+    /// take drags; the floating Drop Shelf is the always-available drop target.
+    private var dropShelfCard: some View {
+        let isVisible = DropShelfController.shared.isVisible
+        return Button {
+            DropShelfController.shared.toggle()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isVisible ? "tray.and.arrow.down.fill" : "tray.and.arrow.down")
+                    .font(.title3)
+                    .foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isVisible ? "Hide Drop Shelf" : "Show Drop Shelf")
+                        .font(.callout.weight(.semibold))
+                    Text("A floating drop target on every Space for images, files and links.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .foregroundStyle(isDropTargeted ? Color.accentColor : Color.secondary)
+                Spacer(minLength: 0)
             }
-            .onDrop(of: ItemProviderLoader.supportedTypes, isTargeted: $isDropTargeted) { providers in
-                Task {
-                    let count = await MacCaptureCoordinator.shared.capture(providers: providers)
-                    environment.router.showToast(count > 0 ? "Captured \(count) item\(count == 1 ? "" : "s")." : "Nothing to capture.")
-                }
-                return true
-            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var quickActions: some View {
@@ -129,9 +133,6 @@ struct MenuBarContentView: View {
             }
             quickButton("Import", systemImage: "photo.badge.plus") {
                 MacCaptureCoordinator.shared.importFiles()
-            }
-            quickButton(DropShelfController.shared.isVisible ? "Hide Shelf" : "Drop Shelf", systemImage: "tray.2") {
-                DropShelfController.shared.toggle()
             }
         }
     }

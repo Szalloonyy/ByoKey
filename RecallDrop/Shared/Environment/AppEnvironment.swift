@@ -46,7 +46,12 @@ final class AppEnvironment {
         let settings = SettingsStore()
         let catalog = ModelCatalogStore()
         let pipeline = AgentPipeline(container: container, settings: settings, catalog: catalog)
-        pipeline.claimsWork = role == .shareExtension
+        if role == .shareExtension {
+            // Share extensions get roughly 120 MB: one job at a time, smaller OCR bitmaps.
+            pipeline.claimsWork = true
+            pipeline.maxConcurrentJobs = 1
+            pipeline.ocrMaxDimension = 2048
+        }
         let reminders = ReminderService(settings: settings)
         let capture = CaptureService(container: container, pipeline: pipeline, reminders: reminders)
         capture.processesImmediately = role == .app
