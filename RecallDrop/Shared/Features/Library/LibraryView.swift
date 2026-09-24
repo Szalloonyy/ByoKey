@@ -29,27 +29,38 @@ struct LibraryStack: View {
     }
 }
 
+/// Owns the capture query and hands the results to `content`. Give it
+/// `.id(environment.storeRevision)` so it fetches again after the share
+/// extension changed the store, while the surrounding view keeps its state.
+struct CapturedItemsReader<Content: View>: View {
+    @Query(sort: \CapturedItem.createdAt, order: .reverse) private var items: [CapturedItem]
+    @ViewBuilder let content: ([CapturedItem]) -> Content
+
+    var body: some View {
+        content(items)
+    }
+}
+
 struct LibraryView: View {
     let scope: LibraryScope
 
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \CapturedItem.createdAt, order: .reverse) private var allItems: [CapturedItem]
 
     @State private var searchText = ""
     @State private var kindFilter: CaptureKind?
     @State private var isDropTargeted = false
 
     var body: some View {
-        let query = SearchQuery(parsing: searchText)
-        let items = filteredItems(query: query)
-
-        Group {
+        CapturedItemsReader { allItems in
+            let query = SearchQuery(parsing: searchText)
+            let items = filteredItems(allItems, query: query)
             if items.isEmpty {
                 emptyState(isSearching: !query.isEmpty)
             } else {
                 ItemGridView(items: items, highlightTerms: query.highlightTerms)
             }
         }
+        .id(environment.storeRevision)
         .background(Theme.canvasBackground)
         .navigationTitle(scope.title)
         .searchable(text: $searchText, prompt: "Search text, titles, notes, #tags")
@@ -72,7 +83,7 @@ struct LibraryView: View {
 
     // MARK: Filtering
 
-    private func filteredItems(query: SearchQuery) -> [CapturedItem] {
+    private func filteredItems(_ allItems: [CapturedItem], query: SearchQuery) -> [CapturedItem] {
         var result = allItems.filter { item in
             switch scope {
             case .inbox: !item.isArchived

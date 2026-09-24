@@ -83,7 +83,12 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         default:
             // Tapped: the reminder did its job – clear it and show the item.
             reminders.cancelReminder(for: item)
+            #if os(macOS)
+            // Opens a window even when only the menu bar extra is running.
+            MacCaptureCoordinator.shared.open(itemID: itemID)
+            #else
             environment.router.open(itemID: itemID)
+            #endif
         }
     }
 }

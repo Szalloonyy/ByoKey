@@ -54,7 +54,6 @@ struct SearchAndFilterView: View {
     }
 
     @Environment(AppEnvironment.self) private var environment
-    @Query(sort: \CapturedItem.createdAt, order: .reverse) private var allItems: [CapturedItem]
     @Query(sort: [SortDescriptor(\AgentConfig.sortOrder), SortDescriptor(\AgentConfig.createdAt)])
     private var agents: [AgentConfig]
 
@@ -68,26 +67,29 @@ struct SearchAndFilterView: View {
     @State private var dateRange: DateRange = .any
 
     var body: some View {
-        let query = SearchQuery(parsing: searchText)
-        let results = results(for: query)
+        CapturedItemsReader { allItems in
+            let query = SearchQuery(parsing: searchText)
+            let results = results(in: allItems, for: query)
 
-        VStack(spacing: 0) {
-            filterBar
-            Divider()
-            if results.isEmpty {
-                if query.isEmpty && !hasActiveFilters {
-                    ContentUnavailableView {
-                        Label("Search Your Captures", systemImage: "magnifyingglass")
-                    } description: {
-                        Text("Search matches text inside screenshots, titles, summaries, notes and tags. Try \"exact phrase\", #tag, -exclude, is:pinned or has:reminder.")
+            VStack(spacing: 0) {
+                filterBar(tags: Self.tags(in: allItems))
+                Divider()
+                if results.isEmpty {
+                    if query.isEmpty && !hasActiveFilters {
+                        ContentUnavailableView {
+                            Label("Search Your Captures", systemImage: "magnifyingglass")
+                        } description: {
+                            Text("Search matches text inside screenshots, titles, summaries, notes and tags. Try \"exact phrase\", #tag, -exclude, is:pinned or has:reminder.")
+                        }
+                    } else {
+                        ContentUnavailableView.search(text: searchText)
                     }
                 } else {
-                    ContentUnavailableView.search(text: searchText)
+                    ItemGridView(items: results, highlightTerms: query.highlightTerms)
                 }
-            } else {
-                ItemGridView(items: results, highlightTerms: query.highlightTerms)
             }
         }
+        .id(environment.storeRevision)
         .background(Theme.canvasBackground)
         .navigationTitle("Search")
         .searchable(text: $searchText, prompt: "Text, titles, notes, #tags…")
@@ -97,7 +99,7 @@ struct SearchAndFilterView: View {
         scope != .all || kind != nil || tag != nil || agentName != nil || remindersOnly || openStepsOnly || dateRange != .any
     }
 
-    private var allTags: [String] {
+    private static func tags(in allItems: [CapturedItem]) -> [String] {
         var counts: [String: Int] = [:]
         for item in allItems {
             for tag in item.tags { counts[tag, default: 0] += 1 }
@@ -105,7 +107,7 @@ struct SearchAndFilterView: View {
         return counts.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }.map(\.key)
     }
 
-    private var filterBar: some View {
+    private func filterBar(tags allTags: [String]) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 Picker("Scope", selection: $scope) {
@@ -198,7 +200,7 @@ struct SearchAndFilterView: View {
         .fixedSize()
     }
 
-    private func results(for query: SearchQuery) -> [CapturedItem] {
+    private func results(in allItems: [CapturedItem], for query: SearchQuery) -> [CapturedItem] {
         let foldedAgent = agentName.map(SearchText.fold)
         let now = Date()
         let candidates = allItems.filter { item in

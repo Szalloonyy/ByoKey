@@ -21,6 +21,10 @@ struct AISettingsView: View {
     @State private var testResult: ConnectionTestResult?
     @State private var isTesting = false
     @State private var isModelPickerPresented = false
+    /// The model field is edited locally and stored on Return or when it loses
+    /// focus; an empty field means the provider's default.
+    @State private var modelInput = ""
+    @FocusState private var isModelFieldFocused: Bool
 
     var body: some View {
         @Bindable var settings = environment.settings
@@ -63,6 +67,10 @@ struct AISettingsView: View {
         .formStyle(.grouped)
         .navigationTitle("AI Provider")
         .onAppear { loadFields(for: provider) }
+        .onChange(of: settings.activeDefaultModel) { _, model in
+            // e.g. picked in the model browser
+            if !isModelFieldFocused { modelInput = model }
+        }
         .onChange(of: settings.provider) { _, newProvider in
             loadFields(for: newProvider)
             testResult = nil
@@ -104,6 +112,7 @@ struct AISettingsView: View {
                     Spacer()
                     Button("Remove Key", role: .destructive) {
                         KeychainStore.removeAPIKey(for: provider)
+                        environment.settings.noteAPIKeyChange()
                         storedKeyMask = nil
                         keyMessage = "Key removed from the Keychain."
                     }
@@ -192,12 +201,17 @@ struct AISettingsView: View {
         let info = catalog.info(for: model, provider: provider)
 
         return Section {
-            TextField("Model ID", text: defaultModelBinding(provider))
+            TextField("Model ID", text: $modelInput, prompt: Text(provider.defaultModel))
                 .monospaced()
                 .autocorrectionDisabled()
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 #endif
+                .focused($isModelFieldFocused)
+                .onSubmit { commitModel(for: provider) }
+                .onChange(of: isModelFieldFocused) { _, focused in
+                    if !focused { commitModel(for: provider) }
+                }
             Button {
                 isModelPickerPresented = true
             } label: {
@@ -284,6 +298,12 @@ struct AISettingsView: View {
         keyMessage = nil
         baseURLInput = environment.settings.baseURL(for: provider).absoluteString
         baseURLError = nil
+        modelInput = environment.settings.defaultModel(for: provider)
+    }
+
+    private func commitModel(for provider: AIProviderKind) {
+        environment.settings.setDefaultModel(modelInput, for: provider)
+        modelInput = environment.settings.defaultModel(for: provider)
     }
 
     private func saveKey(for provider: AIProviderKind) {
@@ -292,6 +312,7 @@ struct AISettingsView: View {
             storedKeyMask = KeychainStore.masked(key)
             apiKeyInput = ""
             keyMessage = "Saved to the Keychain."
+            environment.settings.noteAPIKeyChange()
             environment.pipeline.resumePendingWork()
             Task { await runConnectionTest(provider) }
         } else {

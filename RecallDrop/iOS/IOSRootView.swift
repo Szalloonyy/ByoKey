@@ -46,6 +46,8 @@ private struct IOSLibraryTab: View {
         @Bindable var router = environment.router
         NavigationStack(path: $router.libraryPath) {
             LibraryView(scope: router.libraryScope)
+                // The scope menu hangs off the title, which needs the inline style.
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbarTitleMenu {
                     ForEach(LibraryScope.primary, id: \.self) { scope in
                         Button {

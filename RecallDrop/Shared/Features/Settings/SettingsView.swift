@@ -218,12 +218,19 @@ struct DataSettingsView: View {
     @State private var isEraseConfirmationPresented = false
     @State private var message: String?
 
+    private var storageDescription: String {
+        if case .inMemoryFallback = environment.persistenceIssue {
+            return "Temporary – captures are not saved"
+        }
+        return AppGroup.containerURL == nil ? "This app only" : "Shared with the Share Extension"
+    }
+
     var body: some View {
         Form {
             Section("Library") {
                 LabeledContent("Captures", value: "\(items.count)")
                 LabeledContent("Archived", value: "\(items.filter(\.isArchived).count)")
-                LabeledContent("Storage", value: AppGroup.containerURL == nil ? "This app only" : "Shared with the Share Extension")
+                LabeledContent("Storage", value: storageDescription)
             }
 
             Section {

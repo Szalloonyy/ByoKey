@@ -77,6 +77,10 @@ final class SettingsStore {
     /// Set while values are (re)loaded from the defaults, so they are not written back.
     @ObservationIgnored private var isLoading = false
 
+    /// Bumped whenever an API key is saved or removed. The Keychain is not
+    /// observable, so views showing `aiUnavailableReason` depend on this.
+    private(set) var apiKeyRevision = 0
+
     // MARK: AI provider
 
     var provider: AIProviderKind = .openRouter {
@@ -299,8 +303,13 @@ final class SettingsStore {
         )
     }
 
+    func noteAPIKeyChange() {
+        apiKeyRevision += 1
+    }
+
     /// Whether agents can run right now; `nil` means ready, otherwise the reason.
     var aiUnavailableReason: String? {
+        _ = apiKeyRevision
         if offlineOnly { return "Offline Only is on." }
         if provider.requiresAPIKey, !KeychainStore.hasAPIKey(for: provider) {
             return "Add your \(provider.displayName) API key in Settings."

@@ -38,15 +38,15 @@ struct ToastOverlay: ViewModifier {
     }
 }
 
-/// App lifecycle: start once, refresh on activation, rebuild queries when
-/// the share extension changed the store.
+/// App lifecycle: start once, refresh on activation, open deep links.
+/// (Views that list captures fetch again through `CapturedItemsReader` when
+/// the share extension changed the store.)
 struct LifecycleModifier: ViewModifier {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.scenePhase) private var scenePhase
 
     func body(content: Content) -> some View {
         content
-            .id(environment.storeRevision)
             .onAppear {
                 environment.start()
             }
@@ -63,7 +63,25 @@ extension View {
     func appChrome() -> some View {
         modifier(LifecycleModifier())
             .modifier(ToastOverlay())
+            .modifier(RouterAlertModifier())
             .modifier(WelcomeSheetModifier())
+    }
+}
+
+/// Presents `router.alertMessage` until the user dismisses it.
+struct RouterAlertModifier: ViewModifier {
+    @Environment(AppEnvironment.self) private var environment
+
+    func body(content: Content) -> some View {
+        let router = environment.router
+        content.alert("RecallDrop Library", isPresented: Binding(
+            get: { router.alertMessage != nil },
+            set: { presented in if !presented { router.alertMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(router.alertMessage ?? "")
+        }
     }
 }
 

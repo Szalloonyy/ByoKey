@@ -73,6 +73,8 @@ final class AppRouter {
 
     /// Shown as a transient banner.
     var toastMessage: String?
+    /// Shown as an alert that stays until dismissed (e.g. storage problems).
+    var alertMessage: String?
 
     func open(itemID: UUID) {
         selectedTab = .library
@@ -112,8 +114,16 @@ final class AppRouter {
             if let id = UUID(uuidString: url.lastPathComponent) { open(itemID: id) }
         case "capture":
             selectedTab = .library
+            #if os(macOS)
+            // The Mac has no capture sheet; importing files is the closest action.
+            sidebarSelection = .library(libraryScope)
+            isFileImporterPresented = true
+            #else
             isCapturePresented = true
+            #endif
         case "note":
+            // The New Note sheet belongs to the library.
+            selectedTab = .library
             isNewNotePresented = true
         case "search":
             selectedTab = .search

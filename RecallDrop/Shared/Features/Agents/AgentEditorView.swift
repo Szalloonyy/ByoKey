@@ -36,6 +36,10 @@ private struct AgentEditorForm: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
     @State private var draft: AgentPersona
+    /// Kept apart from `draft.assignedModel`, so clearing the field while typing
+    /// does not switch back to the default model.
+    @State private var overridesModel: Bool
+    @State private var didDelete = false
     @State private var isModelPickerPresented = false
     @State private var isExporterPresented = false
     @State private var isDeleteConfirmationPresented = false
@@ -45,11 +49,28 @@ private struct AgentEditorForm: View {
     init(agent: AgentConfig) {
         self.agent = agent
         _draft = State(initialValue: agent.persona)
+        _overridesModel = State(initialValue: !agent.persona.usesDefaultModel)
     }
 
-    private var hasChanges: Bool { draft != agent.persona }
+    /// The agent was deleted (here or elsewhere); nothing may read it any more.
+    private var isGone: Bool {
+        didDelete || agent.isDeleted || agent.modelContext == nil
+    }
+
+    private var hasChanges: Bool {
+        guard !isGone else { return false }
+        return draft != agent.persona
+    }
 
     var body: some View {
+        if isGone {
+            Color.clear
+        } else {
+            editor
+        }
+    }
+
+    private var editor: some View {
         Form {
             identitySection
             modelSection
@@ -66,7 +87,7 @@ private struct AgentEditorForm: View {
             }
             if hasChanges {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Revert") { draft = agent.persona }
+                    Button("Revert") { reloadDraft() }
                 }
             }
         }
@@ -81,8 +102,10 @@ private struct AgentEditorForm: View {
         ) { _ in }
         .confirmationDialog("Delete “\(agent.displayName)”?", isPresented: $isDeleteConfirmationPresented, titleVisibility: .visible) {
             Button("Delete Agent", role: .destructive) {
-                environment.agents.delete(agent)
+                // Nothing may read the agent once it is gone (onDisappear saves otherwise).
+                didDelete = true
                 dismiss()
+                environment.agents.delete(agent)
             }
         } message: {
             Text("Results this agent produced stay with your captures.")
@@ -91,7 +114,7 @@ private struct AgentEditorForm: View {
                             titleVisibility: .visible) {
             Button("Reset", role: .destructive) {
                 agent.resetToBuiltIn()
-                draft = agent.persona
+                reloadDraft()
             }
         }
         .task(id: draft) {
@@ -172,22 +195,24 @@ private struct AgentEditorForm: View {
         let settings = environment.settings
         return Section {
             Toggle("Use Default Model", isOn: Binding(
-                get: { draft.usesDefaultModel },
+                get: { !overridesModel },
                 set: { useDefault in
-                    draft.assignedModel = useDefault ? "" : settings.activeDefaultModel
+                    overridesModel = !useDefault
+                    draft.assignedModel = useDefault ? "" : (draft.assignedModel.trimmedNonEmpty ?? settings.activeDefaultModel)
                 }
             ))
-            if draft.usesDefaultModel {
-                LabeledContent("Default", value: settings.activeDefaultModel)
-            } else {
+            if overridesModel {
                 HStack {
-                    TextField("Model ID", text: $draft.assignedModel)
+                    TextField("Model ID", text: $draft.assignedModel, prompt: Text(settings.activeDefaultModel))
                         .autocorrectionDisabled()
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
                         #endif
                     Button("Browse…") { isModelPickerPresented = true }
+                        .disabled(settings.offlineOnly)
                 }
+            } else {
+                LabeledContent("Default", value: settings.activeDefaultModel)
             }
         } header: {
             Text("Model")
@@ -252,6 +277,7 @@ private struct AgentEditorForm: View {
                 Button {
                     save()
                     environment.agents.setDefault(agent)
+                    reloadDraft()
                 } label: {
                     Label("Make Default Agent", systemImage: "star")
                 }
@@ -299,5 +325,13 @@ private struct AgentEditorForm: View {
         guard hasChanges else { return }
         agent.apply(draft)
         try? agent.modelContext?.save()
+        // The stored values may be normalized (empty name, emoji, model).
+        reloadDraft()
+    }
+
+    private func reloadDraft() {
+        guard !isGone else { return }
+        draft = agent.persona
+        overridesModel = !draft.usesDefaultModel
     }
 }

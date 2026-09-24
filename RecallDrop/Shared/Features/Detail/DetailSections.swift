@@ -66,12 +66,34 @@ struct DetailHeroView: View {
 struct DetailTitleSection: View {
     @Bindable var item: CapturedItem
 
+    /// Edited locally and stored on Return, when focus leaves or the view goes
+    /// away; an emptied title goes back to automatic naming.
+    @State private var titleDraft = ""
+    @FocusState private var isEditingTitle: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Title", text: titleBinding, axis: .vertical)
+            TextField("Title", text: $titleDraft, prompt: Text(item.displayTitle), axis: .vertical)
                 .font(.title2.weight(.bold))
                 .textFieldStyle(.plain)
                 .lineLimit(1...4)
+                .focused($isEditingTitle)
+                .onSubmit(commitTitle)
+                .onChange(of: titleDraft) { _, newValue in
+                    // Return adds a line break in a multi-line field on iOS; treat it as Done.
+                    if newValue.contains("\n") {
+                        titleDraft = newValue.replacingOccurrences(of: "\n", with: " ")
+                        isEditingTitle = false
+                    }
+                }
+                .onChange(of: isEditingTitle) { _, editing in
+                    if !editing { commitTitle() }
+                }
+                .onChange(of: item.title) { _, newTitle in
+                    if !isEditingTitle { titleDraft = newTitle }
+                }
+                .onAppear { titleDraft = item.title }
+                .onDisappear(perform: commitTitle)
 
             HStack(spacing: 10) {
                 Label(item.kind.label, systemImage: item.kind.symbolName)
@@ -93,15 +115,14 @@ struct DetailTitleSection: View {
         }
     }
 
-    private var titleBinding: Binding<String> {
-        Binding(
-            get: { item.title.isEmpty ? item.displayTitle : item.title },
-            set: { newValue in
-                item.title = newValue
-                item.isTitleUserEdited = true
-                item.touch()
-            }
-        )
+    private func commitTitle() {
+        guard !item.isDeleted, item.modelContext != nil else { return }
+        let title = titleDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard title != item.title else { return }
+        item.title = title
+        // With an empty title, agents may name the capture again.
+        item.isTitleUserEdited = !title.isEmpty
+        item.touch()
     }
 }
 

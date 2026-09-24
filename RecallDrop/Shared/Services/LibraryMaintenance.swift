@@ -45,6 +45,7 @@ enum LibraryMaintenance {
         }
         try? context.save()
         KeychainStore.removeAll()
+        environment.settings.noteAPIKeyChange()
         environment.catalog.clearCache()
         environment.settings.resetAll()
         environment.agents.seedBuiltInsIfNeeded()

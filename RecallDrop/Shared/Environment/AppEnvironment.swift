@@ -80,7 +80,7 @@ final class AppEnvironment {
         }
         pipeline.resumePendingWork()
         if let issue = persistenceIssue {
-            router.showToast(issue.message)
+            router.alertMessage = issue.message
         }
         Task {
             await reminders.reconcile(in: container.mainContext)

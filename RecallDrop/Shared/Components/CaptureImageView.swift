@@ -11,18 +11,38 @@ import SwiftUI
 actor ImageDecodeCache {
     static let shared = ImageDecodeCache()
 
-    private var storage: [String: DecodedImage] = [:]
+    /// Decoded bitmaps take 4 bytes per pixel, so the cache is bounded by
+    /// memory rather than by count.
+    #if os(macOS)
+    private let byteLimit = 256 * 1024 * 1024
+    #else
+    private let byteLimit = 96 * 1024 * 1024
+    #endif
+    /// Larger decodes (full-screen viewers, detail heroes) are not kept.
+    private let largestCachedPixelSize = 1200
+
+    private var storage: [String: (image: DecodedImage, bytes: Int)] = [:]
+    /// Least recently used first.
     private var order: [String] = []
-    private let limit = 250
+    private var totalBytes = 0
 
     func image(for key: String, data: Data, maxPixelSize: Int) -> DecodedImage? {
-        if let cached = storage[key] { return cached }
+        let sizedKey = "\(key)@\(maxPixelSize)"
+        if let cached = storage[sizedKey] {
+            order.removeAll { $0 == sizedKey }
+            order.append(sizedKey)
+            return cached.image
+        }
         guard let decoded = ImageProcessor.decodedImage(from: data, maxPixelSize: maxPixelSize) else { return nil }
-        storage[key] = decoded
-        order.append(key)
-        if order.count > limit {
-            let evicted = order.removeFirst()
-            storage[evicted] = nil
+        guard maxPixelSize <= largestCachedPixelSize else { return decoded }
+
+        let bytes = decoded.cgImage.bytesPerRow * decoded.cgImage.height
+        storage[sizedKey] = (decoded, bytes)
+        order.append(sizedKey)
+        totalBytes += bytes
+        while totalBytes > byteLimit, let evicted = order.first {
+            order.removeFirst()
+            totalBytes -= storage.removeValue(forKey: evicted)?.bytes ?? 0
         }
         return decoded
     }
@@ -30,6 +50,7 @@ actor ImageDecodeCache {
     func removeAll() {
         storage.removeAll()
         order.removeAll()
+        totalBytes = 0
     }
 }
 

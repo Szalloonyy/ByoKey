@@ -99,9 +99,8 @@ struct AgencyGalleryView: View {
             }
             .task { await load() }
             .sheet(item: $previewEntry) { entry in
-                if let catalog {
-                    AgencyAgentPreview(entry: entry, catalog: catalog)
-                }
+                // The entry carries its own file URL, so the repository field may change meanwhile.
+                AgencyAgentPreview(entry: entry)
             }
         }
         #if os(macOS)
@@ -138,7 +137,6 @@ struct AgencyGalleryView: View {
 
 private struct AgencyAgentPreview: View {
     let entry: AgencyAgentEntry
-    let catalog: AgencyAgentsCatalog
 
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -205,7 +203,7 @@ private struct AgencyAgentPreview: View {
 
     private func load() async {
         do {
-            let text = try await catalog.fetchMarkdown(for: entry)
+            let text = try await AgencyAgentsCatalog.fetchMarkdown(from: entry.rawURL)
             markdown = text
             persona = try PersonaMarkdownCodec.decode(text, fallbackName: entry.name)
         } catch {

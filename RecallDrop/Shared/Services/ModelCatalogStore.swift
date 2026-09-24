@@ -57,7 +57,8 @@ final class ModelCatalogStore {
     }
 
     func refresh(_ provider: AIProviderKind, settings: SettingsStore) async {
-        guard state(for: provider) != .loading else { return }
+        // Offline Only means no request at all, not even for the model list.
+        guard !settings.offlineOnly, state(for: provider) != .loading else { return }
         states[provider] = .loading
         do {
             let client = try AIClientFactory.makeClient(configuration: settings.providerConfiguration(for: provider))
