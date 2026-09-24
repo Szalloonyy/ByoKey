@@ -1,0 +1,14 @@
+# Xcode
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/RecallDropKit/.build/
+Packages/RecallDropKit/.swiftpm/
+
+# macOS
+.DS_Store
