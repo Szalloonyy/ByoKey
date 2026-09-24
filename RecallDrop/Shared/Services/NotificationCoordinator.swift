@@ -26,8 +26,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         ReminderService.registerCategories()
         let queued = pendingActions
         pendingActions.removeAll()
-        for entry in queued {
-            handle(action: entry.action, itemID: entry.itemID)
+        guard !queued.isEmpty else { return }
+        Task {
+            for entry in queued {
+                await handle(action: entry.action, itemID: entry.itemID)
+            }
         }
     }
 
@@ -53,7 +56,9 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         await handle(action: action, itemID: itemID)
     }
 
-    private func handle(action: String, itemID: UUID) {
+    /// Finishes before returning, so a background launch for a Snooze action
+    /// is not suspended before the new reminder is scheduled.
+    private func handle(action: String, itemID: UUID) async {
         guard let environment else {
             pendingActions.append((action, itemID))
             return
@@ -66,10 +71,10 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         switch action {
         case ReminderService.Action.snoozeHour.rawValue:
             let date = SnoozeOption.oneHour.date(relativeTo: Date(), schedule: schedule)
-            Task { await reminders.schedule(item, at: date) }
+            await reminders.schedule(item, at: date)
         case ReminderService.Action.snoozeTomorrow.rawValue:
             let date = SnoozeOption.tomorrow.date(relativeTo: Date(), schedule: schedule)
-            Task { await reminders.schedule(item, at: date) }
+            await reminders.schedule(item, at: date)
         case ReminderService.Action.archive.rawValue:
             item.isArchived = true
             reminders.cancelReminder(for: item)

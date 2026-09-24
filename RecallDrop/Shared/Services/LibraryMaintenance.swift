@@ -21,8 +21,8 @@ enum LibraryMaintenance {
     static func delete(_ items: [CapturedItem], environment: AppEnvironment) {
         let context = environment.container.mainContext
         for item in items {
-            environment.pipeline.cancel(item.id)
-            if item.hasReminder { environment.reminders.cancelReminder(for: item) }
+            environment.pipeline.discard(item.id)
+            if item.hasReminder { ReminderService.removeNotification(for: item.id) }
             context.delete(item)
         }
         try? context.save()

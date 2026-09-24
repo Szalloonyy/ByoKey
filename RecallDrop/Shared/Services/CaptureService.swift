@@ -155,6 +155,10 @@ final class CaptureService {
         let agentIDs = options.agentIDs ?? pipeline.defaultAgentIDsForNewCapture()
         item.pendingAgentIds = agentIDs
         item.processingState = .pending
+        if !processesImmediately {
+            // The share extension decides what happens next; the app keeps away meanwhile.
+            pipeline.claim([item.id])
+        }
         try? context.save()
 
         if let reminderDate = options.reminderDate {

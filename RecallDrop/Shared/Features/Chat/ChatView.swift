@@ -132,7 +132,7 @@ struct ChatView: View {
                 Text(item.displayTitle)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
-                Text("The agent sees the \(item.hasImage && includeImage ? "image, " : "")text, summary and your notes.")
+                Text("The agent sees the \(sendsImage ? "image, " : "")text, summary and your notes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -166,7 +166,7 @@ struct ChatView: View {
 
     private var composer: some View {
         HStack(alignment: .bottom, spacing: 10) {
-            if item.hasImage {
+            if item.hasImage, environment.settings.sendImages {
                 Button {
                     includeImage.toggle()
                 } label: {
@@ -232,10 +232,18 @@ struct ChatView: View {
         }
     }
 
+    /// Whether the image goes along: the capture has one, the chat includes it
+    /// and "Send Images to the Model" is on.
+    private var sendsImage: Bool {
+        item.hasImage && includeImage && environment.settings.sendImages
+    }
+
     private func send(_ text: String) {
         guard let session, let agent = selectedAgent, text.trimmedNonEmpty != nil else { return }
-        session.send(text, about: item, persona: agent.persona, includeImage: includeImage)
-        draft = ""
+        // A reply that is still streaming keeps the draft for the next try.
+        if session.send(text, about: item, persona: agent.persona, includeImage: includeImage) {
+            draft = ""
+        }
     }
 }
 

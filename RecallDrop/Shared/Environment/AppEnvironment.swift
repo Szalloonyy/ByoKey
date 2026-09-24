@@ -40,10 +40,13 @@ final class AppEnvironment {
     @ObservationIgnored private var didStart = false
 
     init(role: Role) {
-        let (container, issue) = PersistenceController.makeContainer()
+        // Only the app may move an unreadable store aside; the extension never
+        // touches the files the app may have open.
+        let (container, issue) = PersistenceController.makeContainer(allowsRecovery: role == .app)
         let settings = SettingsStore()
         let catalog = ModelCatalogStore()
         let pipeline = AgentPipeline(container: container, settings: settings, catalog: catalog)
+        pipeline.claimsWork = role == .shareExtension
         let reminders = ReminderService(settings: settings)
         let capture = CaptureService(container: container, pipeline: pipeline, reminders: reminders)
         capture.processesImmediately = role == .app
@@ -59,6 +62,10 @@ final class AppEnvironment {
         self.agents = AgentLibrary(container: container)
         self.router = AppRouter()
         self.lastSeenExternalChange = settings.lastExternalChange
+
+        pipeline.onItemFinished = { [weak self] itemID in
+            self?.pipelineDidFinish(itemID)
+        }
     }
 
     /// One-time setup after launch.
@@ -92,6 +99,17 @@ final class AppEnvironment {
             if catalog.needsRefresh(settings.provider), settings.aiUnavailableReason == nil {
                 await catalog.refresh(settings.provider, settings: settings)
             }
+        }
+    }
+
+    /// A reminder scheduled at capture time still shows the placeholder title;
+    /// once an agent named the capture, the notification is sent again.
+    private func pipelineDidFinish(_ itemID: UUID) {
+        guard let item = CapturedItem.fetch(id: itemID, in: container.mainContext),
+              let date = item.reminderDate, date > Date() else { return }
+        let reminders = self.reminders
+        Task {
+            await reminders.refreshNotification(for: item)
         }
     }
 

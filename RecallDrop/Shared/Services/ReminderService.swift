@@ -106,6 +106,22 @@ final class ReminderService {
         await schedule(item, at: date)
     }
 
+    /// Sends the pending notification again with the item's current title and
+    /// text; the same identifier replaces the old request.
+    func refreshNotification(for item: CapturedItem) async {
+        guard let date = item.reminderDate, date > Date() else { return }
+        await refreshAuthorizationStatus()
+        guard isAuthorized else { return }
+        let payload = ReminderPayload(itemID: item.id, title: item.displayTitle, body: item.reminderBody,
+                                      date: date, thumbnail: item.thumbnailData)
+        try? await Self.addNotification(payload)
+    }
+
+    /// Removes the notification of an item that is being deleted.
+    nonisolated static func removeNotification(for itemID: UUID) {
+        removeNotifications(ids: [requestIdentifier(for: itemID)])
+    }
+
     func cancelReminder(for item: CapturedItem) {
         item.reminderDate = nil
         item.touch()

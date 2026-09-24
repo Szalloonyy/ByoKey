@@ -38,16 +38,24 @@ enum PersistenceController {
 
     static var schema: Schema { Schema(versionedSchema: RecallDropSchemaV1.self) }
 
-    static func makeContainer() -> (container: ModelContainer, issue: PersistenceIssue?) {
+    /// Opens the store. With `allowsRecovery`, a store that cannot be opened
+    /// is moved aside and a new one is created; the share extension passes
+    /// false so it never renames files the app may have open.
+    static func makeContainer(allowsRecovery: Bool) -> (container: ModelContainer, issue: PersistenceIssue?) {
         let url = storeURL
         do {
             return (try openContainer(at: url), nil)
         } catch {
-            let backupName = moveStoreAside(at: url)
+            guard allowsRecovery, let backup = moveStoreAside(at: url) else {
+                return (makeInMemoryContainer(), .inMemoryFallback(reason: error.localizedDescription))
+            }
             do {
                 let container = try openContainer(at: url)
-                return (container, backupName.map { .recoveredFromCorruption(backupName: $0) })
+                return (container, .recoveredFromCorruption(backupName: backup.name))
             } catch {
+                // A new store fails as well, so the old one was not the problem
+                // (full disk, permissions): put it back for the next launch.
+                restore(backup)
                 return (makeInMemoryContainer(), .inMemoryFallback(reason: error.localizedDescription))
             }
         }
@@ -74,19 +82,40 @@ enum PersistenceController {
         return try ModelContainer(for: schema, migrationPlan: RecallDropMigrationPlan.self, configurations: [configuration])
     }
 
-    /// Renames the store and its SQLite side files; returns the new base name.
-    private static func moveStoreAside(at url: URL) -> String? {
+    private struct StoreBackup {
+        var name: String
+        /// Moved files: original location → backup location.
+        var moves: [(from: URL, to: URL)]
+    }
+
+    /// Renames the store, its SQLite side files and its folder of externally
+    /// stored images; returns what was moved, or nil when there was no store.
+    private static func moveStoreAside(at url: URL) -> StoreBackup? {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: url.path(percentEncoded: false)) else { return nil }
         let stamp = Int(Date().timeIntervalSince1970)
         let backupBase = "\(storeName)-unreadable-\(stamp)"
         let directory = url.deletingLastPathComponent()
-        for suffix in ["", "-shm", "-wal"] {
-            let source = directory.appending(path: "\(storeName).store\(suffix)")
+        let names = ["", "-shm", "-wal"].map { ("\(storeName).store\($0)", "\(backupBase).store\($0)") }
+            + [(".\(storeName)_SUPPORT", ".\(backupBase)_SUPPORT")]
+        var moves: [(from: URL, to: URL)] = []
+        for (original, backup) in names {
+            let source = directory.appending(path: original)
             guard fileManager.fileExists(atPath: source.path(percentEncoded: false)) else { continue }
-            let destination = directory.appending(path: "\(backupBase).store\(suffix)")
-            try? fileManager.moveItem(at: source, to: destination)
+            let destination = directory.appending(path: backup)
+            if (try? fileManager.moveItem(at: source, to: destination)) != nil {
+                moves.append((source, destination))
+            }
         }
-        return "\(backupBase).store"
+        return moves.isEmpty ? nil : StoreBackup(name: "\(backupBase).store", moves: moves)
+    }
+
+    /// Undoes `moveStoreAside`, replacing whatever the failed attempt created.
+    private static func restore(_ backup: StoreBackup) {
+        let fileManager = FileManager.default
+        for move in backup.moves {
+            try? fileManager.removeItem(at: move.from)
+            try? fileManager.moveItem(at: move.to, to: move.from)
+        }
     }
 }

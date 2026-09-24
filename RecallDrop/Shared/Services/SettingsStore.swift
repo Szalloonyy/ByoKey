@@ -63,90 +63,93 @@ final class SettingsStore {
         static let hotKeys = "mac.hotKeys"
         static let hasCompletedOnboarding = "ui.hasCompletedOnboarding"
         static let lastExternalChange = "sync.lastExternalChange"
+        static let processingClaims = "sync.processingClaims"
 
         static let all = [
             provider, baseURLs, defaultModels, maxOutputTokens, offlineOnly, autoAnalyze, sendImages,
             useJSONMode, requestTimeout, responseLanguage, ocrAccuracy, ocrLanguageCorrection,
             fetchLinkPreviews, morningHour, eveningHour, weekendHour, gridDensity, showDropShelfAtLaunch,
-            hideDockIcon, hotKeys, hasCompletedOnboarding, lastExternalChange
+            hideDockIcon, hotKeys, hasCompletedOnboarding, lastExternalChange, processingClaims
         ]
     }
 
     @ObservationIgnored private let defaults: UserDefaults
+    /// Set while values are (re)loaded from the defaults, so they are not written back.
+    @ObservationIgnored private var isLoading = false
 
     // MARK: AI provider
 
-    var provider: AIProviderKind {
-        didSet { defaults.set(provider.rawValue, forKey: Key.provider) }
+    var provider: AIProviderKind = .openRouter {
+        didSet { store(provider.rawValue, Key.provider) }
     }
 
     /// Per-provider base URL overrides (raw value → URL string).
-    private(set) var baseURLOverrides: [String: String] {
-        didSet { defaults.set(baseURLOverrides, forKey: Key.baseURLs) }
+    private(set) var baseURLOverrides: [String: String] = [:] {
+        didSet { store(baseURLOverrides, Key.baseURLs) }
     }
 
     /// Per-provider default model (raw value → model ID).
-    private(set) var defaultModels: [String: String] {
-        didSet { defaults.set(defaultModels, forKey: Key.defaultModels) }
+    private(set) var defaultModels: [String: String] = [:] {
+        didSet { store(defaultModels, Key.defaultModels) }
     }
 
-    private(set) var maxOutputTokenOverrides: [String: Int] {
-        didSet { defaults.set(maxOutputTokenOverrides, forKey: Key.maxOutputTokens) }
+    private(set) var maxOutputTokenOverrides: [String: Int] = [:] {
+        didSet { store(maxOutputTokenOverrides, Key.maxOutputTokens) }
     }
 
     /// Only on-device OCR and analysis; no request reaches an AI provider.
-    var offlineOnly: Bool {
-        didSet { defaults.set(offlineOnly, forKey: Key.offlineOnly) }
+    var offlineOnly = false {
+        didSet { store(offlineOnly, Key.offlineOnly) }
     }
 
     /// Run the default agent on every new capture.
-    var autoAnalyze: Bool {
-        didSet { defaults.set(autoAnalyze, forKey: Key.autoAnalyze) }
+    var autoAnalyze = true {
+        didSet { store(autoAnalyze, Key.autoAnalyze) }
     }
 
     /// Attach the image itself (not just the OCR text) to agent requests.
-    var sendImages: Bool {
-        didSet { defaults.set(sendImages, forKey: Key.sendImages) }
+    var sendImages = true {
+        didSet { store(sendImages, Key.sendImages) }
     }
 
-    var useJSONMode: Bool {
-        didSet { defaults.set(useJSONMode, forKey: Key.useJSONMode) }
+    var useJSONMode = true {
+        didSet { store(useJSONMode, Key.useJSONMode) }
     }
 
-    var requestTimeout: Double {
-        didSet { defaults.set(requestTimeout, forKey: Key.requestTimeout) }
+    var requestTimeout = 120.0 {
+        didSet { store(requestTimeout, Key.requestTimeout) }
     }
 
-    var responseLanguage: PromptEnvironment.ResponseLanguage {
-        didSet { defaults.set(responseLanguage.rawValue, forKey: Key.responseLanguage) }
+    var responseLanguage: PromptEnvironment.ResponseLanguage = .device {
+        didSet { store(responseLanguage.rawValue, Key.responseLanguage) }
     }
 
     // MARK: Capture
 
-    var ocrAccuracy: OCRAccuracy {
-        didSet { defaults.set(ocrAccuracy.rawValue, forKey: Key.ocrAccuracy) }
+    var ocrAccuracy: OCRAccuracy = .accurate {
+        didSet { store(ocrAccuracy.rawValue, Key.ocrAccuracy) }
     }
 
-    var ocrLanguageCorrection: Bool {
-        didSet { defaults.set(ocrLanguageCorrection, forKey: Key.ocrLanguageCorrection) }
+    var ocrLanguageCorrection = true {
+        didSet { store(ocrLanguageCorrection, Key.ocrLanguageCorrection) }
     }
 
-    var fetchLinkPreviews: Bool {
-        didSet { defaults.set(fetchLinkPreviews, forKey: Key.fetchLinkPreviews) }
+    var fetchLinkPreviews = true {
+        didSet { store(fetchLinkPreviews, Key.fetchLinkPreviews) }
     }
 
     // MARK: Reminders
 
-    var morningHour: Int {
-        didSet { defaults.set(morningHour, forKey: Key.morningHour) }
+    var morningHour = 9 {
+        didSet { store(morningHour, Key.morningHour) }
     }
 
-    var eveningHour: Int {
-        didSet { defaults.set(eveningHour, forKey: Key.eveningHour) }
+    var eveningHour = 20 {
+        didSet { store(eveningHour, Key.eveningHour) }
     }
 
-    var weekendHour: Int {
-        didSet { defaults.set(weekendHour, forKey: Key.weekendHour) }
+    var weekendHour = 10 {
+        didSet { store(weekendHour, Key.weekendHour) }
     }
 
     var reminderSchedule: ReminderSchedule {
@@ -155,27 +158,27 @@ final class SettingsStore {
 
     // MARK: Interface
 
-    var gridDensity: GridDensity {
-        didSet { defaults.set(gridDensity.rawValue, forKey: Key.gridDensity) }
+    var gridDensity: GridDensity = .comfortable {
+        didSet { store(gridDensity.rawValue, Key.gridDensity) }
     }
 
-    var hasCompletedOnboarding: Bool {
-        didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding) }
+    var hasCompletedOnboarding = false {
+        didSet { store(hasCompletedOnboarding, Key.hasCompletedOnboarding) }
     }
 
     // MARK: macOS
 
-    var showDropShelfAtLaunch: Bool {
-        didSet { defaults.set(showDropShelfAtLaunch, forKey: Key.showDropShelfAtLaunch) }
+    var showDropShelfAtLaunch = false {
+        didSet { store(showDropShelfAtLaunch, Key.showDropShelfAtLaunch) }
     }
 
-    var hideDockIcon: Bool {
-        didSet { defaults.set(hideDockIcon, forKey: Key.hideDockIcon) }
+    var hideDockIcon = false {
+        didSet { store(hideDockIcon, Key.hideDockIcon) }
     }
 
     /// Global shortcuts as JSON (see HotKeyCenter on macOS).
-    var hotKeysData: Data? {
-        didSet { defaults.set(hotKeysData, forKey: Key.hotKeys) }
+    var hotKeysData: Data? = nil {
+        didSet { store(hotKeysData, Key.hotKeys) }
     }
 
     // MARK: Init
@@ -193,6 +196,13 @@ final class SettingsStore {
             Key.eveningHour: 20,
             Key.weekendHour: 10
         ])
+        reload()
+    }
+
+    /// Reads every preference from the defaults (registered values apply to missing keys).
+    private func reload() {
+        isLoading = true
+        defer { isLoading = false }
         provider = defaults.string(forKey: Key.provider).flatMap(AIProviderKind.init(rawValue:)) ?? .openRouter
         baseURLOverrides = defaults.dictionary(forKey: Key.baseURLs) as? [String: String] ?? [:]
         defaultModels = defaults.dictionary(forKey: Key.defaultModels) as? [String: String] ?? [:]
@@ -215,6 +225,11 @@ final class SettingsStore {
         showDropShelfAtLaunch = defaults.bool(forKey: Key.showDropShelfAtLaunch)
         hideDockIcon = defaults.bool(forKey: Key.hideDockIcon)
         hotKeysData = defaults.data(forKey: Key.hotKeys)
+    }
+
+    private func store(_ value: Any?, _ key: String) {
+        guard !isLoading else { return }
+        defaults.set(value, forKey: key)
     }
 
     // MARK: Per-provider values
@@ -304,10 +319,54 @@ final class SettingsStore {
         defaults.double(forKey: Key.lastExternalChange)
     }
 
-    /// Removes every stored preference; takes effect on the next launch.
+    /// Removes every stored preference and returns to the defaults right away.
     func resetAll() {
         for key in Key.all {
             defaults.removeObject(forKey: key)
         }
+        reload()
+    }
+
+    // MARK: Cross-process processing claims
+
+    /// How long a claim keeps the app away from an item the share extension works on.
+    nonisolated static let claimLifetime: TimeInterval = 180
+
+    /// Marks items the share extension is processing, so the app does not
+    /// start the same work at the same time.
+    func claimProcessing(of itemIDs: [UUID]) {
+        guard !itemIDs.isEmpty else { return }
+        var claims = liveClaims()
+        let now = Date().timeIntervalSince1970
+        for itemID in itemIDs {
+            claims[itemID.uuidString] = now
+        }
+        defaults.set(claims, forKey: Key.processingClaims)
+    }
+
+    func releaseProcessing(of itemIDs: [UUID]) {
+        guard !itemIDs.isEmpty else { return }
+        var claims = liveClaims()
+        for itemID in itemIDs {
+            claims.removeValue(forKey: itemID.uuidString)
+        }
+        defaults.set(claims, forKey: Key.processingClaims)
+    }
+
+    /// Claims younger than `claimLifetime`, by item.
+    func activeProcessingClaims() -> [UUID: Date] {
+        var result: [UUID: Date] = [:]
+        for (key, time) in liveClaims() {
+            if let itemID = UUID(uuidString: key) {
+                result[itemID] = Date(timeIntervalSince1970: time)
+            }
+        }
+        return result
+    }
+
+    private func liveClaims() -> [String: Double] {
+        let stored = defaults.dictionary(forKey: Key.processingClaims) as? [String: Double] ?? [:]
+        let cutoff = Date().timeIntervalSince1970 - Self.claimLifetime
+        return stored.filter { $0.value > cutoff }
     }
 }

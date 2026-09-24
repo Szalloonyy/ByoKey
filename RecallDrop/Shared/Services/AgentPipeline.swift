@@ -57,10 +57,22 @@ final class AgentPipeline {
     @ObservationIgnored private var queue: [UUID] = []
     @ObservationIgnored private var running: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var forcedOCR: Set<UUID> = []
+    /// Requests that arrived while the item was being processed; they run next.
+    @ObservationIgnored private var followUps: [UUID: FollowUp] = [:]
+    @ObservationIgnored private var recheckTask: Task<Void, Never>?
     @ObservationIgnored private let maxConcurrentJobs = 2
 
     /// Called after an item finished processing (successfully or not).
     @ObservationIgnored var onItemFinished: ((UUID) -> Void)?
+
+    /// Set in the share extension: items it processes are claimed in the shared
+    /// defaults, so the app does not work on them at the same time.
+    @ObservationIgnored var claimsWork = false
+
+    private struct FollowUp {
+        var agentIDs: [UUID] = []
+        var forceOCR = false
+    }
 
     init(container: ModelContainer, settings: SettingsStore, catalog: ModelCatalogStore) {
         self.container = container
@@ -94,11 +106,23 @@ final class AgentPipeline {
     }
 
     /// Queues processing for `item`. `agentIDs` may be empty (text recognition only).
+    /// While the item is being processed, the request runs right after the current job.
     func schedule(_ item: CapturedItem, agentIDs: [UUID], forceOCR: Bool = false, prioritized: Bool = false) {
-        item.pendingAgentIds = agentIDs
+        if running[item.id] != nil {
+            var followUp = followUps[item.id] ?? FollowUp()
+            followUp.agentIDs = Self.merged(followUp.agentIDs, agentIDs)
+            followUp.forceOCR = followUp.forceOCR || forceOCR
+            followUps[item.id] = followUp
+            return
+        }
+        // Work that is still pending (queued, or waiting for AI) is kept.
+        item.pendingAgentIds = item.processingState == .pending
+            ? Self.merged(item.pendingAgentIds, agentIDs)
+            : agentIDs
         item.processingState = .pending
         item.processingError = nil
         if forceOCR { forcedOCR.insert(item.id) }
+        claim([item.id])
         save()
         enqueue(item.id, prioritized: prioritized)
     }
@@ -116,6 +140,7 @@ final class AgentPipeline {
     func cancel(_ itemID: UUID) {
         queue.removeAll { $0 == itemID }
         forcedOCR.remove(itemID)
+        followUps.removeValue(forKey: itemID)
         if let task = running[itemID] {
             task.cancel()
         } else {
@@ -126,6 +151,29 @@ final class AgentPipeline {
                 save()
             }
         }
+    }
+
+    /// Stops all work for an item that is about to be deleted, without touching the model.
+    func discard(_ itemID: UUID) {
+        queue.removeAll { $0 == itemID }
+        forcedOCR.remove(itemID)
+        followUps.removeValue(forKey: itemID)
+        if let task = running[itemID] {
+            task.cancel()
+        } else {
+            phases[itemID] = nil
+        }
+    }
+
+    /// Marks items as handled by this process (share extension only).
+    func claim(_ itemIDs: [UUID]) {
+        guard claimsWork else { return }
+        settings.claimProcessing(of: itemIDs)
+    }
+
+    func releaseClaims(_ itemIDs: [UUID]) {
+        guard claimsWork else { return }
+        settings.releaseProcessing(of: itemIDs)
     }
 
     /// True while `item` holds agents that need an AI provider and none is
@@ -153,7 +201,15 @@ final class AgentPipeline {
             sortBy: [SortDescriptor(\.createdAt)]
         )
         guard let items = try? context.fetch(descriptor) else { return }
+        let claims = claimsWork ? [:] : settings.activeProcessingClaims()
+        var nextClaimExpiry: Date?
         for item in items where running[item.id] == nil && !queue.contains(item.id) {
+            if let claimed = claims[item.id] {
+                // The share extension is working on it right now; look again later.
+                let expiry = claimed.addingTimeInterval(SettingsStore.claimLifetime)
+                nextClaimExpiry = min(nextClaimExpiry ?? expiry, expiry)
+                continue
+            }
             // Already processed and only waiting for AI: nothing to do yet.
             if !item.agentRuns.isEmpty, isWaitingForAI(item) { continue }
             if item.processingState != .pending {
@@ -162,6 +218,19 @@ final class AgentPipeline {
             enqueue(item.id, prioritized: false)
         }
         save()
+        if let nextClaimExpiry {
+            scheduleRecheck(at: nextClaimExpiry)
+        }
+    }
+
+    private func scheduleRecheck(at date: Date) {
+        recheckTask?.cancel()
+        let delay = max(date.timeIntervalSinceNow, 0) + 1
+        recheckTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            self?.resumePendingWork()
+        }
     }
 
     // MARK: Queue
@@ -191,7 +260,11 @@ final class AgentPipeline {
     private func jobFinished(_ itemID: UUID) {
         running[itemID] = nil
         phases[itemID] = nil
+        releaseClaims([itemID])
         onItemFinished?(itemID)
+        if let followUp = followUps.removeValue(forKey: itemID), let item = currentItem(itemID) {
+            schedule(item, agentIDs: followUp.agentIDs, forceOCR: followUp.forceOCR, prioritized: true)
+        }
         startNextJobs()
     }
 
@@ -204,13 +277,13 @@ final class AgentPipeline {
     private func process(_ itemID: UUID) async {
         guard let item = currentItem(itemID) else { return }
         let agentIDs = item.pendingAgentIds
-        let forceOCR = forcedOCR.remove(itemID) != nil
+        let force = forcedOCR.remove(itemID) != nil
         let activity = BackgroundActivity(reason: "Analyzing a capture")
         defer { activity.end() }
 
         do {
-            try await enrichLinkIfNeeded(itemID)
-            try await recognizeTextIfNeeded(itemID, force: forceOCR)
+            try await enrichLinkIfNeeded(itemID, force: force)
+            try await recognizeTextIfNeeded(itemID, force: force)
             let waitingAgentIDs = try await runAgents(agentIDs, on: itemID)
             guard let item = currentItem(itemID) else { return }
             item.pendingAgentIds = waitingAgentIDs
@@ -237,8 +310,10 @@ final class AgentPipeline {
         }
     }
 
-    private func enrichLinkIfNeeded(_ itemID: UUID) async throws {
-        guard let item = currentItem(itemID), item.kind == .link, !item.linkMetadataFetched,
+    /// Loads the page's title, description, preview image and – for posts –
+    /// its text. `force` reloads a page that was loaded before.
+    private func enrichLinkIfNeeded(_ itemID: UUID, force: Bool) async throws {
+        guard let item = currentItem(itemID), item.kind == .link, force || !item.linkMetadataFetched,
               settings.fetchLinkPreviews, let url = item.sourceURL else { return }
         setPhase(.fetchingLink, for: itemID)
         item.processingState = .fetchingLink
@@ -246,6 +321,8 @@ final class AgentPipeline {
 
         let metadata = await LinkMetadataFetcher.fetch(url)
         try Task.checkCancellation()
+        // Nothing came back (offline, timeout, blocked): try again next time.
+        guard !metadata.isEmpty else { return }
         var preview: PreparedImage?
         if let imageURL = metadata.imageURL, currentItem(itemID)?.hasImage == false {
             preview = await Self.downloadPreviewImage(imageURL)
@@ -258,8 +335,10 @@ final class AgentPipeline {
         if item.sourceAppName == nil {
             item.sourceAppName = metadata.siteName ?? TextHeuristics.sourceAppName(for: url)
         }
-        if let body = metadata.bodyText?.trimmedNonEmpty, item.extractedText?.trimmedNonEmpty == nil {
+        if let body = metadata.bodyText?.trimmedNonEmpty, force || item.extractedText?.trimmedNonEmpty == nil {
             item.extractedText = body
+            item.ocrConfidence = nil
+            item.ocrLines = []
         }
         if !item.isTitleUserEdited, item.title.trimmedNonEmpty == nil, let title = metadata.title?.trimmedNonEmpty {
             item.title = TextHeuristics.truncate(title, maxLength: AgentOutputParser.maximumTitleLength)
@@ -275,10 +354,10 @@ final class AgentPipeline {
     }
 
     private func recognizeTextIfNeeded(_ itemID: UUID, force: Bool) async throws {
-        guard let item = currentItem(itemID), item.hasImage, force || item.extractedText == nil else { return }
-        // For links the page text is usually better than OCR of a preview picture.
-        if item.kind == .link, !force, item.extractedText?.trimmedNonEmpty != nil { return }
-        guard let imageData = item.imageData else { return }
+        guard let item = currentItem(itemID), item.hasImage, let imageData = item.imageData,
+              force || item.extractedText == nil else { return }
+        // A link's own page text beats OCR of its preview picture, so it is kept.
+        if item.kind == .link, item.extractedText?.trimmedNonEmpty != nil, item.ocrConfidence == nil { return }
 
         setPhase(.recognizingText, for: itemID)
         item.processingState = .recognizing
@@ -292,11 +371,7 @@ final class AgentPipeline {
         try Task.checkCancellation()
 
         guard let item = currentItem(itemID) else { return }
-        if item.kind == .link, !force, let pageText = item.extractedText?.trimmedNonEmpty, !result.isEmpty {
-            item.extractedText = pageText + "\n\n" + result.text
-        } else {
-            item.extractedText = result.text
-        }
+        item.extractedText = result.text
         item.ocrConfidence = result.averageConfidence
         item.ocrLines = result.lines
         if !item.isTitleUserEdited, item.title.trimmedNonEmpty == nil {
@@ -323,28 +398,41 @@ final class AgentPipeline {
             }
         }
 
-        let isAIAvailable = settings.aiUnavailableReason == nil
-        let needsInterimResult = !isAIAvailable && !personas.isEmpty
+        let needsInterimResult = settings.aiUnavailableReason != nil && !personas.isEmpty
             && currentItem(itemID)?.agentRuns.isEmpty == true
         if wantsOnDevice || needsInterimResult {
             try await runOnDeviceAnalysis(on: itemID)
+            markFinished(Self.onDeviceAgentID, on: itemID)
         }
-        guard isAIAvailable else { return personas.map(\.id) }
 
         var previous: [PreviousAnalysis] = []
         for (index, persona) in personas.enumerated() {
             try Task.checkCancellation()
+            // Offline Only may have been turned on (or the key removed) meanwhile.
+            guard settings.aiUnavailableReason == nil else {
+                return personas[index...].map(\.id)
+            }
+            claim([itemID])
             setPhase(.analyzing(agentName: persona.displayName, step: index + 1, total: personas.count), for: itemID)
             let output = try await analyze(itemID, with: persona, previous: previous, chainPosition: index)
             previous.append(PreviousAnalysis(agentName: persona.displayName, output: output))
+            markFinished(persona.id, on: itemID)
         }
         return []
     }
 
+    /// Takes a finished agent off the item's stored work, so an interrupted
+    /// chain resumes after it instead of running it again.
+    private func markFinished(_ agentID: UUID, on itemID: UUID) {
+        guard let item = currentItem(itemID), let index = item.pendingAgentIds.firstIndex(of: agentID) else { return }
+        item.pendingAgentIds.remove(at: index)
+        save()
+    }
+
     private func analyze(_ itemID: UUID, with persona: AgentPersona, previous: [PreviousAnalysis],
                          chainPosition: Int) async throws -> AgentOutput {
-        guard let item = currentItem(itemID) else { throw CancellationError() }
-        item.processingState = .analyzing
+        guard let startingItem = currentItem(itemID) else { throw CancellationError() }
+        startingItem.processingState = .analyzing
         save()
 
         let provider = settings.provider
@@ -352,11 +440,14 @@ final class AgentPipeline {
         let model = persona.resolvedModel(defaultModel: settings.defaultModel(for: provider))
 
         var image: AIImageInput?
-        if settings.sendImages, item.hasImage, let data = item.imageData {
+        if settings.sendImages, startingItem.hasImage, let data = startingItem.imageData {
             image = await Task.detached(priority: .userInitiated) {
                 ImageProcessor.uploadJPEG(from: data).map { AIImageInput(data: $0, mimeType: "image/jpeg") }
             }.value
+            try Task.checkCancellation()
         }
+        // The item may have been deleted while the image was encoded.
+        guard let item = currentItem(itemID) else { throw CancellationError() }
 
         let request = AgentPromptBuilder.analysisRequest(
             persona: persona,
@@ -373,7 +464,7 @@ final class AgentPipeline {
         try Task.checkCancellation()
         let parsed = AgentOutputParser.parse(result.response.text)
 
-        guard let item = currentItem(itemID) else { throw CancellationError() }
+        guard let resultItem = currentItem(itemID) else { throw CancellationError() }
         let run = AgentRun()
         run.agentId = persona.id
         run.agentName = persona.displayName
@@ -397,10 +488,10 @@ final class AgentPipeline {
         run.chainPosition = chainPosition
         run.adjustmentNotes = Self.notes(for: result.adjustments)
         context.insert(run)
-        run.item = item
+        run.item = resultItem
 
-        item.apply(parsed.output, agentID: persona.id, agentName: persona.displayName, agentEmoji: persona.emoji,
-                   agentColorName: persona.colorName)
+        resultItem.apply(parsed.output, agentID: persona.id, agentName: persona.displayName, agentEmoji: persona.emoji,
+                         agentColorName: persona.colorName)
         save()
         return parsed.output
     }
@@ -467,6 +558,15 @@ final class AgentPipeline {
         return await Task.detached(priority: .utility) {
             try? ImageProcessor.prepare(data)
         }.value
+    }
+
+    /// `base` followed by the entries of `extra` it does not contain yet.
+    private static func merged(_ base: [UUID], _ extra: [UUID]) -> [UUID] {
+        var result = base
+        for id in extra where !result.contains(id) {
+            result.append(id)
+        }
+        return result
     }
 
     private static func notes(for adjustments: AIRequestAdjustments) -> [String] {

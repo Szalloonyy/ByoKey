@@ -80,7 +80,12 @@ final class ShareExtensionModel {
         }.value
 
         choice = AgentChoice(agentIDs: environment.pipeline.defaultAgentIDsForNewCapture())
-        phase = loaded.isEmpty ? .failed("There is nothing RecallDrop can save in this item.") : .ready
+        if case .inMemoryFallback = environment.persistenceIssue {
+            // Anything saved now would be lost when the sheet closes.
+            phase = .failed("RecallDrop could not open its library. Open the RecallDrop app once, then share again.")
+        } else {
+            phase = loaded.isEmpty ? .failed("There is nothing RecallDrop can save in this item.") : .ready
+        }
     }
 
     func save() async {
@@ -94,12 +99,16 @@ final class ShareExtensionModel {
             return
         }
         savedItemIDs = items.map(\.id)
-        notifyApp()
 
         guard !choice.agentIDs.isEmpty else {
+            // Nothing to analyze here; the app reads the text right away.
+            environment.pipeline.releaseClaims(savedItemIDs)
+            notifyApp()
             onComplete()
             return
         }
+        // The items stay claimed while this extension analyzes them.
+        notifyApp()
 
         // Analyze here while the sheet is open; the app finishes anything left over.
         let label = agentLabel
