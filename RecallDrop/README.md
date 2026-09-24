@@ -205,7 +205,7 @@ RecallDrop/
 │   ├── Services/                OCR, capture, agent pipeline, AI settings, Keychain,
 │   │                            reminders, notifications, model catalog, chat, maintenance
 │   ├── Components/              Theme, badges, image view, agent chips, clipboard helpers
-│   └── Features/                Library (ItemGridView), Detail (ItemDetailView), Chat,
+│   └── Views/                   Library (ItemGridView), Detail (ItemDetailView), Chat,
 │                                Agents (AgentManagerView), Settings (AISettingsView),
 │                                Search (SearchAndFilterView)
 ├── iOS/                         Tab UI, floating + button, capture sheet, camera and
