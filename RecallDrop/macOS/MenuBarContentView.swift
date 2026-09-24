@@ -14,7 +14,7 @@ import RecallDropKit
 struct MenuBarContentView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.openWindow) private var openWindow
-    @Query(sort: \CapturedItem.createdAt, order: .reverse) private var items: [CapturedItem]
+    @Query(Self.recentDescriptor) private var recentItems: [CapturedItem]
     @Query(sort: [SortDescriptor(\AgentConfig.sortOrder), SortDescriptor(\AgentConfig.createdAt)])
     private var agents: [AgentConfig]
 
@@ -22,8 +22,14 @@ struct MenuBarContentView: View {
     @State private var isDropTargeted = false
     @FocusState private var isNoteFocused: Bool
 
-    private var recentItems: [CapturedItem] {
-        Array(items.lazy.filter { !$0.isArchived }.prefix(6))
+    /// Only the newest few non-archived captures, so large libraries stay cheap here.
+    private nonisolated static var recentDescriptor: FetchDescriptor<CapturedItem> {
+        var descriptor = FetchDescriptor<CapturedItem>(
+            predicate: #Predicate { !$0.isArchived },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 6
+        return descriptor
     }
 
     var body: some View {
