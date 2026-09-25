@@ -1,0 +1,300 @@
+//
+//  MenuBarContentView.swift
+//  RecallDrop (macOS)
+//
+//  The MenuBarExtra panel: the Drop Shelf switch, quick capture actions, a
+//  field for fleeting ideas and the most recent captures with one-click
+//  agent runs.
+//
+
+import AppKit
+import SwiftUI
+import SwiftData
+import RecallDropKit
+
+struct MenuBarContentView: View {
+    @Environment(AppEnvironment.self) private var environment
+    @Environment(\.openWindow) private var openWindow
+    @Query(Self.recentDescriptor) private var recentItems: [CapturedItem]
+    @Query(sort: [SortDescriptor(\AgentConfig.sortOrder), SortDescriptor(\AgentConfig.createdAt)])
+    private var agents: [AgentConfig]
+
+    @State private var noteText = ""
+    @FocusState private var isNoteFocused: Bool
+
+    /// Only the newest few non-archived captures, so large libraries stay cheap here.
+    private nonisolated static var recentDescriptor: FetchDescriptor<CapturedItem> {
+        var descriptor = FetchDescriptor<CapturedItem>(
+            predicate: #Predicate { !$0.isArchived },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 6
+        return descriptor
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            dropShelfCard
+            quickActions
+            noteField
+            Divider()
+            recentSection
+            Divider()
+            footer
+        }
+        .padding(14)
+        .frame(width: 380)
+        .onAppear {
+            MacCaptureCoordinator.shared.openWindowAction = openWindow
+        }
+        .overlay(alignment: .bottom) {
+            if let message = environment.router.toastMessage {
+                Text(message)
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.bottom, 48)
+                    .task(id: message) {
+                        try? await Task.sleep(nanoseconds: 2_200_000_000)
+                        environment.router.toastMessage = nil
+                    }
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "tray.and.arrow.down.fill")
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Theme.brandGradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            VStack(alignment: .leading, spacing: 1) {
+                Text("RecallDrop")
+                    .font(.headline)
+                Text(statusText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Open") {
+                MacCaptureCoordinator.shared.openMainWindow()
+            }
+            .controlSize(.small)
+        }
+    }
+
+    private var statusText: String {
+        let busy = environment.pipeline.busyCount
+        if busy > 0 { return "Analyzing \(busy) capture\(busy == 1 ? "" : "s")…" }
+        if environment.settings.offlineOnly { return "Offline Only – on-device analysis" }
+        if let reason = environment.settings.aiUnavailableReason { return reason }
+        let agent = agents.first(where: \.isDefault)?.displayName ?? "default agent"
+        return "New captures go to \(agent)"
+    }
+
+    /// The menu bar panel closes as soon as another app is clicked, so it cannot
+    /// take drags; the floating Drop Shelf is the always-available drop target.
+    private var dropShelfCard: some View {
+        let isVisible = DropShelfController.shared.isVisible
+        return Button {
+            DropShelfController.shared.toggle()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isVisible ? "tray.and.arrow.down.fill" : "tray.and.arrow.down")
+                    .font(.title3)
+                    .foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isVisible ? "Hide Drop Shelf" : "Show Drop Shelf")
+                        .font(.callout.weight(.semibold))
+                    Text("A floating drop target on every Space for images, files and links.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var quickActions: some View {
+        HStack(spacing: 8) {
+            quickButton("Paste", systemImage: "doc.on.clipboard") {
+                Task { await MacCaptureCoordinator.shared.captureClipboard() }
+            }
+            quickButton("Screenshot", systemImage: "rectangle.dashed") {
+                Task { await MacCaptureCoordinator.shared.captureScreenRegion() }
+            }
+            quickButton("Import", systemImage: "photo.badge.plus") {
+                MacCaptureCoordinator.shared.importFiles()
+            }
+        }
+    }
+
+    private func quickButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.title3)
+                Text(title)
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(Theme.placeholderFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var noteField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "lightbulb")
+                .foregroundStyle(.secondary)
+            TextField("Jot down a fleeting idea…", text: $noteText)
+                .textFieldStyle(.plain)
+                .focused($isNoteFocused)
+                .onSubmit(saveNote)
+            if noteText.trimmedNonEmpty != nil {
+                Button("Save", action: saveNote)
+                    .controlSize(.small)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Theme.placeholderFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func saveNote() {
+        let text = noteText
+        guard text.trimmedNonEmpty != nil else { return }
+        noteText = ""
+        Task {
+            await environment.capture.captureText(text)
+            environment.router.showToast("Idea saved.")
+        }
+    }
+
+    @ViewBuilder
+    private var recentSection: some View {
+        Text("Recent")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+        if recentItems.isEmpty {
+            Text("Nothing captured yet.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        } else {
+            VStack(spacing: 6) {
+                ForEach(recentItems) { item in
+                    MenuBarRecentRow(item: item, agents: Array(agents.prefix(4)))
+                }
+            }
+        }
+    }
+
+    private var footer: some View {
+        HStack {
+            SettingsLink {
+                Label("Settings…", systemImage: "gearshape")
+            }
+            .buttonStyle(.borderless)
+            Spacer()
+            Button("Quit RecallDrop") {
+                NSApplication.shared.terminate(nil)
+            }
+            .buttonStyle(.borderless)
+        }
+        .font(.callout)
+    }
+}
+
+private struct MenuBarRecentRow: View {
+    let item: CapturedItem
+    let agents: [AgentConfig]
+
+    @Environment(AppEnvironment.self) private var environment
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button {
+                MacCaptureCoordinator.shared.open(itemID: item.id)
+            } label: {
+                HStack(spacing: 10) {
+                    thumbnail
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.displayTitle)
+                            .font(.callout.weight(.medium))
+                            .lineLimit(1)
+                        HStack(spacing: 6) {
+                            if let phase = environment.pipeline.phase(for: item.id) {
+                                ProgressView()
+                                    .controlSize(.mini)
+                                Text(phase.label)
+                            } else {
+                                Text(item.createdAt.formatted(.relative(presentation: .named)))
+                                if let name = item.lastUsedAgentName {
+                                    Text("· \(item.lastUsedAgentEmoji ?? "") \(name)")
+                                }
+                            }
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 2) {
+                ForEach(agents) { agent in
+                    Button {
+                        environment.pipeline.run([agent.id], on: item)
+                    } label: {
+                        Text(agent.emoji)
+                            .frame(width: 24, height: 24)
+                            .background(agent.agentColor.color.opacity(isHovered ? 0.18 : 0.08), in: RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Run \(agent.displayName)")
+                    .disabled(environment.pipeline.isBusy(item.id))
+                }
+            }
+        }
+        .padding(6)
+        .background(isHovered ? Theme.placeholderFill : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .onHover { isHovered = $0 }
+    }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        if item.hasImage {
+            CaptureImageView(cacheKey: item.thumbnailCacheKey, data: item.thumbnailData, maxPixelSize: 120)
+                .frame(width: 36, height: 36)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        } else {
+            Image(systemName: item.kind.symbolName)
+                .frame(width: 36, height: 36)
+                .background(Theme.placeholderFill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+    }
+}
+
+/// Menu bar icon; switches to sparkles while agents are working.
+struct MenuBarLabel: View {
+    @Environment(AppEnvironment.self) private var environment
+
+    var body: some View {
+        Image(systemName: environment.pipeline.busyCount > 0 ? "sparkles" : "tray.and.arrow.down.fill")
+            .accessibilityLabel("RecallDrop")
+    }
+}

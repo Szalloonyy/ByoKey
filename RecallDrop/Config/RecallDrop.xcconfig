@@ -1,0 +1,22 @@
+//
+//  RecallDrop.xcconfig
+//
+//  Build settings shared by every target. Edit these two values before
+//  running on a device or distributing:
+//
+//  1. DEVELOPMENT_TEAM – your Apple Developer Team ID (e.g. ABCDE12345).
+//  2. RD_BUNDLE_ID_PREFIX – a reverse-DNS identifier you own.
+//
+//  The App Group that lets the app and the share extension share the
+//  SwiftData store and API keys is derived from the prefix. With automatic
+//  signing, Xcode registers it for you.
+//
+
+DEVELOPMENT_TEAM =
+RD_BUNDLE_ID_PREFIX = com.example.recalldrop
+
+// iOS App Groups use the "group." prefix.
+RD_APP_GROUP_IOS = group.$(RD_BUNDLE_ID_PREFIX)
+
+// Sandboxed macOS apps use the Team ID as prefix (e.g. ABCDE12345.com.example.recalldrop).
+RD_APP_GROUP_MACOS = $(TeamIdentifierPrefix)$(RD_BUNDLE_ID_PREFIX)
