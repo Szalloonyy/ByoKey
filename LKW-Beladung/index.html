@@ -215,6 +215,94 @@ tr:last-child td{border-bottom:0}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13.5px;align-items:center;color:var(--ink-2)}
 .src{font-size:12.5px;columns:2 300px;column-gap:26px;padding-left:18px}
 .src li{break-inside:avoid;margin-bottom:6px;font-size:12.5px}
+/* Drucken: Dialog mit Vorschau und das Blatt selbst (hell, tintensparend) */
+.modal-box.wide{width:min(1180px,100%)}
+.print-opts{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 10px;font-size:14px;color:var(--ink-2)}
+.print-opts label{display:flex;gap:7px;align-items:center}
+.print-opts input{width:16px;height:16px;accent-color:var(--cyan)}
+.print-note{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+#printNote{width:100%;box-sizing:border-box;border:1px solid var(--edge);border-radius:9px;background:var(--fill);color:var(--ink);padding:8px 10px;font:14px/1.4 var(--font-body);resize:vertical}
+.print-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0 0;font-size:12.5px;color:var(--mute)}
+.print-preview{background:#434b5a;border-radius:12px;padding:14px;margin-top:12px;overflow:auto}
+.print-preview .sheet{max-width:297mm;margin:0 auto;padding:9mm 10mm;box-shadow:0 10px 30px -10px #000;border-radius:3px}
+#printSheet{display:none}
+.sheet{background:#fff;color:#111;font:9pt/1.35 var(--font-body);-webkit-print-color-adjust:exact;print-color-adjust:exact;text-align:left}
+.sheet .p-page{width:100%;border-collapse:collapse}
+.sheet .p-page>tbody>tr>td,.sheet .p-page>tfoot>tr>td{padding:0;vertical-align:top}
+.sheet h2{margin:7px 0 2px;font:700 7.5pt/1.2 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:#555}
+.sheet h3{margin:0 0 3px;font:700 11pt/1.1 var(--font-display);text-transform:uppercase;letter-spacing:.04em;color:#111}
+.p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid #111;padding-bottom:5px}
+.p-eyebrow{font:700 7.5pt/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:#666}
+.p-head h1{margin:2px 0 0;font:800 21pt/1 var(--font-display);text-transform:uppercase}
+.p-head h1 span{font-weight:600;font-size:12.5pt;color:#444;text-transform:none;margin-left:6px}
+.p-sub{font-size:9pt;color:#444;margin-top:2px}
+.p-stats{display:flex;gap:6px}
+.p-stats div{border:1px solid #bbb;border-radius:6px;padding:2px 9px 3px;text-align:center;min-width:52px}
+.p-stats b{display:block;font:700 14pt/1.1 var(--font-display)}
+.p-stats small{font-size:6.5pt;letter-spacing:.1em;text-transform:uppercase;color:#555}
+.p-stats .p-warnbox{border-color:#c0392b;color:#c0392b}
+.p-fig{break-inside:avoid}
+.p-svg{display:block;width:100%;height:auto;max-height:54mm}
+.p-dir{font:600 21px var(--font-body);fill:#333}
+.p-cab{fill:#eef0f2;stroke:#555;stroke-width:2}
+.p-glass{fill:#aab5bf}
+.p-box{fill:none;stroke:#333;stroke-width:3}
+.p-floor{fill:#f6f7f9;stroke:#999;stroke-width:1}
+.p-tk{fill:#dcecfb}
+.p-wall{fill:#4f86c2}
+.p-row{stroke:#c9ced4;stroke-width:1}
+.p-lane{stroke:#d3d8dd;stroke-width:1;stroke-dasharray:6 6}
+.p-rown{font:600 15px var(--font-mono);fill:#666}
+.p-it{stroke:#222;stroke-width:1.6}
+.p-it.tk{stroke:#0b63b6;stroke-width:3.4}
+.p-lbl{font:700 17px var(--font-display)}
+.p-tkl{font:700 12px var(--font-mono)}
+.p-sperr{stroke:#e0892b;stroke-width:5;stroke-dasharray:14 8}
+.p-small{font:500 15px var(--font-body);fill:#444}
+.p-or{fill:#c26a12;font-weight:700}
+.p-bl{fill:#0b63b6;font-weight:700}
+.p-unit{font:700 22px var(--font-display);text-transform:uppercase;letter-spacing:.04em;fill:#111}
+.p-side{font:500 13px var(--font-body);fill:#777}
+.p-bar{fill:none;stroke:#555;stroke-width:4}
+.p-ground{stroke:#999;stroke-width:2}
+.p-wheel{fill:#333}.p-rim{fill:#bbb}
+.p-drawbar{stroke:#555;stroke-width:6}
+.p-chassis{fill:#777}
+.p-l0{opacity:.25}.p-l1{opacity:.5}
+.p-hline{stroke:#999;stroke-dasharray:6 5}
+.p-legend{display:flex;flex-wrap:wrap;gap:3px 14px;margin:5px 0 2px;font-size:8.5pt}
+.p-leg i{display:inline-block;width:10px;height:10px;border:1px solid #333;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.p-leg small{color:#666}
+.p-notes{break-inside:avoid}
+.p-notes ul{margin:0;padding-left:15px}
+.p-notes li{margin:1px 0;font-size:9pt}
+.p-warn{color:#c0392b}
+.p-own{margin-top:5px;padding:5px 8px;border:1.5px solid #111;border-radius:6px;font-size:10pt}
+.p-shot{break-inside:avoid}
+.p-shot img{display:block;max-width:100%;max-height:80mm;border-radius:6px}
+.p-hint{font-size:8pt;color:#555;margin:0 0 4px}
+.modal-box .sheet p,.modal-box .sheet li{color:#111;max-width:none}
+.modal-box .sheet .p-hint{color:#555}
+.p-newpage{break-before:page}
+.p-listgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88mm,1fr));gap:4mm 8mm}
+.p-unitlist{break-inside:avoid}
+.p-rows{border-collapse:collapse;width:100%;font-size:8.5pt;border-bottom:1px solid #bbb}
+.p-rows th,.p-rows td{border:1px solid #bbb;padding:1.5px 5px;text-align:left}
+.p-rows th{background:#eee;font:700 8pt/1.3 var(--font-body);color:#111;letter-spacing:0;text-transform:none}
+.p-rows td:first-child{width:12mm;font-weight:700}
+.p-rows tr.tk td{background:#e6f1fc}
+.p-rows small{color:#0b63b6;font-weight:700}
+.p-rows .p-wallrow td{background:#4f86c2;color:#fff;font-size:7.5pt;padding:1px 5px}
+.p-free{color:#aaa}
+.p-foot{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #999;margin-top:8px;padding-top:3px;font-size:7.5pt;color:#666}
+.p-copy{font-size:7pt;color:#777}
+@media print{
+  @page{size:A4 landscape;margin:9mm 10mm}
+  :root{color-scheme:light}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important;color:#111}
+  body>*:not(#printSheet){display:none!important}
+  #printSheet{display:block}
+}
 .livery{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .livery img{height:46px;max-width:180px;object-fit:cover;border-radius:6px;border:1px solid var(--edge)}
 .livery-none{font:400 12px/1.3 var(--font-mono);color:var(--mute)}
@@ -328,6 +416,7 @@ tr:last-child td{border-bottom:0}
       <div class="glabel" style="margin-top:16px"><span>Ladeliste</span><span class="hint">je Einheit</span></div>
       <ul class="list" id="loadList"></ul>
       <div class="row" style="margin-top:10px">
+        <button class="btn small" id="btnPrint" type="button" title="Druckblatt für den Fahrer (P)">Drucken</button>
         <button class="btn small" id="btnCopy" type="button">Ladeliste kopieren</button>
         <button class="btn small" id="btnSample" type="button">Beispielladung</button>
       </div>
@@ -394,6 +483,7 @@ tr:last-child td{border-bottom:0}
         <span><kbd>T</kbd></span><span>Ausgewählten Behälter um 90° drehen</span>
         <span><kbd>Entf</kbd></span><span>Ausgewählten Behälter löschen</span>
         <span><kbd>Strg</kbd> <kbd>Z</kbd></span><span>Rückgängig</span>
+        <span><kbd>P</kbd></span><span>Druckblatt für den Fahrer: Draufsicht, Seitenansicht, Hinweise und Ladeliste</span>
         <span><kbd>Esc</kbd></span><span>Auswahl und Setzen beenden</span>
         <span><kbd>R</kbd></span><span>Ansicht zurücksetzen</span>
         <span><kbd>H</kbd> / <kbd>/</kbd></span><span>Bedienung aus- und einblenden</span>
@@ -410,8 +500,25 @@ tr:last-child td{border-bottom:0}
     </div>
   </div>
 
+  <div class="modal" id="printModal" hidden role="dialog" aria-modal="true" aria-labelledby="printTitle">
+    <div class="modal-box wide">
+      <div class="modal-head"><div><div class="eyebrow">Für den Fahrer</div><h2 id="printTitle">Ladeplan drucken</h2></div><button class="btn" data-close type="button">Schließen <kbd>Esc</kbd></button></div>
+      <div class="print-opts">
+        <label><input type="checkbox" data-popt="top" checked> Draufsicht</label>
+        <label><input type="checkbox" data-popt="side" checked> Seitenansicht</label>
+        <label><input type="checkbox" data-popt="list" checked> Ladeliste Reihe für Reihe</label>
+        <label><input type="checkbox" data-popt="shot"> 3D-Bild der aktuellen Ansicht</label>
+      </div>
+      <label class="print-note" for="printNote">Hinweis für den Fahrer, erscheint auf dem Blatt (freiwillig)</label>
+      <textarea id="printNote" rows="2" maxlength="400" placeholder="z. B. Leergut mitnehmen, TK-Kammer zuerst entladen"></textarea>
+      <div class="print-actions"><button class="btn primary" id="btnDoPrint" type="button">Drucken</button><span>A4 quer. Farben kommen mit, wenn im Druckdialog „Hintergrundgrafiken“ an ist.</span></div>
+      <div class="print-preview"><div class="sheet" id="printPreview"></div></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 </div>
+<div class="sheet" id="printSheet" aria-hidden="true"></div>
 
 <!-- web:scripts:start -->
 <script src="vendor/three.min.js"></script>
@@ -2412,6 +2519,7 @@ function bind() {
     else if (t.id === 'presetSel') switchPreset(t.value);
     else if (d.len) { setUnitLength(d.len, +t.value); $('#specsBody').innerHTML = specsHtml(); }
     else if ('livery' in d) { loadLiveryFile(t.files && t.files[0]); t.value = ''; }
+    else if (d.popt) { printOpt[d.popt] = t.checked; if (d.popt === 'shot') printShot = t.checked ? takeShot() : ''; renderPrintPreview(); }
   });
   $('#btnAuto').addEventListener('click', () => { state.sample = false; autoLoad(); });
   $('#btnCompact').addEventListener('click', () => { pushUndo(); for (const U of G.units) compact(U.id); update(); toast('Nachgerückt: alles steht bündig nach vorn'); });
@@ -2419,6 +2527,11 @@ function bind() {
   $('#btnClear').addEventListener('click', () => { if (!state.items.length) return; pushUndo(); state.items = []; view.selected = null; state.sample = false; update(); toast('Geleert. Rückgängig holt die Ladung zurück.'); });
   $('#btnSample').addEventListener('click', () => { pushUndo(); loadSample(); });
   $('#btnCopy').addEventListener('click', copyList);
+  $('#btnPrint').addEventListener('click', openPrint);
+  $('#btnDoPrint').addEventListener('click', doPrint);
+  $('#printNote').addEventListener('input', e => { printOpt.note = e.target.value; renderPrintPreview(); });
+  // Auch Strg+P aus dem Browser-Menü druckt das Blatt, nicht die dunkle Oberfläche
+  window.addEventListener('beforeprint', () => { $('#printSheet').innerHTML = printSheetHtml(); });
   $('#btnView').addEventListener('click', () => { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); });
   $('#btnTour').addEventListener('click', () => (view.tour ? stopTour() : startTour()));
   $('#btnHelp').addEventListener('click', () => openModal('helpModal'));
@@ -2446,7 +2559,7 @@ function bind() {
 function onKey(e) {
   const tag = (e.target.tagName || '').toLowerCase();
   const typing = tag === 'input' || tag === 'select' || tag === 'textarea';
-  const modalOpen = !$('#helpModal').hidden || !$('#specsModal').hidden;
+  const modalOpen = !$('#helpModal').hidden || !$('#specsModal').hidden || !$('#printModal').hidden;
   if (e.key === 'Escape') {
     if (modalOpen) { closeModals(); return; }
     if (typing) { e.target.blur(); return; }
@@ -2472,6 +2585,7 @@ function onKey(e) {
   else if (k === 'f') { if (!$('#btnFull').hidden) toggleFullscreen(); }
   else if (k === 'delete' || k === 'backspace') { if (view.selected != null) { e.preventDefault(); deleteSelected(); } }
   else if (k === '?') openModal('helpModal');
+  else if (k === 'p') openPrint();
 }
 function toggleFullscreen() {
   const d = document, el = d.documentElement;
@@ -2523,6 +2637,183 @@ const SAMPLE = {
   'anh30': [['rbh', 23], ['hyg', 2], ['iso', 2]],
   'anh24': [['rbh', 18], ['hyg', 2], ['iso', 1]],
 };
+/* =====================================================================
+   Drucken: Blatt für den Fahrer (Draufsicht, Seitenansicht, Hinweise, Ladeliste)
+   ===================================================================== */
+const printOpt = { top:true, side:true, list:true, shot:false, note:'' };
+let printShot = '';
+// Fahrzeug im Maßstab: 1 m = 100 Einheiten. Front rechts, Tür links (wie im Stellplatzplan).
+function printScale() {
+  const x0 = G.rear - 0.5, x1 = G.cab ? 0.35 : 0.5;
+  return { x0, x1, X:x => (x - x0) * 100, w:(x1 - x0) * 100 };
+}
+// Schrift auf farbiger Fläche: weiß auf dunkel, schwarz auf hell
+function inkOn(hex) { const n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) < 150 ? '#fff' : '#111'; }
+const itemWorld = (U, it) => { const k = dims(it); return { x1:U.X0 - it.x, x0:U.X0 - it.x - k.d, k }; };
+const laneOf = (U, it) => Math.max(0, Math.min(2, Math.floor((it.y + dims(it).w / 2) / (U.W / 3))));
+function printTopSvg(st) {
+  const S = printScale(), top = 96, Wmax = Math.max(...G.units.map(U => U.W));
+  const h = top + Wmax * 100 + 92;
+  const Y = y => top + y * 100;
+  let s = `<svg class="p-svg" viewBox="0 0 ${S.w.toFixed(0)} ${h.toFixed(0)}" role="img" aria-label="Draufsicht der Ladung">`;
+  // Fahrtrichtung
+  s += `<text x="${(S.w - 8).toFixed(0)}" y="28" text-anchor="end" class="p-dir">Fahrtrichtung →</text>`;
+  if (G.cab) {
+    const cx0 = S.X(-CAB_BACK + 0.08), cx1 = S.X(0);
+    s += `<path d="M${cx0} ${Y(-0.02)} H${cx1 - 22} Q${cx1} ${Y(-0.02)} ${cx1} ${Y(0.2)} V${Y(Wmax - 0.2)} Q${cx1} ${Y(Wmax + 0.02)} ${cx1 - 22} ${Y(Wmax + 0.02)} H${cx0} Z" class="p-cab"/>`;
+    s += `<text x="${((cx0 + cx1) / 2).toFixed(0)}" y="${Y(Wmax / 2) + 6}" text-anchor="middle" class="p-small" transform="rotate(-90 ${((cx0 + cx1) / 2).toFixed(0)} ${Y(Wmax / 2)})">Fahrerhaus</text>`;
+  }
+  G.units.forEach((U, i) => {
+    const u = st.units[U.id], xf = S.X(U.X0), xr = S.X(U.X0 - U.L), w = U.W * 100;
+    // Deichsel zum Vorgänger bzw. Zugmaul
+    if (U.kind === 'trailer') s += `<path d="M${S.X(U.extFront)} ${Y(0.55)} L${S.X(U.XC || 0) - 4} ${Y(U.W / 2)} L${S.X(U.extFront)} ${Y(U.W - 0.55)}" class="p-bar"/>`;
+    s += `<rect x="${xr - 6}" y="${Y(-0.06)}" width="${xf - xr + 12}" height="${w + 12}" rx="4" class="p-box"/>`;
+    s += `<rect x="${xr}" y="${Y(0)}" width="${xf - xr}" height="${w}" class="p-floor"/>`;
+    if (U.wall) {
+      s += `<rect x="${S.X(U.X0 - U.wall.x)}" y="${Y(0)}" width="${U.wall.x * 100}" height="${w}" class="p-tk"/>`;
+      s += `<rect x="${S.X(U.X0 - U.wall.end)}" y="${Y(-0.06)}" width="${U.wall.d * 100}" height="${w + 12}" class="p-wall"/>`;
+    }
+    // Reihen: Nummern oben, Linien fein
+    U.rowX.forEach((rx, r) => {
+      const a = S.X(U.X0 - rx), b = S.X(U.X0 - rx - SLOT_D);
+      if (r) s += `<line x1="${a}" y1="${Y(0)}" x2="${a}" y2="${Y(U.W)}" class="p-row"/>`;
+      s += `<text x="${((a + b) / 2).toFixed(1)}" y="${Y(-0.06) - 8}" text-anchor="middle" class="p-rown">${r + 1}</text>`;
+    });
+    for (let l = 1; l < 3; l++) s += `<line x1="${xr}" y1="${Y(l * U.W / 3)}" x2="${xf}" y2="${Y(l * U.W / 3)}" class="p-lane"/>`;
+    // Behälter
+    for (const it of u.its) {
+      const c = CT[it.t], p = itemWorld(U, it), x = S.X(p.x0), y = Y(it.y), ww = p.k.d * 100, hh = p.k.w * 100;
+      const ink = inkOn(c.color);
+      s += `<rect x="${(x + 2).toFixed(1)}" y="${(y + 2).toFixed(1)}" width="${(ww - 4).toFixed(1)}" height="${(hh - 4).toFixed(1)}" rx="5" fill="${c.color}" class="p-it${it.tk && U.wall ? ' tk' : ''}"/>`;
+      s += `<text x="${(x + ww / 2).toFixed(1)}" y="${(y + hh / 2 + (it.tk && U.wall ? 0 : 6)).toFixed(1)}" text-anchor="middle" class="p-lbl" fill="${ink}">${c.short}</text>`;
+      if (it.tk && U.wall) s += `<text x="${(x + ww / 2).toFixed(1)}" y="${(y + hh / 2 + 20).toFixed(1)}" text-anchor="middle" class="p-tkl" fill="${ink}">TK</text>`;
+    }
+    // Sperrbalken hinter der letzten Reihe
+    if (u.n && U.L - u.end > 0.1) {                        // wie im Hinweis: erst ab 10 cm Luft bis zur Tür
+      const bx = S.X(U.X0 - u.end - 0.04);
+      s += `<line x1="${bx}" y1="${Y(-0.12)}" x2="${bx}" y2="${Y(U.W + 0.12)}" class="p-sperr"/>`;
+      s += `<text x="${bx}" y="${Y(U.W) + 72}" text-anchor="middle" class="p-small p-or">Sperrbalken</text>`;
+    }
+    s += `<text x="${xr}" y="${Y(U.W) + 44}" class="p-small">Tür</text><text x="${xf}" y="${Y(U.W) + 44}" text-anchor="end" class="p-small">Stirnwand</text>`;
+    s += `<text x="${xr}" y="28" class="p-unit">${esc(U.label)}</text>`;
+    s += `<text x="${xr}" y="52" class="p-small">${u.used}/${U.cap} Stellplätze · ${u.n} Behälter · ${U.wall ? `TK ${fmtTemp(U.wall.temp)}, Frische ` : ''}${fmtTemp(u.temp)}</text>`;
+    if (U.wall) s += `<text x="${S.X(U.X0 - U.wall.x / 2)}" y="${Y(U.W) + 44}" text-anchor="middle" class="p-small p-bl">TK-Kammer</text>`;
+    s += `<text x="${xr - 14}" y="${Y(U.W / 6) + 5}" text-anchor="end" class="p-side">links</text><text x="${xr - 14}" y="${Y(U.W * 5 / 6) + 5}" text-anchor="end" class="p-side">rechts</text>`;
+  });
+  return s + `</svg>`;
+}
+function printSideSvg(st) {
+  const S = printScale(), H = 3.75, base = H * 100 + 20;
+  const Z = z => base - z * 100;
+  let s = `<svg class="p-svg" viewBox="0 0 ${S.w.toFixed(0)} ${(base + 46).toFixed(0)}" role="img" aria-label="Seitenansicht der Ladung von rechts">`;
+  s += `<line x1="0" y1="${Z(0)}" x2="${S.w}" y2="${Z(0)}" class="p-ground"/>`;
+  const wheel = (x, r) => `<circle cx="${S.X(x)}" cy="${Z(r)}" r="${r * 100}" class="p-wheel"/><circle cx="${S.X(x)}" cy="${Z(r)}" r="${r * 45}" class="p-rim"/>`;
+  if (G.cab) {
+    const x0 = S.X(-CAB_BACK + 0.08), x1 = S.X(0);
+    s += `<path d="M${x0} ${Z(1.05)} V${Z(3.3)} H${x1 - 30} Q${x1 - 6} ${Z(3.3)} ${x1 - 8} ${Z(2.95)} L${x1} ${Z(1.6)} V${Z(0.55)} H${x0 + 20} Z" class="p-cab"/>`;
+    s += `<path d="M${x1 - 70} ${Z(2.95)} L${x1 - 14} ${Z(2.95)} L${x1 - 8} ${Z(2.1)} H${x1 - 70} Z" class="p-glass"/>`;
+  }
+  G.units.forEach(U => {
+    const u = st.units[U.id], xf = S.X(U.X0), xr = S.X(U.X0 - U.L);
+    const fy = U.floorY;
+    if (U.kind === 'motor') { s += wheel(U.XF, 0.5) + wheel(U.XD, 0.5) + wheel(U.XT, 0.5); }
+    else if (U.kind === 'trailer') {
+      s += wheel(U.XA + 0.655, 0.5) + wheel(U.XA - 0.655, 0.5);
+      s += `<line x1="${S.X(U.extFront)}" y1="${Z(0.72)}" x2="${S.X(U.XC || 0)}" y2="${Z(0.72)}" class="p-drawbar"/>`;
+    }
+    s += `<rect x="${S.X(U.extRear)}" y="${Z(fy)}" width="${S.X(U.extFront) - S.X(U.extRear)}" height="${(fy - 0.95) * 100}" class="p-chassis"/>`;
+    // Koffer: Außenkontur, Boden, Innenhöhe
+    s += `<rect x="${S.X(U.extRear)}" y="${Z(fy + U.H + 0.1)}" width="${S.X(U.extFront) - S.X(U.extRear)}" height="${(U.H + 0.1) * 100 + 8}" rx="3" class="p-box"/>`;
+    s += `<rect x="${xr}" y="${Z(fy + U.H)}" width="${xf - xr}" height="${U.H * 100}" class="p-floor"/>`;
+    if (U.wall) {
+      s += `<rect x="${S.X(U.X0 - U.wall.x)}" y="${Z(fy + U.H)}" width="${U.wall.x * 100}" height="${U.H * 100}" class="p-tk"/>`;
+      s += `<rect x="${S.X(U.X0 - U.wall.end)}" y="${Z(fy + U.H)}" width="${U.wall.d * 100}" height="${U.H * 100}" class="p-wall"/>`;
+    }
+    // hinten die linke Spur (blass), vorn die rechte: so sieht man von rechts in den offenen Koffer
+    for (const lane of [0, 1, 2]) {
+      for (const it of u.its.filter(i => laneOf(U, i) === lane)) {
+        const c = CT[it.t], p = itemWorld(U, it), x = S.X(p.x0), ww = p.k.d * 100, hh = c.h * 100;
+        s += `<rect x="${(x + 2).toFixed(1)}" y="${Z(fy) - hh}" width="${(ww - 4).toFixed(1)}" height="${hh}" rx="4" fill="${c.color}" class="p-it p-l${lane}${it.tk && U.wall ? ' tk' : ''}"/>`;
+        if (lane === 2) s += `<text x="${(x + ww / 2).toFixed(1)}" y="${Z(fy) - hh / 2 + 6}" text-anchor="middle" class="p-lbl" fill="${inkOn(c.color)}">${c.short}</text>`;
+      }
+    }
+    if (u.n && U.L - u.end > 0.1) { const bx = S.X(U.X0 - u.end - 0.04); s += `<line x1="${bx}" y1="${Z(fy) - 4}" x2="${bx}" y2="${Z(fy + U.H) + 4}" class="p-sperr"/>`; }
+    s += `<line x1="${xr}" y1="${Z(fy + U.H)}" x2="${xf}" y2="${Z(fy + U.H)}" class="p-hline"/><text x="${xr + 6}" y="${Z(fy + U.H) - 8}" class="p-small">innen ${fmt(U.H, 2)} m hoch · ${fmt(U.L, 2)} m lang</text>`;
+  });
+  s += `<text x="8" y="${base + 38}" class="p-small">Von rechts gesehen. Vorn die rechte Spur, dahinter blass Mitte und links.</text>`;
+  return s + `</svg>`;
+}
+// Ladeliste Reihe für Reihe: Spalten links, Mitte, rechts
+function printRowsHtml(U, u) {
+  const rows = [];
+  for (let r = 0; r < U.rows; r++) rows.push([[], [], []]);
+  for (const it of u.its) {
+    const r = rowOf(U, it.x), c = CT[it.t];
+    rows[r][laneOf(U, it)].push(c.short + (it.tk && U.wall ? ' (TK)' : ''));
+  }
+  const cell = a => a.length ? esc(a.join(' + ')) : '<span class="p-free">frei</span>';
+  let h = `<table class="p-rows"><thead><tr><th>Reihe</th><th>links</th><th>Mitte</th><th>rechts</th></tr></thead><tbody>`;
+  rows.forEach((row, r) => {
+    const tk = U.wall && r < U.wall.rows;
+    h += `<tr class="${tk ? 'tk' : ''}"><td>${r + 1}${tk ? ' <small>TK</small>' : ''}</td>${row.map(a => `<td>${cell(a)}</td>`).join('')}</tr>`;
+    if (U.wall && r === U.wall.rows - 1) h += `<tr class="p-wallrow"><td colspan="4">Trennwand · dahinter Frische ${fmtTemp(u.temp)}</td></tr>`;
+  });
+  return h + `</tbody></table>`;
+}
+function printNotes(st) {
+  const P = PRESET(state.preset), out = [];
+  for (const U of G.units) {
+    const u = st.units[U.id];
+    const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} × ${c.short}` : ''; }).filter(Boolean).join(', ');
+    out.push(`<b>${esc(U.label)}:</b> ${u.n} Behälter${counts ? ` (${counts})` : ''} auf ${u.used} von ${U.cap} Stellplätzen. ${U.wall ? `TK-Kammer vorn Reihe 1–${U.wall.rows} bei ${fmtTemp(U.wall.temp)}, ${u.tkIts.length} Behälter; Frische dahinter bei ${fmtTemp(u.temp)}.` : `Kühlung ${fmtTemp(u.temp)}.`}`);
+  }
+  for (const w of st.warns) if (w.lvl !== 'ok') out.push((w.lvl === 'bad' || w.lvl === 'warn' ? '<b class="p-warn">Achtung:</b> ' : '') + esc(w.txt));
+  const ramp = itemsIn('r');
+  if (ramp.length) out.push(`<b class="p-warn">Nicht geladen:</b> ${esc(CARRIERS().map(c => { const k = ramp.filter(it => it.t === c.id).length; return k ? `${k} × ${c.name}` : ''; }).filter(Boolean).join(', '))}.`);
+  if (P.durchlade && G.units.length > 1) out.push('Durchladezug: Die Maschine wird über die Stirnklappe des Anhängers be- und entladen, der Anhänger bleibt dafür angekuppelt.');
+  return out;
+}
+function printLegend(st) {
+  const used = new Set(state.items.map(it => it.t));
+  return CARRIERS().filter(c => used.has(c.id)).map(c => `<span class="p-leg"><i style="background:${c.color}"></i><b>${c.short}</b> ${esc(c.name)} <small>${esc(c.vlabel)} · ${esc(c.sub)}</small></span>`).join('');
+}
+function printSheetHtml() {
+  const st = lastStats || computeStats(), P = PRESET(state.preset), now = new Date();
+  const date = now.toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
+  const time = now.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+  let body = `<header class="p-head"><div><div class="p-eyebrow">Ladeplan</div><h1>${esc(P.name)} <span>${esc(P.type)}</span></h1><div class="p-sub">${esc(date)}</div></div>
+    <div class="p-stats"><div><b>${st.total.used}/${st.total.cap}</b><small>Stellplätze</small></div><div><b>${st.total.cap - st.total.used}</b><small>frei</small></div><div><b>${st.total.n}</b><small>Behälter</small></div>${st.ramp ? `<div class="p-warnbox"><b>${st.ramp}</b><small>nicht geladen</small></div>` : ''}</div></header>`;
+  if (printOpt.top) body += `<section class="p-fig"><h2>Draufsicht</h2>${printTopSvg(st)}</section>`;
+  if (printOpt.side) body += `<section class="p-fig"><h2>Seitenansicht</h2>${printSideSvg(st)}</section>`;
+  body += `<section class="p-legend">${printLegend(st)}</section>`;
+  const notes = printNotes(st);
+  body += `<section class="p-notes"><h2>Hinweise für den Fahrer</h2><ul>${notes.map(n => `<li>${n}</li>`).join('')}</ul>${printOpt.note.trim() ? `<div class="p-own"><b>Hinweis der Disposition:</b> ${esc(printOpt.note.trim()).replace(/\n/g, '<br>')}</div>` : ''}</section>`;
+  if (printOpt.shot && printShot) body += `<section class="p-fig p-shot"><h2>Ansicht wie am Bildschirm</h2><img src="${printShot}" alt="3D-Ansicht des Ladeplans"></section>`;
+  if (printOpt.list) body += `<section class="p-list${printOpt.top || printOpt.side ? ' p-newpage' : ''}"><h2>Ladeliste Reihe für Reihe</h2><p class="p-hint">Reihe 1 steht an der Stirnwand, die höchste Nummer an der Tür. Links und rechts in Fahrtrichtung gesehen.</p><div class="p-listgrid">${G.units.map(U => `<div class="p-unitlist"><h3>${esc(U.label)}</h3>${printRowsHtml(U, st.units[U.id])}</div>`).join('')}</div></section>`;
+  const foot = `<div class="p-foot"><span>Ladeplan ${esc(P.name)} · gedruckt am ${esc(now.toLocaleDateString('de-DE'))}, ${esc(time)} Uhr</span><span class="p-copy">© Maximilian Skibinski</span></div>`;
+  // Die Fußzeile steht im tfoot: Browser wiederholen sie auf jeder gedruckten Seite
+  return `<table class="p-page"><tbody><tr><td>${body}</td></tr></tbody><tfoot><tr><td>${foot}</td></tr></tfoot></table>`;
+}
+function takeShot() {
+  if (!renderer) return '';
+  try { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/jpeg', 0.85); } catch (e) { return ''; }
+}
+function renderPrintPreview() {
+  if (printOpt.shot && !printShot) printShot = takeShot();
+  $('#printPreview').innerHTML = printSheetHtml();
+}
+function openPrint() {
+  stopTour();
+  printShot = printOpt.shot ? takeShot() : '';
+  for (const b of document.querySelectorAll('[data-popt]')) b.checked = !!printOpt[b.dataset.popt];
+  $('#printNote').value = printOpt.note;
+  openModal('printModal');
+  renderPrintPreview();
+}
+function doPrint() {
+  $('#printSheet').innerHTML = printSheetHtml();
+  window.print();
+}
 function copyList() {
   const P = PRESET(state.preset), st = lastStats;
   const lines = [`LADEPLAN ${P.name} · ${P.type} · ${new Date().toLocaleDateString('de-DE')}`, ''];
