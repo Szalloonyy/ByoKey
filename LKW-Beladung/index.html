@@ -2475,7 +2475,9 @@ function start() {
   bulk = false;
   moveCamera(true);
   if (!saved && !reduced && renderer) setTimeout(() => { if (!view.armed && view.selected == null && !ptr) startTour(); }, 900);
-  window.ladeplan = { get state() { return state; }, stats:() => lastStats, autoLoad, geometry:() => G, setFocus, setExploded, setVariant, view, CT };
+  window.ladeplan = { get state() { return state; }, stats:() => lastStats, autoLoad, geometry:() => G, setFocus, setExploded, setVariant, view, CT,
+    // Kamera für Tests und Bildschirmfotos: ladeplan.look([x, y, z], [zx, zy, zz])
+    look:(pos, target) => { stopTour(); camera.position.set(...pos); controls.target.set(...target); controls.update(); requestRender(); } };
 }
 start();
 // Offline-Cache, nur auf einer echten Website (http/https) und nicht in eingebetteten Vorschauen
