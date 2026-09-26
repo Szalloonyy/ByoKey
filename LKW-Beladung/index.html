@@ -430,13 +430,17 @@ const CARRIER_BASE = [
       { key:'k163', label:'Hygiene-Grau, 163 cm', sub:'72,4 × 81,5 × 163 cm', d:0.724, w:0.815, h:1.63, model:'hyg' },
       { key:'edel', label:'Edelstahl, 176 cm', sub:'72,4 × 81,5 × 176 cm', d:0.724, w:0.815, h:1.755, model:'hyg' },
       { key:'k153', label:'Kunststoff, 153 cm', sub:'72,4 × 81,5 × 153 cm', d:0.724, w:0.815, h:1.53, model:'hyg' } ] },
-  { id:'iso', name:'TK-Isotainer', short:'ISO', color:'#D9E2E8', need:'tk',
+  // Isotainer (TKT-Thermobehälter): Tür auf der 73,5-cm-Seite, steht mit der Tür zur Hecktür, also 73,5 cm quer
+  { id:'iso', name:'TK-Isotainer', short:'ISO', color:'#4DAEE3', need:'tk',
     variants:[
-      { key:'c580', label:'TKT C-580', sub:'73,5 × 82,5 × 177 cm', d:0.735, w:0.825, h:1.77, model:'iso' },
-      { key:'olivo', label:'Olivo Roll 580', sub:'71,5 × 81 × 190 cm', d:0.715, w:0.81, h:1.90, model:'iso' },
-      { key:'e1070', label:'TKT E-1070 (Palettenmaß)', sub:'120 × 80 × 200 cm', d:1.20, w:0.80, h:2.00, model:'iso' } ] },
+      { key:'a580', label:'TKT A-580, hellblau', sub:'73,5 × 82,5 × 177 cm · 580 l', d:0.825, w:0.735, h:1.77, model:'iso', panel:'#4DAEE3' },
+      { key:'c720', label:'TKT C-720, hellblau', sub:'73,5 × 95,5 × 177 cm · 720 l', d:0.955, w:0.735, h:1.77, model:'iso', panel:'#4DAEE3' },
+      { key:'c780', label:'TKT C-780, hellblau', sub:'73,5 × 95,5 × 190 cm · 780 l', d:0.955, w:0.735, h:1.90, model:'iso', panel:'#4DAEE3' },
+      { key:'olivo', label:'Olivo Roll 580, weiß', sub:'71,5 × 81 × 190 cm', d:0.81, w:0.715, h:1.90, model:'iso', panel:'#DCE3E9' } ] },
   { id:'i2', name:'I2 Fleisch', short:'I2', color:'#C23A33', need:'kalt',
     variants:[
+      { key:'iso', label:'Isotainer silber (A-580-Maß)', sub:'73,5 × 82,5 × 177 cm', d:0.825, w:0.735, h:1.77, model:'iso', panel:'#C3CBD2' },
+      { key:'isob', label:'Isotainer hellblau (A-580-Maß)', sub:'73,5 × 82,5 × 177 cm', d:0.825, w:0.735, h:1.77, model:'iso', panel:'#4DAEE3' },
       { key:'pal', label:'E2-Kisten auf H1-Palette', sub:'120 × 80 × 176 cm', d:1.20, w:0.80, h:1.76, model:'i2' },
       { key:'dolly', label:'E2-Kisten auf 2 Dollies', sub:'60 × 80 × 175 cm', d:0.60, w:0.80, h:1.75, model:'i2d' } ] },
   { id:'ep', name:'Euro-Palette', short:'EP', color:'#C49A62', need:'egal',
@@ -512,6 +516,8 @@ function loadSaved() {
     s.items = s.items.filter(it => known.has(it.t) && typeof it.x === 'number' && typeof it.y === 'number');
     if (!PRESETS.some(p => p.id === s.preset)) return null;
     s.variant = Object.assign(Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].key])), s.variant || {});
+    // Bis Ende September 2026 stand der TK-Isotainer 82,5 cm quer (Variante c580). Jetzt 73,5 cm quer: einmal neu verteilen.
+    if (s.variant.iso === 'c580' || s.variant.iso === 'e1070') { s.variant.iso = 'a580'; s.repack = true; }
     return s;
   } catch (e) { return null; }
 }
@@ -2222,8 +2228,8 @@ function specsHtml() {
 const NOTES = {
   rbh:`Enzianblau, 2 Gitter an den 81,5-cm-Seiten, Kunststoff-Rollplatte ${conf('hoch')}`,
   hyg:`Grundmaß wie RBH, geschlossene Rollplatte. Welche Höhe ihr fahrt, bitte prüfen ${conf('mittel')}`,
-  iso:`Edeka Nord fährt bis 1.900 Isotainer am Tag (Trockeneis/CO₂-Schnee). Welches Modell eure Region nutzt, ist offen ${conf('mittel')}`,
-  i2:`Wahrscheinlich E2-Fleischkisten 60 × 40 × 20 cm („E2“ englisch ausgesprochen). Auf Palette oder Dolly: bitte prüfen ${conf('niedrig')}`,
+  iso:`TKT-Thermobehälter (TKT GmbH, Arnsberg) wie auf eurem Foto: hellblaue PE-Außenhaut, Alu-Rahmen, 4 Rollen, Tür auf der 73,5-cm-Seite mit Verriegelung in der Mitte. Steht mit der Tür nach hinten: 3 × 73,5 cm = 2,21 m passen nebeneinander, eine Reihe ist 82,5 cm tief (A-580). TK-Kühlung mit Trockeneis bzw. CO₂-Schnee ${conf('hoch')}`,
+  i2:`Laut euch derselbe Isotainer wie auf dem Foto, vermutlich für Frischfleisch im Plusbereich. „I2“ ist ein interner Name, öffentlich nicht zu finden. Farbe (silber oder blau) und Größe bitte prüfen; E2-Kisten auf Palette oder Dolly bleiben wählbar ${conf('niedrig')}`,
   ep:`EPAL 1: 1200 × 800 × 144 mm, längs geladen (80 cm quer) ${conf('hoch')}`,
   ch3:`Wahrscheinlich „CHEP“ (blaue Mietpalette; auf dem Handy wird aus „e“ leicht „3“). Vollpalette oder Halbpalette: bitte prüfen ${conf('niedrig')}`,
 };
@@ -2263,7 +2269,7 @@ const FACTS = `
   <h3>Offene Annahmen: bitte prüfen</h3>
   <ul>
     <li>Kammer-Auto 211: Wo steht die Trennwand, wie viele Reihen hat die TK-Kammer, gibt es eine Seitentür? Innenlänge des 24er-Anhängers von LKW 213.</li>
-    <li>CH3: CHEP-Vollpalette (120 × 80) oder Halbpalette (80 × 60)? I2: E2-Kisten auf Palette oder auf Dollies? Umschaltbar in der Tabelle oben.</li>
+    <li>CH3: CHEP-Vollpalette (120 × 80) oder Halbpalette (80 × 60)? I2: Isotainer silber oder blau, gleiches Maß wie der TK-Isotainer? Umschaltbar in der Tabelle oben.</li>
     <li>Innenhöhe eurer Koffer (2,25 m laut ROHR-Inserat, Wüllhorst-Anhänger 2,25–2,70 m) und Durchschnittsgewichte je Behälter.</li>
   </ul>
   <h3>Quellen</h3>
@@ -2278,6 +2284,7 @@ const FACTS = `
     <li><a href="https://www.alle-lkw.de/anhanger/kuhlkoffer-anhanger/wullhorst-tandem-kuhlkoffer-durchladesystem-a4319681.html" target="_blank" rel="noopener">Gebrauchtinserat Wüllhorst Tandem-Durchladeanhänger</a></li>
     <li><a href="https://www.ewers-online.de/produkte/verfuegbare-fahrzeuge/iveco-s-way-as260s46yfs-mit-tandem-anhaenger-18-t-auftr-van-11804696/" target="_blank" rel="noopener">Iveco S-Way AS260S46Y/FS mit Tandem-Anhänger (20 + 18 EP)</a></li>
     <li><a href="https://www.gesetze-im-internet.de/stvzo_2012/__32.html" target="_blank" rel="noopener">StVZO § 32: Abmessungen</a> · <a href="https://www.gesetze-im-internet.de/stvzo_2012/__34.html" target="_blank" rel="noopener">§ 34: Achslast und Gesamtgewicht</a></li>
+    <li>TKT-Thermobehälter: <a href="https://www.maschinensucher.at/tkt-c-720/i-4116672" target="_blank" rel="noopener">C-720</a> · <a href="https://www.maschinensucher.at/tkt-c-780/i-4116669" target="_blank" rel="noopener">C-780</a> · <a href="https://www.tkt-usa.com/" target="_blank" rel="noopener">TKT USA (Maße in Zoll)</a> · <a href="https://de.airliquide.com/ueber-uns/medien/news-blog/perfekt-gekuhlt-den-supermarkt" target="_blank" rel="noopener">Air Liquide: Carbofresh mit TKT</a> · <a href="https://www.frischelogistik.com/kuehl-triple-fuer-edeka/" target="_blank" rel="noopener">Isotainer im TK-Lager Neumünster</a></li>
     <li><a href="https://www.kiesling.de/de/kuehlfahrzeuge/ausstattung/trennwandsysteme/" target="_blank" rel="noopener">Kiesling: Trennwandsysteme für Kühlaufbauten</a> · <a href="https://www.kress.eu/en/products/kress-innovations/flexwall-partition-system.html" target="_blank" rel="noopener">KRESS: FLEXWALL</a> · <a href="https://www.cargobull.com/de/einsatz/kuehltransport/m-ko-cool" target="_blank" rel="noopener">Schmitz Cargobull: M.KO COOL</a></li>
     <li><a href="https://www.hubwagen.de/Rollbehaelter-2-seitig-Rollplatte-aus-Kunststoff-724-x-815-x-1630-mm-500-kg-Nutzhoehe-1440-mm-Enzianblau" target="_blank" rel="noopener">Rollbehälter 724 × 815 × 1630 mm, 500 kg</a></li>
     <li><a href="https://www.allda.eu/product_info.php?info=p140_thermocontainer--c580--.html" target="_blank" rel="noopener">TKT-Thermocontainer C-580</a> · <a href="https://www.frischelogistik.com/kuehl-triple-fuer-edeka/" target="_blank" rel="noopener">Edeka Nord: 1.900 Isotainer am Tag</a></li>
@@ -2431,7 +2438,7 @@ function loadSample() {
 // Beispielladung je Fahrzeug: [Typ, Anzahl, 'tk' = gehört in die TK-Kammer]
 const SAMPLE = {
   '221':   [['rbh', 38], ['hyg', 6], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
-  '219':   [['rbh', 23], ['hyg', 3], ['iso', 3], ['ep', 1], ['i2', 1]],
+  '219':   [['rbh', 22], ['hyg', 3], ['iso', 3], ['ep', 1], ['i2', 1]],
   '213':   [['rbh', 7, 'tk'], ['rbh', 30], ['hyg', 4], ['ep', 2], ['i2', 1], ['ch3', 1]],
   '211':   [['rbh', 7, 'tk'], ['rbh', 12], ['hyg', 3], ['ep', 1], ['i2', 1]],
   'anh30': [['rbh', 23], ['hyg', 2], ['iso', 2]],
@@ -2485,7 +2492,9 @@ function start() {
   bulk = true;
   rebuildVehicle();
   renderViewControls();
-  if (!saved) loadSample(); else update();
+  if (!saved) loadSample();
+  else if (saved.repack) { delete state.repack; autoLoad(true, true); }
+  else update();
   bulk = false;
   moveCamera(true);
   if (!saved && !reduced && renderer) setTimeout(() => { if (!view.armed && view.selected == null && !ptr) startTour(); }, 900);
