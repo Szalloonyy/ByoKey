@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ladeplan Hängerzug</title>
+<meta name="ladeplan-seitenbild" content="">
 <meta name="description" content="Interaktiver 3D-Ladeplan für Kühl-Hängerzug, Kammer-Auto, Solo-LKW und Anhänger: Rollbehälter, Paletten, TK-Isotainer und Fleisch auf Stellplätze verteilen.">
 <meta name="theme-color" content="#0b0f1a">
 <meta property="og:title" content="Ladeplan Hängerzug">
@@ -214,6 +215,9 @@ tr:last-child td{border-bottom:0}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13.5px;align-items:center;color:var(--ink-2)}
 .src{font-size:12.5px;columns:2 300px;column-gap:26px;padding-left:18px}
 .src li{break-inside:avoid;margin-bottom:6px;font-size:12.5px}
+.livery{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.livery img{height:46px;max-width:180px;object-fit:cover;border-radius:6px;border:1px solid var(--edge)}
+.livery-none{font:400 12px/1.3 var(--font-mono);color:var(--mute)}
 .edit-units{display:grid;gap:8px}
 .edit-units label{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;font-size:13.5px;color:var(--ink-2)}
 .edit-units small{display:block;color:var(--mute);font:400 11px/1.3 var(--font-mono)}
@@ -304,11 +308,12 @@ tr:last-child td{border-bottom:0}
     <section id="secView">
       <div class="glabel"><span>Einheit</span><span class="hint">1 2 3</span></div>
       <div class="seg" id="focusSeg"></div>
-      <div class="glabel"><span>Aufbau</span><span class="hint">X · V · C</span></div>
+      <div class="glabel"><span>Aufbau</span><span class="hint">A · X · V · C</span></div>
       <div class="row">
         <div class="seg" id="explodeSeg" style="flex:1">
-          <button type="button" data-explode="0" aria-pressed="true">Zu</button>
-          <button type="button" data-explode="1" aria-pressed="false">Aufgeklappt</button>
+          <button type="button" data-outside="1" aria-pressed="false" title="Geschlossen mit Seitenbild (A)">Außen</button>
+          <button type="button" data-explode="0" aria-pressed="true" title="Wände zur Kamera werden durchsichtig">Zu</button>
+          <button type="button" data-explode="1" aria-pressed="false" title="Aufklappen (X)">Auf</button>
         </div>
         <button class="btn icon" id="btnView" type="button" aria-label="Ansicht wechseln" title="Ansicht wechseln (V)"><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><rect x="1" y="3" width="11" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 6l5-3v8l-5-3z" fill="currentColor"/></svg></button>
         <button class="btn icon" id="btnTour" type="button" aria-label="Kamerafahrt" title="Kamerafahrt (C)"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5l9 5.5-9 5.5z" fill="currentColor"/></svg></button>
@@ -382,6 +387,7 @@ tr:last-child td{border-bottom:0}
       <h3>Tasten</h3>
       <div class="keys">
         <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span>Maschine, Anhänger oder ganzen Zug in den Blick nehmen</span>
+        <span><kbd>A</kbd></span><span>Außenansicht: Koffer geschlossen mit Seitenbild, so wie der LKW auf der Straße aussieht</span>
         <span><kbd>X</kbd></span><span>Aufklappen: Dach und Wände heben sich, die Maschine fährt vor, beim Durchladezug klappt die Stirnklappe des Anhängers herunter</span>
         <span><kbd>V</kbd> / <kbd>⇧ V</kbd></span><span>Ansicht wechseln: Übersicht, Seite, Draufsicht, Heck an der Rampe, über der Stirnwand</span>
         <span><kbd>C</kbd></span><span>Kamerafahrt starten oder beenden</span>
@@ -491,7 +497,7 @@ const PRESET = id => PRESETS.find(p => p.id === id) || PRESETS[0];
    ===================================================================== */
 const STORE_KEY = 'ladeplan-haengerzug-v5';
 let state = null;
-const view = { focus:'zug', cam:0, exploded:false, armed:null, selected:null, uiOff:false, tour:false };
+const view = { focus:'zug', cam:0, exploded:false, outside:false, armed:null, selected:null, uiOff:false, tour:false };
 let undoStack = [];
 
 function unitsFor(p) {
@@ -1605,10 +1611,66 @@ function applyDoors() {
 }
 function setExploded(on) {
   if (!G) return;
+  if (on && view.outside) setOutside(false);
   view.exploded = on;
   renderViewControls();
   const from = three.explodeK, to = on ? 1 : 0;
   tween(950, k => applyExplode(from + (to - from) * k));
+}
+// Seitenbild: eigenes Bild aus diesem Browser, sonst eins vom Server (meta ladeplan-seitenbild), sonst das neutrale Motiv
+const LIVERY_KEY = STORE_KEY + '-seitenbild';
+const livery = { url:'', own:false };
+function applyLivery(url, own) {
+  livery.url = url || ''; livery.own = !!own;
+  if (typeof setLivery !== 'function' || !renderer) return;
+  if (!url) { setLivery(null); return; }
+  const img = new Image();
+  img.onload = () => { setLivery(img); requestRender(); };
+  img.onerror = () => { if (own) toast('Das Seitenbild ließ sich nicht laden.'); livery.url = ''; setLivery(null); };
+  img.src = url;
+}
+function initLivery() {
+  let own = null;
+  try { own = localStorage.getItem(LIVERY_KEY); } catch (e) {}
+  const meta = document.querySelector('meta[name="ladeplan-seitenbild"]');
+  const server = meta && meta.content && !/^\{\{/.test(meta.content) ? meta.content : '';
+  if (own) applyLivery(own, true); else if (server) applyLivery(server, false);
+}
+function loadLiveryFile(file) {
+  if (!file || !/^image\//.test(file.type)) { toast('Bitte eine Bilddatei wählen (JPG, PNG, WebP).'); return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    // auf höchstens 2048 × 1024 verkleinern, damit es in den Browser-Speicher passt
+    const k = Math.min(1, 2048 / img.width, 1024 / img.height);
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    const data = c.toDataURL('image/jpeg', 0.86);
+    let stored = true;
+    try { localStorage.setItem(LIVERY_KEY, data); } catch (e) { stored = false; }
+    applyLivery(data, true);
+    setOutside(true);
+    $('#specsBody').innerHTML = specsHtml();
+    toast(stored ? 'Seitenbild übernommen. Ansicht: Außen' : 'Seitenbild übernommen, aber zu groß zum Speichern: nach dem Neuladen ist es weg.');
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('Das Bild ließ sich nicht öffnen.'); };
+  img.src = url;
+}
+function resetLivery() {
+  try { localStorage.removeItem(LIVERY_KEY); } catch (e) {}
+  livery.url = ''; livery.own = false;
+  initLivery();
+  if (!livery.url && typeof setLivery === 'function' && renderer) setLivery(null);
+  $('#specsBody').innerHTML = specsHtml();
+  toast('Eigenes Seitenbild entfernt');
+}
+// Außenansicht: Koffer geschlossen, Seitenbild sichtbar (three.skin wertet updateWalls aus)
+function setOutside(on) {
+  view.outside = !!on;
+  if (renderer) three.skin = view.outside;
+  if (view.outside && view.exploded) setExploded(false);
+  renderViewControls();
+  requestRender();
 }
 // Wände, die zur Kamera zeigen, werden durchsichtig
 const _wp = { v:null };
@@ -1700,7 +1762,9 @@ function setFocus(f) {
 
 // ---- Kamerafahrt (wie die Vorlage: Einstellungen mit Haltezeit, jede Berührung übernimmt) ----
 const SHOTS = [
-  { cam:0, focus:'zug', exploded:false, hold:2400 },
+  { cam:0, focus:'zug', exploded:false, outside:true, hold:2600 },
+  { cam:1, focus:'zug', exploded:false, outside:true, hold:2400 },
+  { cam:0, focus:'zug', exploded:false, hold:2000 },
   { cam:2, focus:'zug', exploded:false, hold:2600 },
   { cam:3, focus:'zug', exploded:false, hold:2600 },
   { cam:0, focus:'zug', exploded:true, hold:3000 },
@@ -1717,6 +1781,7 @@ function startTour() {
     if (!view.tour) return;
     const s = SHOTS[i];
     view.focus = s.focus === 'first' ? G.units[0].id : s.focus;
+    if (view.outside !== !!s.outside) setOutside(!!s.outside);
     if (view.exploded !== s.exploded) setExploded(s.exploded);
     view.cam = s.cam;
     renderViewControls();
@@ -1934,15 +1999,18 @@ function cancelDrag() {
    ===================================================================== */
 function select(id) {
   view.selected = id == null ? null : id;
+  if (view.selected != null && view.outside) setOutside(false);
   update();
 }
 function arm(type) {
   view.armed = type && view.armed !== type ? type : null;
+  if (view.armed && view.outside) setOutside(false);
   if (view.armed) view.selected = null;
   hideGhost();
   renderArmed(); renderDock(); syncItems(lastStats); renderSelbar();
 }
 function addOne(type) {
+  if (view.outside) setOutside(false);
   pushUndo();
   const pref = view.focus !== 'zug' && G.byId[view.focus] ? view.focus : null;
   const it = newItem(type, placeNew(type, pref));
@@ -2191,9 +2259,9 @@ function renderViewControls() {
   const pressed = f => view.focus === f || (G.units.length === 1 && view.focus === 'zug' && f === G.units[0].id);
   const seg = items.map(x => `<button type="button" data-focus="${x.f}" aria-pressed="${pressed(x.f)}">${x.label} <kbd>${x.key}</kbd></button>`).join('');
   $('#focusSeg').innerHTML = seg;
-  for (const b of document.querySelectorAll('#explodeSeg button')) b.setAttribute('aria-pressed', String((b.dataset.explode === '1') === view.exploded));
+  for (const b of document.querySelectorAll('#explodeSeg button')) b.setAttribute('aria-pressed', String(b.dataset.outside ? view.outside : !view.outside && (b.dataset.explode === '1') === view.exploded));
   $('#btnTour').setAttribute('aria-pressed', String(view.tour));
-  $('#stageTools').innerHTML = `<div class="seg">${seg}</div><div class="seg"><button type="button" data-explode="${view.exploded ? 0 : 1}" aria-pressed="${view.exploded}">Auf</button><button type="button" data-nextview aria-label="Ansicht wechseln">${esc(VIEWS[view.cam].name.split(' ')[0])}</button><button type="button" data-tour aria-pressed="${view.tour}" aria-label="Kamerafahrt">▶</button></div>`;
+  $('#stageTools').innerHTML = `<div class="seg">${seg}</div><div class="seg"><button type="button" data-outside="${view.outside ? 0 : 1}" aria-pressed="${view.outside}">Außen</button><button type="button" data-explode="${view.exploded ? 0 : 1}" aria-pressed="${view.exploded}">Auf</button><button type="button" data-nextview aria-label="Ansicht wechseln">${esc(VIEWS[view.cam].name.split(' ')[0])}</button><button type="button" data-tour aria-pressed="${view.tour}" aria-label="Kamerafahrt">▶</button></div>`;
 }
 
 let toastTimer = 0;
@@ -2220,6 +2288,13 @@ function specsHtml() {
     <h3>Eure Koffer sind anders lang?</h3>
     <p>Innenlänge eintragen. Der Planer rechnet Reihen und Stellplätze neu; was nicht mehr passt, stellt er auf die Rampe.</p>
     <div class="edit-units">${lens}</div>
+    <h3>Seitenbild auf dem Koffer</h3>
+    <p>Ohne eigenes Bild zeigt der Planer ein neutrales Obst-und-Gemüse-Motiv. Ihr könnt ein Foto oder die Grafik eurer Fahrzeugbeschriftung laden, am besten im Querformat (etwa 3 : 1). Das Bild bleibt nur in diesem Browser. Zu sehen ist es in der Ansicht <b>Außen</b> (Taste A).</p>
+    <div class="livery">
+      ${livery.url ? `<img src="${esc(livery.url)}" alt="Aktuelles Seitenbild">` : '<span class="livery-none">neutrales Motiv</span>'}
+      <label class="btn small">Bild wählen<input type="file" accept="image/*" data-livery hidden></label>
+      ${livery.own ? '<button class="btn small" type="button" data-livery-reset>Eigenes Bild entfernen</button>' : ''}
+    </div>
     <h3>Ladungsträger</h3>
     <p>Das Format gilt für alle Behälter dieses Typs. Nach einem Wechsel verteilt der Planer die Ladung neu. Gewichte rechnet er bewusst nicht, weil die Ware immer anders gepackt ist.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Behälter · Format</th><th>L × B × H</th><th>Belegt</th><th>Quelle, Sicherheit</th></tr></thead><tbody>${carrierRows}</tbody></table></div>
@@ -2304,7 +2379,8 @@ function bind() {
     else if (d.add) addOne(d.add);
     else if (d.rm) removeOne(d.rm);
     else if (d.focus) { stopTour(); setFocus(d.focus); }
-    else if (d.explode != null) { stopTour(); setExploded(d.explode === '1'); }
+    else if (d.explode != null) { stopTour(); if (view.outside) setOutside(false); setExploded(d.explode === '1'); }
+    else if (d.outside != null) { stopTour(); setOutside(d.outside === '1'); }
     else if ('nextview' in d) { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); }
     else if ('tour' in d) view.tour ? stopTour() : startTour();
     else if (d.temp) { const u = state.units.find(x => x.id === d.temp); if (u) { u.temp = Math.max(-25, Math.min(15, u.temp + +d.dt)); update(); } }
@@ -2318,6 +2394,7 @@ function bind() {
     else if ('delete' in d) deleteSelected();
     else if ('disarm' in d) arm(null);
     else if ('close' in d) closeModals();
+    else if ('liveryReset' in d) resetLivery();
     else if (d.item && t.closest('svg.plan')) select(+d.item);
   });
   $('#unitCards').addEventListener('click', e => {
@@ -2334,6 +2411,7 @@ function bind() {
     if (d.variant) { setVariant(d.variant, t.value); $('#specsBody').innerHTML = specsHtml(); }
     else if (t.id === 'presetSel') switchPreset(t.value);
     else if (d.len) { setUnitLength(d.len, +t.value); $('#specsBody').innerHTML = specsHtml(); }
+    else if ('livery' in d) { loadLiveryFile(t.files && t.files[0]); t.value = ''; }
   });
   $('#btnAuto').addEventListener('click', () => { state.sample = false; autoLoad(); });
   $('#btnCompact').addEventListener('click', () => { pushUndo(); for (const U of G.units) compact(U.id); update(); toast('Nachgerückt: alles steht bündig nach vorn'); });
@@ -2385,9 +2463,10 @@ function onKey(e) {
   else if (k === '2' && G.units[1]) setFocus(G.units[1].id);
   else if (k === '3') setFocus('zug');
   else if (k === 'x') setExploded(!view.exploded);
+  else if (k === 'a') setOutside(!view.outside);
   else if (k === 'v') { view.cam = (view.cam + (e.shiftKey ? VIEWS.length - 1 : 1)) % VIEWS.length; renderViewControls(); moveCamera(); }
   else if (k === 'c') view.tour ? stopTour() : startTour();
-  else if (k === 'r') { view.cam = 0; if (view.exploded) setExploded(false); setFocus('zug'); }
+  else if (k === 'r') { view.cam = 0; if (view.outside) setOutside(false); if (view.exploded) setExploded(false); setFocus('zug'); }
   else if (k === 'h' || k === '/') { e.preventDefault(); toggleUI(); }
   else if (k === 't') rotateSelected();
   else if (k === 'f') { if (!$('#btnFull').hidden) toggleFullscreen(); }
@@ -2491,6 +2570,7 @@ function start() {
   bind();
   bulk = true;
   rebuildVehicle();
+  initLivery();
   renderViewControls();
   if (!saved) loadSample();
   else if (saved.repack) { delete state.repack; autoLoad(true, true); }

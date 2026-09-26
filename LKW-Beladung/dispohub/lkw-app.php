@@ -34,6 +34,13 @@ if ($html === false) {
     exit('Die Vorlage includes/lkw-planer.html fehlt.');
 }
 
+// Seitenbild für alle: assets/lkw/seitenbild.jpg (oder .png/.webp) per FTP ablegen. Eigene Bilder
+// im Browser (Datenblatt) haben Vorrang.
+$seitenbild = '';
+foreach (['jpg', 'png', 'webp'] as $endung) {
+    if (is_file(__DIR__ . '/assets/lkw/seitenbild.' . $endung)) { $seitenbild = asset_url('assets/lkw/seitenbild.' . $endung); break; }
+}
+
 header('Content-Type: text/html; charset=utf-8');
 echo strtr($html, [
     '{{FONTS_CSS}}' => e(asset_url('assets/lkw/fonts/fonts.css')),
@@ -41,4 +48,5 @@ echo strtr($html, [
     '{{ORBIT_JS}}'  => e(asset_url('assets/lkw/OrbitControls.js')),
     // Ladeplan je Benutzer getrennt speichern (mehrere Disponenten an einem PC)
     '{{STORE_PREFIX}}' => 'lkw_u' . (int) $user['id'] . '_',
+    '{{SEITENBILD}}'   => e($seitenbild),
 ]);

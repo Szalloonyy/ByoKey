@@ -116,10 +116,12 @@ def vorlage():
     t = ersetzen(t, r'// Offline-Cache[^\n]*\n/\* web:sw \*/[^\n]*\n', '', 'index.html: /* web:sw */')
     t = ersetzen(t, r"const STORE_KEY = '([^']+)';", r"const STORE_KEY = '{{STORE_PREFIX}}\1';",
                  'index.html: STORE_KEY')
+    t = ersetzen(t, r'<meta name="ladeplan-seitenbild" content="[^"]*">',
+                 '<meta name="ladeplan-seitenbild" content="{{SEITENBILD}}">', 'index.html: meta ladeplan-seitenbild')
     kopf = ('<!-- Vorlage für lkw-app.php (DispoHub-Modul „LKW“). Nicht von Hand ändern:\n'
             '     erzeugt von LKW-Beladung/dispohub/einbau.py aus LKW-Beladung/index.html. -->\n')
     t = t.replace('<!doctype html>\n', '<!doctype html>\n' + kopf, 1)
-    for p in ('{{FONTS_CSS}}', '{{THREE_JS}}', '{{ORBIT_JS}}', '{{STORE_PREFIX}}'):
+    for p in ('{{FONTS_CSS}}', '{{THREE_JS}}', '{{ORBIT_JS}}', '{{STORE_PREFIX}}', '{{SEITENBILD}}'):
         assert t.count(p) == 1, p
     assert 'serviceWorker' not in t and 'manifest' not in t and 'vendor/' not in t
     return t
