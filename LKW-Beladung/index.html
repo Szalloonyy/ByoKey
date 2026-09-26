@@ -1052,7 +1052,7 @@ function slotEq(c) { const e = (c.d * c.w) / (SLOT_D * 2.48 / 3); return e < 1.1
    ===================================================================== */
 const canvas = $('#gl');
 let renderer = null, scene, camera, controls, T = null, raycaster = null;
-const three = { unitGroups:{}, walls:[], floors:[], hit:[], meshes:new Map(), vehicle:null, head:null, ghost:null, bars:{}, fronts:{}, grids:{}, doors:[], flaps:[], leds:{}, explodeK:0, doorK:0 };
+const three = { unitGroups:{}, walls:[], floors:[], hit:[], meshes:new Map(), vehicle:null, head:null, ghost:null, bars:{}, fronts:{}, grids:{}, doors:[], flaps:[], leds:{}, explodeK:0, doorK:0, skins:[], skin:false };
 const M = {}, GEO = {};
 let rafPending = false;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1149,8 +1149,10 @@ function initThree() {
   M.goods = std('#ffffff', 0.9);
   M.hyg = std('#95a1ab', 0.5, 0.05);
   M.hygPanel = std('#ffffff', 0.4, 0.4);
-  M.iso = std('#ffffff', 0.45, 0.05);
-  M.isoTrim = std('#6c7984', 0.5, 0.3);
+  M.isoFrame = std('#a1a9b0', 0.4, 0.5);          // Isotainer: Alu-Vierkantrahmen
+  M.isoBand = std('#565b61', 0.42, 0.2);          // dunkles Schlossband (anthrazit)
+  M.isoChrome = std('#eef1f3', 0.22, 0.45);       // Griff, Schließbleche, Hebel
+  M.isoWheel = std('#c9cdd1', 0.55, 0.05);        // hellgraue Lenkrollen
   M.wood = std('#ffffff', 0.95);
   M.woodDark = std('#8e6a3e', 0.95);
   M.wrap = std('#eef2f5', 0.22, 0.0, { transparent:true, opacity:0.78 });
@@ -1188,13 +1190,6 @@ function initThree() {
     c.fillStyle = '#c69c64'; c.fillRect(0, 0, w, h);
     for (let i = 0; i < 40; i++) { c.strokeStyle = `rgba(110,75,35,${0.08 + rnd() * 0.12})`; c.beginPath(); const y = rnd() * h; c.moveTo(0, y); c.bezierCurveTo(w * 0.3, y + 3, w * 0.6, y - 3, w, y + 1); c.stroke(); }
   }, true);
-  M.iso.map = canvasTex(128, 256, (c, w, h) => {
-    c.fillStyle = '#e6ecf0'; c.fillRect(0, 0, w, h);
-    c.strokeStyle = '#9aa6b0'; c.lineWidth = 4; c.strokeRect(10, 10, w - 20, h - 20);
-    c.fillStyle = '#7d8a95'; c.fillRect(w - 26, h * 0.42, 8, h * 0.18);
-    c.fillStyle = '#2E6CC7'; c.fillRect(10, 22, w - 20, 16);
-    c.fillStyle = '#ffffff'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText('TK  −18 °C', w / 2, 34);
-  });
   M.crate.map = canvasTex(128, 64, (c, w, h) => {
     c.fillStyle = '#c23a33'; c.fillRect(0, 0, w, h);
     c.fillStyle = 'rgba(0,0,0,.28)'; for (let x = 10; x < w - 10; x += 14) c.fillRect(x, 12, 7, h - 24);
@@ -1272,22 +1267,283 @@ function axle(group, x, r, width, dual, trackHalf) {
 }
 function mesh(geo, mat, shadow = true) { const m = new T.Mesh(geo, mat); m.castShadow = shadow; m.receiveShadow = shadow; return m; }
 
-// Neutrales Fernverkehrs-Fahrerhaus mit Flachdach, Front bei X = 0 (kein Markenlogo)
-function buildCab(group, tall) {
-  const top = tall ? 3.55 : 3.3;
-  group.add(mesh(bx(1.9, top - 1.05, 2.46, -1.07, 1.05 + (top - 1.05) / 2, 0), M.cab));
-  group.add(mesh(bx(0.08, 1.02, 2.26, -0.11, 2.42, 0), M.glass, false));
-  group.add(mesh(bx(0.10, 0.62, 2.10, -0.10, 1.55, 0), M.grille));
-  group.add(mesh(bx(0.34, 0.46, 2.50, -0.17, 0.70, 0), M.dark));
-  for (const z of [-0.98, 0.98]) {
-    group.add(mesh(bx(0.06, 0.15, 0.42, -0.01, 0.83, z), M.light, false));
-    group.add(mesh(bx(0.06, 0.05, 0.36, -0.09, 1.95, z * 1.02), M.amber, false));
-    group.add(mesh(bx(0.85, 0.6, 0.04, -0.8, 2.52, z * 1.255), M.glass, false));
-    group.add(mesh(bx(0.18, 0.52, 0.07, -0.22, 2.25, z * 1.39), M.dark));
-    group.add(mesh(bx(0.44, 0.14, 0.34, -0.9, 0.55, z * 1.0), M.dark));
+// ---- Fahrerhaus ----
+// Materialien des Fahrerhauses, beim ersten Bau angelegt
+function ensureCabMaterials() {
+  if (M.cabPaint) return;
+  M.cabPaint = std('#eef1f4', 0.3, 0.16);                   // Perlweiß
+  M.cabBlack = std('#14191e', 0.5, 0.2);                    // Kunststoff seidenmatt
+  M.cabMatte = std('#0a0d10', 0.85);
+  M.cabSlat = std('#2c343b', 0.4, 0.55);
+  // Scheiben: oben hellere Spiegelung, unten dunkel (v = 0 unten, 1 oben)
+  M.cabGlass = std('#ffffff', 0.1, 0.3, { map:canvasTex(4, 128, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#5f7182'); g.addColorStop(0.35, '#2a3642'); g.addColorStop(1, '#0f151b');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+  }) });
+  M.cabLens = std('#3a4652', 0.1, 0.6);
+  M.cabMirror = std('#5d7082', 0.08, 0.7);
+  M.cabDrl = new T.MeshBasicMaterial({ color:0xf2f8ff, toneMapped:false });
+  M.cabLamp = new T.MeshBasicMaterial({ color:0x6d7b87 });            // Reflektoren, nicht leuchtend
+  // Wabengitter hinter den Kühlerlamellen
+  M.cabGrille = std('#0d1013', 0.75, 0.3, { map:canvasTex(64, 64, (c, w, h) => {
+    c.fillStyle = '#9aa3ab'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#1b1f23';
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) { c.beginPath(); c.ellipse(x * 32 + (y ? 16 : 0) + 8, y * 32 + 16, 12, 11, 0, 0, Math.PI * 2); c.fill(); }
+    c.beginPath(); c.ellipse(-8, 48, 12, 11, 0, 0, Math.PI * 2); c.fill();
+  }, true) });
+  M.cabGrille.map.repeat.set(14, 14);
+  M.cabNo = {};
+}
+// weiche Normalen über gemeinsame Eckpunkte, Kanten über `deg` Grad bleiben hart; ebene Deckflächen (±z) bleiben flach
+function smoothNormals(g, deg) {
+  const p = g.attributes.position.array, out = g.attributes.normal.array, nv = p.length / 3, nf = nv / 3;
+  const fn = new Float32Array(nf * 3), keys = new Array(nv), map = new Map();
+  for (let f = 0; f < nf; f++) {
+    const i = f * 9;
+    const ax = p[i + 3] - p[i], ay = p[i + 4] - p[i + 1], az = p[i + 5] - p[i + 2];
+    const cx = p[i + 6] - p[i], cy = p[i + 7] - p[i + 1], cz = p[i + 8] - p[i + 2];
+    let x = ay * cz - az * cy, y = az * cx - ax * cz, z = ax * cy - ay * cx;
+    const l = Math.hypot(x, y, z);
+    if (l > 1e-12) { x /= l; y /= l; z /= l; } else x = y = z = 0;
+    fn[f * 3] = x; fn[f * 3 + 1] = y; fn[f * 3 + 2] = z;
+    for (let k = 0; k < 3; k++) {
+      const v = f * 3 + k, key = Math.round(p[v * 3] * 2000) + '|' + Math.round(p[v * 3 + 1] * 2000) + '|' + Math.round(p[v * 3 + 2] * 2000);
+      keys[v] = key; let a = map.get(key); if (!a) map.set(key, a = []); a.push(f);
+    }
   }
-  group.add(mesh(bx(0.24, 0.1, 2.40, -0.2, top - 0.05, 0), M.dark));
-  group.add(mesh(bx(1.7, 0.1, 2.3, -1.07, top + 0.04, 0), M.cab));
+  const c = Math.cos(deg * Math.PI / 180);
+  for (let v = 0; v < nv; v++) {
+    const f = (v / 3) | 0, x = fn[f * 3], y = fn[f * 3 + 1], z = fn[f * 3 + 2];
+    let sx = x, sy = y, sz = z;
+    if (Math.abs(z) < 0.999) {
+      sx = sy = sz = 0;
+      for (const h of map.get(keys[v])) if (x * fn[h * 3] + y * fn[h * 3 + 1] + z * fn[h * 3 + 2] >= c) { sx += fn[h * 3]; sy += fn[h * 3 + 1]; sz += fn[h * 3 + 2]; }
+    }
+    const l = Math.hypot(sx, sy, sz) || 1;
+    out[v * 3] = sx / l; out[v * 3 + 1] = sy / l; out[v * 3 + 2] = sz / l;
+  }
+  g.attributes.normal.needsUpdate = true;
+  return g;
+}
+// Profil extrudieren (z von 0 bis depth), Kanten mit Radius r gerundet, ohne die Außenmaße zu vergrößern
+function extrude(shape, depth, r, seg, curveSeg) {
+  const g = new T.ExtrudeGeometry(shape, r > 0
+    ? { depth:depth - 2 * r, bevelEnabled:true, bevelThickness:r, bevelSize:r, bevelOffset:-r, bevelSegments:seg || 3, curveSegments:curveSeg || 10 }
+    : { depth, bevelEnabled:false, curveSegments:curveSeg || 10 });
+  if (r > 0) g.translate(0, 0, r);
+  return smoothNormals(g, 40);
+}
+// Spiegelbild an der Fahrzeugmitte (z -> -z), Dreiecke umgedreht, damit die Außenseite sichtbar bleibt
+function mirrorZ(g) {
+  g = g.index ? g.toNonIndexed() : g.clone();
+  g.scale(1, 1, -1);
+  for (const a of Object.values(g.attributes)) {
+    const s = a.itemSize, arr = a.array;
+    for (let i = 0; i < arr.length; i += 3 * s) for (let k = 0; k < s; k++) { const t = arr[i + s + k]; arr[i + s + k] = arr[i + 2 * s + k]; arr[i + 2 * s + k] = t; }
+  }
+  return g;
+}
+// Vierkantstab von a nach b
+function rod(a, b, t) {
+  const A = new T.Vector3(...a), B = new T.Vector3(...b), d = B.clone().sub(A), L = d.length();
+  const g = new T.BoxGeometry(L, t, t);
+  g.applyMatrix4(new T.Matrix4().makeRotationFromQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(1, 0, 0), d.normalize())));
+  g.translate((A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2);
+  return g;
+}
+// Flottennummer als Folie, je Nummer einmal erzeugt
+function cabNoMaterial(no) {
+  if (M.cabNo[no]) return M.cabNo[no];
+  const draw = (c, w, h) => {
+    c.clearRect(0, 0, w, h);
+    c.fillStyle = '#15191d'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = "700 84px 'Barlow Condensed', 'Arial Narrow', sans-serif";
+    c.fillText(no, w / 2, h / 2 + 4);
+  };
+  const tex = canvasTex(256, 96, draw);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { draw(tex.image.getContext('2d'), 256, 96); tex.needsUpdate = true; requestRender(); });
+  return (M.cabNo[no] = new T.MeshStandardMaterial({ map:tex, transparent:true, alphaTest:0.35, roughness:0.4, polygonOffset:true, polygonOffsetFactor:-2 }));
+}
+
+// Modernes Fernverkehrs-Fahrerhaus mit Windleitdach, ohne Marken: Stoßfänger bei X = 0, Rückwand bei X = -2,28, Vorderachse X = -1,45
+function buildCab(group, tall) {
+  ensureCabMaterials();
+  const P = { paint:[], black:[], matte:[], grille:[], slat:[], glass:[], lens:[], mirror:[], mirrorBlack:[], drl:[], lamp:[], amber:[] };
+  const both = (list, g) => list.push(g, mirrorZ(g));        // Teil für +z bauen, -z gespiegelt
+  const W2 = 1.245, R = 0.1;                                  // halbe Breite, Kantenradius
+  const yB = 0.95, yR = 3.28, xR = -2.28;                     // Unterkante, Dach, Rückwand
+  const XF = tall && G.units[0].TF ? G.units[0].TF : -1.45, RA = 0.68;   // Vorderachse, Radlauf
+  const w0 = [-0.17, 2.08], w1 = [-0.49, 2.98];               // Windschutzscheibe unten/oben, rund 20° geneigt
+  const wl = Math.hypot(w1[0] - w0[0], w1[1] - w0[1]);
+  const rake = Math.atan2(w0[0] - w1[0], w1[1] - w0[1]), nx = Math.cos(rake), ny = Math.sin(rake);
+
+  // Schale: Seitenprofil mit leicht geneigter Front und Radlauf, quer extrudiert, senkrechte Kanten gerundet
+  const sh = new T.Shape();
+  sh.moveTo(-0.13, yB); sh.lineTo(-0.12, 1.74); sh.lineTo(...w0); sh.lineTo(...w1);
+  sh.quadraticCurveTo(-0.58, yR, -0.92, yR); sh.lineTo(xR, yR); sh.lineTo(xR, yB);
+  const aA = Math.asin((yB - 0.53) / RA);
+  sh.absarc(XF, 0.53, RA, Math.PI - aA, aA, true);
+  sh.lineTo(-0.13, yB);
+  P.paint.push(extrude(sh, 2 * W2, R, 2, 6).translate(0, 0, -W2));
+  P.matte.push(bx(1.85, 0.40, 1.56, -1.40, 0.80, 0));        // Motor und Unterbau
+
+  // Windschutzscheibe mit schwarzem Rahmen, schwarze A-Säulen über der Kantenrundung
+  const onWs = (g, s, off) => { g.rotateY(Math.PI / 2); g.rotateZ(rake); g.translate(w0[0] - ny * s + nx * off, w0[1] + nx * s + ny * off, 0); return g; };
+  P.black.push(onWs(new T.PlaneGeometry(2 * (W2 - R), wl + 0.1), (wl - 0.06) / 2, 0.004));
+  P.glass.push(onWs(new T.PlaneGeometry(2 * (W2 - R) - 0.12, wl - 0.12), wl / 2 - 0.01, 0.008));
+  for (const s of [1, -1]) {
+    const c = new T.CylinderGeometry(R + 0.006, R + 0.006, wl + 0.1, 5, 1, true, s > 0 ? 0 : Math.PI / 2, Math.PI / 2);
+    c.rotateZ(rake);
+    const m = (wl - 0.06) / 2;
+    c.translate(w0[0] - ny * m - nx * R, w0[1] + nx * m - ny * R, s * (W2 - R));
+    P.black.push(c);
+  }
+  for (const z of [-0.5, 0.5]) P.black.push(onWs(new T.BoxGeometry(0.9, 0.025, 0.012), 0.09, 0.014).translate(0, 0, z));  // Wischer
+
+  // Sonnenblende mit Positionsleuchten
+  const vs = new T.Shape();
+  vs.moveTo(-0.25, 2.96); vs.lineTo(-0.33, 3.12); vs.lineTo(-0.71, 3.25); vs.lineTo(-0.58, 2.95);
+  P.black.push(extrude(vs, 2.38, 0.03, 1).translate(0, 0, -1.19));
+  for (const z of [-0.92, 0.92]) P.lamp.push(bx(0.05, 0.02, 0.14, -0.34, 3.13, z));
+
+  // Windleitdach: steigt aus der Dachrundung bis fast an die Kofferoberkante, vorn schwarzer Lufteinlass
+  const top = tall ? 3.84 : 3.53;
+  const d0 = [-0.68, 3.14], d1 = [-1.08, top], d2 = [-1.75, top];
+  const df = new T.Shape();
+  df.moveTo(...d0); df.quadraticCurveTo(...d1, ...d2); df.lineTo(-2.27, top); df.lineTo(-2.27, 2.92); df.lineTo(d0[0], 2.92);
+  P.paint.push(extrude(df, 2.36, 0.1, 2, 6).translate(0, 0, -1.18));
+  const lipO = [], lipI = [];
+  for (let i = 0; i <= 6; i++) {
+    const t = 0.14 + 0.2 * i / 6, u = 1 - t;
+    const x = u * u * d0[0] + 2 * u * t * d1[0] + t * t * d2[0], y = u * u * d0[1] + 2 * u * t * d1[1] + t * t * d2[1];
+    const tx = 2 * u * (d1[0] - d0[0]) + 2 * t * (d2[0] - d1[0]), ty = 2 * u * (d1[1] - d0[1]) + 2 * t * (d2[1] - d1[1]), tl = Math.hypot(tx, ty);
+    lipO.push([x + ty / tl * 0.012, y - tx / tl * 0.012]); lipI.unshift([x - ty / tl * 0.03, y + tx / tl * 0.03]);
+  }
+  const lip = new T.Shape(); [...lipO, ...lipI].forEach((p, i) => i ? lip.lineTo(...p) : lip.moveTo(...p));
+  P.black.push(extrude(lip, 1.3, 0, 1, 1).translate(0, 0, -0.65));
+
+  // Kühlergrill: breiter Block, nach unten schmaler, mit waagerechten Lamellen
+  const gs = new T.Shape();
+  gs.moveTo(-1.02, 1.80); gs.lineTo(1.02, 1.80); gs.lineTo(0.98, 1.66); gs.lineTo(0.68, 1.22); gs.lineTo(0.60, 0.46);
+  gs.lineTo(-0.60, 0.46); gs.lineTo(-0.68, 1.22); gs.lineTo(-0.98, 1.66);
+  P.grille.push(new T.ExtrudeGeometry(gs, { depth:0.05, bevelEnabled:false }).rotateY(Math.PI / 2).translate(-0.125, 0, 0));
+  const hw = y => y < 1.22 ? 0.60 + (y - 0.46) / 0.76 * 0.08 : y < 1.66 ? 0.68 + (y - 1.22) / 0.44 * 0.30 : 0.98 + (y - 1.66) / 0.14 * 0.04;
+  for (let k = 0; k < 10; k++) { const y = 0.53 + k * 0.135; P.slat.push(new T.BoxGeometry(0.06, 0.028, 2 * hw(y) - 0.08).rotateZ(-0.4).translate(-0.07, y, 0)); }
+
+  // Stoßfänger: Ecken mit Aussparung für den bis unten durchgehenden Grill, darunter Lippe mit Trittstufe
+  const bu = new T.Shape();
+  bu.moveTo(-0.13, 0.60); bu.lineTo(0, 0.60); bu.lineTo(0, 0.90); bu.quadraticCurveTo(-0.02, W2 - 0.01, -0.30, W2 - 0.01);
+  bu.lineTo(-0.80, W2 - 0.01); bu.lineTo(-0.80, -W2 + 0.01); bu.lineTo(-0.30, -W2 + 0.01); bu.quadraticCurveTo(-0.02, -W2 + 0.01, 0, -0.90);
+  bu.lineTo(0, -0.60); bu.lineTo(-0.13, -0.60);
+  P.black.push(extrude(bu, 0.32, 0.025, 1, 4).rotateX(-Math.PI / 2).translate(0, 0.66, 0));
+  const bl = new T.Shape();
+  bl.moveTo(-0.80, -W2 + 0.01); bl.lineTo(-0.30, -W2 + 0.01); bl.quadraticCurveTo(-0.04, -W2 + 0.01, -0.02, -0.90); bl.lineTo(-0.02, -0.60);
+  bl.lineTo(-0.13, -0.60); bl.lineTo(-0.13, 0.60);
+  bl.lineTo(-0.02, 0.60); bl.lineTo(-0.02, 0.90); bl.quadraticCurveTo(-0.04, W2 - 0.01, -0.30, W2 - 0.01); bl.lineTo(-0.80, W2 - 0.01);
+  P.black.push(extrude(bl, 0.30, 0.025, 1, 4).rotateX(-Math.PI / 2).translate(0, 0.36, 0));
+  P.black.push(bx(0.15, 0.10, 1.22, -0.085, 0.41, 0));
+  P.slat.push(bx(0.07, 0.015, 1.1, -0.04, 0.467, 0));      // Trittstufe in der Mitte
+
+  for (const s of [1, -1]) {
+    // Nebelscheinwerfer
+    P.matte.push(cyl(0.075, 0.015, -0.02, 0.50, s * 0.80, 'x', 8));
+    P.lens.push(cyl(0.052, 0.02, -0.015, 0.50, s * 0.80, 'x', 8));
+  }
+  // Scheinwerfer flach in den unteren Ecken, außen leicht zurückgezogen, mit C-förmigem Tagfahrlicht
+  const hl = { matte:[bx(0.085, 0.24, 0.515, -0.0875, 1.075, 0.8825)], lens:[bx(0.008, 0.15, 0.47, -0.041, 1.085, 0.885)],
+    lamp:[0.84, 0.96].map(z => cyl(0.034, 0.012, -0.036, 1.09, z, 'x', 8)),
+    drl:[new T.TubeGeometry(new T.CatmullRomCurve3([[0.66, 1.016], [1.0, 1.016], [1.08, 1.04], [1.098, 1.10], [1.07, 1.148], [0.97, 1.152]]
+      .map(([z, y]) => new T.Vector3(-0.034, y, z)), false, 'centripetal'), 14, 0.008, 3, false)],
+    amber:[bx(0.006, 0.035, 0.05, -0.036, 1.15, 0.68)] };
+  const hm = new T.Matrix4().makeTranslation(-0.08, 1.08, 0.63).multiply(new T.Matrix4().makeRotationY(-0.1)).multiply(new T.Matrix4().makeRotationX(-0.08)).multiply(new T.Matrix4().makeTranslation(0.08, -1.08, -0.63));
+  for (const k in hl) for (const g of hl[k]) both(P[k], g.applyMatrix4(hm));
+  // schwarze Stoßfängerwange: um die Ecke herum bis zum Radlauf
+  for (const s of [1, -1]) {
+    const c = new T.CylinderGeometry(R + 0.008, R + 0.008, 0.29, 5, 1, true, s > 0 ? 0 : Math.PI / 2, Math.PI / 2);
+    P.black.push(c.translate(-0.125 - R, 1.095, s * (W2 - R)));
+  }
+
+  // Radlauf mit schwarzer Kotflügelschale
+  const ms = new T.Shape();
+  ms.absarc(0, 0, 0.70, 0.35, 2.62, false); ms.absarc(0, 0, 0.60, 2.62, 0.35, true);
+  const mg = extrude(ms, 0.42, 0, 1, 4);
+  P.matte.push(mg.clone().translate(XF, 0.53, 0.83), mg.translate(XF, 0.53, -1.25));
+
+  // Seitenfenster: schwarzes Band ab der A-Säule, Tür- und hintere Scheibe
+  const xi = y => w0[0] - nx * R + (y - (w0[1] - ny * R)) * (w1[0] - w0[0]) / (w1[1] - w0[1]);
+  const poly = pts => { const s = new T.Shape(); pts.forEach((p, i) => i ? s.lineTo(...p) : s.moveTo(...p)); return s; };
+  const onSide = (list, shape, off) => {
+    const g = new T.ShapeGeometry(shape, 3).translate(0, 0, W2 + off), uv = g.attributes.uv, p = g.attributes.position;
+    for (let i = 0; i < uv.count; i++) uv.setY(i, (p.getY(i) - 2.2) / 0.8);
+    both(list, g);
+  };
+  const band = poly([[xi(2.12), 2.12], [xi(3.02), 3.02], [-1.42, 3.02]]);
+  band.quadraticCurveTo(-1.56, 3.02, -1.63, 2.92); band.lineTo(-1.85, 2.58); band.lineTo(-1.85, 2.30); band.lineTo(-0.95, 2.26); band.lineTo(-0.66, 2.12);
+  onSide(P.black, band, 0.003);
+  onSide(P.glass, poly([[xi(2.19) - 0.03, 2.19], [xi(2.97) - 0.03, 2.97], [-1.38, 2.97], [-1.38, 2.29], [-0.95, 2.30], [-0.68, 2.17]]), 0.006);
+  const qw = poly([[-1.44, 2.97]]); qw.quadraticCurveTo(-1.53, 2.97, -1.59, 2.89); qw.lineTo(-1.80, 2.57); qw.lineTo(-1.80, 2.34); qw.lineTo(-1.44, 2.31);
+  onSide(P.glass, qw, 0.006);
+  // schwarze Wange unten vorn an der Seite, geht in die Kotflügelschale über
+  onSide(P.black, poly([[-0.225, 0.95], [-0.225, 1.24], [-0.55, 1.19], [-0.84, 1.0], [-0.84, 0.95]]), 0.006);
+
+  // Tür: Fugen, Griff, schwarze Zierleiste unten, Blinker vorn an der Seite
+  const zs = W2 + 0.002;
+  both(P.matte, new T.PlaneGeometry(0.012, 0.94).translate(-0.60, 1.73, zs));
+  both(P.matte, new T.PlaneGeometry(0.012, 1.78).translate(-1.88, 2.13, zs));
+  both(P.matte, new T.PlaneGeometry(1.29, 0.012).translate(-1.235, 1.245, zs));
+  both(P.black, bx(0.17, 0.045, 0.02, -1.68, 1.80, W2 + 0.008));
+  both(P.black, new T.PlaneGeometry(1.2, 0.06).translate(-1.23, 1.30, W2 + 0.004));
+  both(P.amber, bx(0.10, 0.035, 0.006, -0.36, 1.30, W2 + 0.003));
+
+  // Außenspiegel: zwei schwarze Arme an der Tür, großer Hauptspiegel und Weitwinkelspiegel darunter
+  const head = (w, h, y) => {
+    const s = new T.Shape(), r = 0.045;
+    s.moveTo(-w / 2 + r, -h / 2); s.lineTo(w / 2 - r, -h / 2); s.absarc(w / 2 - r, -h / 2 + r, r, -Math.PI / 2, 0, false);
+    s.lineTo(w / 2, h / 2 - r); s.absarc(w / 2 - r, h / 2 - r, r, 0, Math.PI / 2, false);
+    s.lineTo(-w / 2 + r, h / 2); s.absarc(-w / 2 + r, h / 2 - r, r, Math.PI / 2, Math.PI, false);
+    s.lineTo(-w / 2, -h / 2 + r); s.absarc(-w / 2 + r, -h / 2 + r, r, Math.PI, Math.PI * 1.5, false);
+    both(P.mirrorBlack, extrude(s, 0.11, 0.02, 1, 1).translate(0, 0, -0.055).rotateY(Math.PI / 2).translate(-0.45, y, 1.53));
+    both(P.mirror, new T.PlaneGeometry(w - 0.05, h - 0.05).rotateY(-Math.PI / 2).translate(-0.507, y, 1.53));
+  };
+  head(0.24, 0.52, 2.66); head(0.22, 0.21, 2.25);
+  both(P.mirrorBlack, rod([-0.74, 2.30, W2 - 0.01], [-0.45, 2.33, 1.42], 0.035));
+  both(P.mirrorBlack, rod([-0.74, 2.82, W2 - 0.01], [-0.45, 2.86, 1.42], 0.035));
+  both(P.mirrorBlack, rod([-0.45, 2.12, 1.415], [-0.45, 2.92, 1.415], 0.03));
+  // Frontspiegel über der Beifahrerseite
+  P.mirrorBlack.push(bx(0.09, 0.13, 0.22, -0.17, 2.86, 1.0), rod([-0.30, 3.0, 1.06], [-0.18, 2.9, 1.04], 0.025));
+  P.mirror.push(new T.PlaneGeometry(0.18, 0.09).rotateY(-Math.PI / 2).translate(-0.217, 2.86, 1.0));
+
+  // Seitenverkleidung hinter der Tür, leicht ausgestellt bis an den Koffer
+  const es = new T.Shape();
+  es.moveTo(0, 1.08); es.lineTo(0, 3.18); es.quadraticCurveTo(0, 3.27, -0.09, 3.27); es.lineTo(-0.42, 3.27); es.lineTo(-0.42, 1.08);
+  const em = new T.Matrix4().makeTranslation(-1.92, 0, W2).multiply(new T.Matrix4().makeRotationY(0.07));
+  both(P.paint, extrude(es, 0.03, 0, 1, 4).applyMatrix4(em));
+  both(P.black, new T.PlaneGeometry(0.04, 2.12).translate(-0.40, 2.16, 0.032).applyMatrix4(em));   // Dichtkante hinten
+
+  // Aufstieg: zwei schwarze Stufen hinter dem Vorderrad (Sattelzugmaschine links nicht, dort sitzt der Tank)
+  const step = (list, g) => (tall ? list.push(g) : both(list, g));
+  step(P.matte, bx(0.24, 0.68, 0.16, -2.18, 0.69, 1.02));
+  for (const y of [0.44, 0.74]) step(P.black, bx(0.26, 0.035, 0.15, -2.18, y, 1.165));
+  for (const x of [-2.055, -2.305]) step(P.black, bx(0.02, 0.70, 0.15, x, 0.69, 1.165));
+
+  const MAT = { paint:M.cabPaint, black:M.cabBlack, matte:M.cabMatte, grille:M.cabGrille, slat:M.cabSlat, glass:M.cabGlass,
+    lens:M.cabLens, mirror:M.cabMirror, mirrorBlack:M.cabBlack, drl:M.cabDrl, lamp:M.cabLamp, amber:M.amber };
+  // Spiegel, Scheiben und Leuchten werfen keinen Schatten (sonst unruhige Flecken auf der Tür)
+  for (const k in P) if (P[k].length) group.add(mesh(merge(P[k]), MAT[k], !/glass|drl|lamp|amber|mirror|lens|grille|slat/i.test(k)));
+
+  // Flottennummer oben hinten an der Seite (Nummer des Motorwagens)
+  const no = G && G.units[0] ? G.units[0].no : '';
+  if (no) {
+    const mat = cabNoMaterial(no);
+    for (const s of [1, -1]) {
+      const g = new T.PlaneGeometry(0.40, 0.15);
+      if (s < 0) g.rotateY(Math.PI);
+      g.translate(-0.22, 3.06, s * 0.033);
+      g.applyMatrix4(new T.Matrix4().makeTranslation(-1.92, 0, s * W2).multiply(new T.Matrix4().makeRotationY(s * 0.07)));
+      group.add(mesh(g, mat, false));
+    }
+  }
 }
 
 function buildFloorTexture(U) {
@@ -1335,7 +1591,483 @@ function gridLines(U) {
   return new T.LineSegments(g, new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.25 }));
 }
 
+// ---- Außenhaut des Koffers: Alu-Profile, Seitenbild, Heck, Unterbau ----
+const LIV = { proc:null, own:null, aspect:0 };      // Seitenbild: neutrales Motiv und eigenes Bild
+// Spiegelumgebung nur für Metallteile: dunkler Himmel mit hellen Lichtbändern, damit Alu und Edelstahl glänzen
+function bodyEnv() {
+  const tex = canvasTex(256, 128, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#7d8794'); g.addColorStop(0.4, '#aeb6bf'); g.addColorStop(0.5, '#5b636d'); g.addColorStop(0.57, '#252a31'); g.addColorStop(1, '#0c0f13');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(255,244,228,0.9)'; c.fillRect(0, h * 0.2, w, h * 0.05);
+    c.fillStyle = 'rgba(190,220,255,0.55)'; c.fillRect(0, h * 0.33, w, h * 0.03);
+    c.fillStyle = 'rgba(255,255,255,0.95)'; for (const x of [0.08, 0.42, 0.76]) c.fillRect(x * w, h * 0.07, w * 0.1, h * 0.09);
+  });
+  tex.mapping = T.EquirectangularReflectionMapping;
+  const pm = new T.PMREMGenerator(renderer);
+  const env = pm.fromEquirectangular(tex).texture;
+  pm.dispose(); tex.dispose();
+  return env;
+}
+// Neutrales Seitenbild: Anthrazit-Tafel mit gemaltem Rand aus Obst, Gemüse, Käse, Wurst und Brot. Keine Schrift, kein Logo.
+function paintFoodPanel(c, w, h) {
+  const s0 = seed; seed = 424242;                 // eigene Zufallsfolge: Motiv ist immer gleich
+  const U = 3500, V = 1000;                       // Malfläche in Einheiten, Seitenverhältnis wie die Kofferwand
+  const P2 = Math.PI * 2, R = (a, b) => a + (b - a) * rnd(), pick = a => a[Math.floor(rnd() * a.length)];
+  c.save(); c.scale(w / U, h / V);
+  // Tafel
+  let g = c.createLinearGradient(0, 0, 0, V);
+  g.addColorStop(0, '#17181a'); g.addColorStop(0.5, '#222326'); g.addColorStop(1, '#161719');
+  c.fillStyle = g; c.fillRect(0, 0, U, V);
+  for (let i = 0; i < 220; i++) {
+    const x = rnd() * U, y = rnd() * V, r = R(40, 260), l = rnd() < 0.45;
+    const rg = c.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, l ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.07)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = rg; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  for (let i = 0; i < 5000; i++) { c.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.12)'; c.fillRect(rnd() * U, rnd() * V, R(1, 3), R(1, 3)); }
+  g = c.createRadialGradient(U / 2, V * 0.48, 40, U / 2, V / 2, U * 0.45);
+  g.addColorStop(0, 'rgba(255,255,255,0.045)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = g; c.fillRect(0, 0, U, V);
+
+  // Werkzeuge
+  const sh = b => { c.shadowColor = b ? 'rgba(0,0,0,0.62)' : 'rgba(0,0,0,0)'; c.shadowBlur = b; c.shadowOffsetX = b * 0.3; c.shadowOffsetY = b * 0.5; };
+  let rot = 0;                                   // Drehung des aktuellen Stücks, damit das Licht immer von oben links kommt
+  const ball = (r, c0, c1, c2) => {
+    const hx = -r * 0.38, hy = -r * 0.42, cs = Math.cos(-rot), sn = Math.sin(-rot);
+    const gg = c.createRadialGradient(hx * cs - hy * sn, hx * sn + hy * cs, r * 0.04, 0, 0, r * 1.08);
+    gg.addColorStop(0, c0); gg.addColorStop(0.5, c1); gg.addColorStop(1, c2); return gg;
+  };
+  const wob = (rx, ry, n, j) => {
+    const pts = [];
+    for (let i = 0; i < n; i++) { const a = i / n * P2, k = 1 + (rnd() - 0.5) * j; pts.push([Math.cos(a) * rx * k, Math.sin(a) * ry * k]); }
+    c.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const p = pts[i % n], q = pts[(i + 1) % n], mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2;
+      if (i === 0) c.moveTo(mx, my); else c.quadraticCurveTo(p[0], p[1], mx, my);
+    }
+    c.closePath();
+  };
+  const hi = (x, y, rx, ry, a) => {
+    const cs = Math.cos(-rot), sn = Math.sin(-rot);
+    c.fillStyle = `rgba(255,255,255,${a})`; c.beginPath(); c.ellipse(x * cs - y * sn, x * sn + y * cs, rx, ry, -0.7 - rot, 0, P2); c.fill();
+  };
+  const star = (ro, ri, n, a0) => { c.beginPath(); for (let i = 0; i < n * 2; i++) { const rr = i % 2 ? ri : ro, a = a0 + i * Math.PI / n; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); };
+  const calyx = (s, col) => { c.fillStyle = col; star(s, s * 0.32, 5, rnd() * 6); c.fill(); c.fillStyle = '#7d8f45'; c.beginPath(); c.arc(0, 0, s * 0.2, 0, P2); c.fill(); };
+  // Pinselstriche: kurze Bögen in der aktuellen Form
+  const dabs = (r, col, n, lw) => {
+    c.save(); c.clip(); c.strokeStyle = col; c.lineCap = 'round';
+    for (let i = 0; i < n; i++) { const a = rnd() * P2; c.lineWidth = lw * R(0.6, 1.4); c.beginPath(); c.arc(0, 0, r * R(0.25, 0.95), a, a + R(0.3, 0.9)); c.stroke(); }
+    c.restore();
+  };
+  const dots = (rx, ry, n, col, s) => { c.fillStyle = col; for (let i = 0; i < n; i++) { const a = rnd() * P2, d = Math.sqrt(rnd()); c.fillRect(Math.cos(a) * rx * d, Math.sin(a) * ry * d, s, s); } };
+
+  // Zeichner je Sorte, jeweils um (0, 0)
+  const D = {
+    tomato(r) {
+      sh(r > 30 ? 14 : 7); wob(r, r * 0.95, 8, 0.1); c.fillStyle = ball(r, '#ff8f6a', '#d8321d', '#6a0e07'); c.fill(); sh(0);
+      dabs(r, 'rgba(255,200,170,0.10)', 5, r * 0.08);
+      hi(-r * 0.36, -r * 0.4, r * 0.24, r * 0.12, 0.45);
+      calyx(r * 0.36, '#3a7328');
+    },
+    apple(r) {
+      const t = pick([['#ff8a78', '#c4231c', '#5a0c0b'], ['#e3f28a', '#8dbd2e', '#3a6012'], ['#ffd08a', '#e0572a', '#7a1c0c']]);
+      sh(14); wob(r, r * 0.96, 7, 0.08); c.fillStyle = ball(r, ...t); c.fill(); sh(0);
+      c.save(); c.clip(); c.strokeStyle = 'rgba(255,220,120,0.16)'; c.lineWidth = r * 0.06;
+      for (let i = 0; i < 9; i++) { const a = rnd() * P2; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.2, Math.sin(a) * r * 0.2); c.lineTo(Math.cos(a) * r, Math.sin(a) * r); c.stroke(); }
+      c.restore();
+      const gg = c.createRadialGradient(0, 0, 0, 0, 0, r * 0.3); gg.addColorStop(0, 'rgba(40,15,5,0.55)'); gg.addColorStop(1, 'rgba(40,15,5,0)');
+      c.fillStyle = gg; c.beginPath(); c.arc(0, 0, r * 0.3, 0, P2); c.fill();
+      c.strokeStyle = '#5a3a1c'; c.lineWidth = r * 0.07; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(r * 0.1, -r * 0.2, r * 0.05, -r * 0.34); c.stroke();
+      hi(-r * 0.4, -r * 0.38, r * 0.2, r * 0.1, 0.4);
+    },
+    orange(r) {
+      const lem = rnd() < 0.35;
+      sh(14); wob(lem ? r * 1.2 : r, lem ? r * 0.9 : r, 8, 0.06); c.fillStyle = lem ? ball(r, '#fff6a0', '#efcc1d', '#7f6205') : ball(r, '#ffc971', '#f08914', '#8a4004'); c.fill(); sh(0);
+      c.save(); c.clip(); dots(r, r, 70, 'rgba(120,60,0,0.25)', 3); c.restore();
+      hi(-r * 0.35, -r * 0.35, r * 0.25, r * 0.12, 0.35);
+      c.fillStyle = '#6d6a2a'; c.beginPath(); c.arc(lem ? r * 1.12 : 0, 0, r * 0.07, 0, P2); c.fill();
+    },
+    citrusHalf(r) {
+      const lem = rnd() < 0.5;
+      sh(12); c.beginPath(); c.arc(0, 0, r, 0, P2); c.fillStyle = lem ? '#e8c21a' : '#ea8410'; c.fill(); sh(0);
+      c.beginPath(); c.arc(0, 0, r * 0.9, 0, P2); c.fillStyle = '#fbf2d6'; c.fill();
+      for (let i = 0; i < 9; i++) {
+        const a = i / 9 * P2;
+        c.beginPath(); c.moveTo(Math.cos(a + 0.05) * r * 0.1, Math.sin(a + 0.05) * r * 0.1); c.arc(0, 0, r * 0.8, a + 0.06, a + P2 / 9 - 0.06); c.closePath();
+        c.fillStyle = lem ? 'rgba(248,222,70,0.95)' : 'rgba(250,150,40,0.95)'; c.fill();
+      }
+      dots(r * 0.7, r * 0.7, 30, 'rgba(255,255,255,0.35)', 3);
+    },
+    pepper(r) {
+      const t = pick([['#ff8a6a', '#d42a16', '#5e0b04'], ['#fff38a', '#f2bd0d', '#7f5a00'], ['#c7ea6a', '#4d981e', '#1b420a'], ['#ffc06a', '#f07a10', '#7a3302']]);
+      sh(15); c.beginPath();
+      for (let i = 0; i < 4; i++) { const a = i / 4 * P2 + R(-0.2, 0.2) + 0.4; c.moveTo(Math.cos(a) * r * 0.42 + r * 0.6, Math.sin(a) * r * 0.42); c.arc(Math.cos(a) * r * 0.42, Math.sin(a) * r * 0.42, r * 0.6, 0, P2); }
+      c.fillStyle = ball(r, ...t); c.fill(); sh(0);
+      c.strokeStyle = 'rgba(0,0,0,0.22)'; c.lineWidth = r * 0.05;
+      for (let i = 0; i < 4; i++) { const a = i / 4 * P2 + 0.4 + Math.PI / 4; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.2, Math.sin(a) * r * 0.2); c.lineTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75); c.stroke(); }
+      hi(-r * 0.42, -r * 0.4, r * 0.22, r * 0.1, 0.5);
+      c.fillStyle = '#2f5a1a'; c.beginPath(); c.arc(0, 0, r * 0.22, 0, P2); c.fill();
+      c.strokeStyle = '#4c7a2a'; c.lineWidth = r * 0.14; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(r * 0.15, -r * 0.2, r * 0.32, -r * 0.18); c.stroke();
+    },
+    chili(r) {
+      const red = rnd() < 0.75;
+      sh(8); c.lineCap = 'round'; c.strokeStyle = red ? '#c81e12' : '#3f8a1c'; c.lineWidth = r * 0.3;
+      c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(0, r * 0.45, r * 0.95, -r * 0.1); c.stroke(); sh(0);
+      c.strokeStyle = red ? 'rgba(255,150,120,0.55)' : 'rgba(200,255,150,0.45)'; c.lineWidth = r * 0.07;
+      c.beginPath(); c.moveTo(-r * 0.8, -r * 0.05); c.quadraticCurveTo(0, r * 0.32, r * 0.7, -r * 0.14); c.stroke();
+      c.strokeStyle = '#3b6a1e'; c.lineWidth = r * 0.12; c.beginPath(); c.moveTo(-r, 0); c.lineTo(-r * 1.25, -r * 0.15); c.stroke();
+    },
+    aubergine(r) {
+      sh(16); c.beginPath(); c.moveTo(-r * 1.3, 0);
+      c.bezierCurveTo(-r * 1.3, -r * 0.75, r * 0.9, -r * 0.8, r * 1.1, -r * 0.1); c.bezierCurveTo(r * 1.2, r * 0.5, -r * 1.3, r * 0.75, -r * 1.3, 0);
+      c.fillStyle = ball(r * 1.2, '#9a6ec0', '#45205f', '#140620'); c.fill(); sh(0);
+      hi(-r * 0.45, -r * 0.35, r * 0.5, r * 0.08, 0.35);
+      c.fillStyle = '#3f6e22'; c.save(); c.translate(r * 0.95, -r * 0.05); star(r * 0.38, r * 0.14, 5, 0.3); c.fill();
+      c.strokeStyle = '#6f8a3a'; c.lineWidth = r * 0.13; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 0.35, -r * 0.04); c.stroke(); c.restore();
+    },
+    cheese(r) {
+      sh(18); c.beginPath(); c.moveTo(-r * 0.9, -r * 0.62); c.lineTo(r * 1.05, -r * 0.05); c.lineTo(-r * 0.9, r * 0.62); c.quadraticCurveTo(-r * 1.15, 0, -r * 0.9, -r * 0.62);
+      let gg = c.createLinearGradient(-r, -r, r, r); gg.addColorStop(0, '#ffe9a0'); gg.addColorStop(1, '#e8a92c');
+      c.fillStyle = gg; c.fill(); sh(0);
+      c.save(); c.clip();
+      for (let i = 0; i < 9; i++) {
+        const x = R(-0.7, 0.5) * r, y = R(-0.4, 0.4) * r, s = R(0.04, 0.12) * r;
+        c.fillStyle = 'rgba(170,100,10,0.45)'; c.beginPath(); c.ellipse(x, y, s, s * 0.8, 0, 0, P2); c.fill();
+        c.fillStyle = 'rgba(255,245,200,0.5)'; c.beginPath(); c.ellipse(x + s * 0.25, y + s * 0.25, s * 0.6, s * 0.45, 0, 0, P2); c.fill();
+      }
+      c.strokeStyle = '#b8781a'; c.lineWidth = r * 0.14; c.beginPath(); c.moveTo(-r * 0.9, -r * 0.62); c.quadraticCurveTo(-r * 1.15, 0, -r * 0.9, r * 0.62); c.stroke();
+      c.restore();
+      c.strokeStyle = 'rgba(255,250,220,0.5)'; c.lineWidth = r * 0.03; c.beginPath(); c.moveTo(-r * 0.85, -r * 0.6); c.lineTo(r * 1.0, -r * 0.06); c.stroke();
+    },
+    salami(r) {
+      const n = 3 + Math.floor(rnd() * 2);
+      for (let k = 0; k < n; k++) {
+        c.save(); c.translate((k - (n - 1) / 2) * r * 0.42, (k % 2 ? 1 : -1) * r * 0.08);
+        sh(10); c.beginPath(); c.arc(0, 0, r * 0.52, 0, P2); c.fillStyle = '#e9ddd2'; c.fill(); sh(0);
+        c.beginPath(); c.arc(0, 0, r * 0.48, 0, P2); c.fillStyle = ball(r * 0.5, '#c24a4a', '#8e2327', '#4a0c10'); c.fill();
+        c.save(); c.clip();
+        for (let i = 0; i < 26; i++) { const a = rnd() * P2, d = Math.sqrt(rnd()) * r * 0.44; c.fillStyle = 'rgba(250,225,215,0.8)'; c.beginPath(); c.ellipse(Math.cos(a) * d, Math.sin(a) * d, R(1.5, 4.5), R(1.5, 4), rnd() * 3, 0, P2); c.fill(); }
+        c.restore(); c.restore();
+      }
+    },
+    ham(r) {
+      sh(20); wob(r * 1.15, r * 0.85, 11, 0.24); c.fillStyle = ball(r, '#b0503a', '#7a2a1c', '#3a0e08'); c.fill(); sh(0);
+      c.save(); c.scale(0.86, 0.84); wob(r * 1.15, r * 0.85, 11, 0.12); c.restore();
+      c.fillStyle = ball(r, '#ffc2b8', '#e2737a', '#9a3442'); c.fill();
+      c.save(); c.clip();
+      c.strokeStyle = '#fbeee6'; c.lineWidth = r * 0.16; c.beginPath(); c.ellipse(-r * 0.05, 0, r * 0.95, r * 0.7, 0, -2.6, 0.3); c.stroke();
+      c.strokeStyle = 'rgba(150,40,55,0.35)'; c.lineWidth = r * 0.035;
+      for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse(r * R(-0.2, 0.2), r * R(-0.1, 0.2), r * R(0.3, 0.6), r * R(0.2, 0.45), R(-0.5, 0.5), R(0, 2), R(3, 5)); c.stroke(); }
+      c.restore();
+      c.fillStyle = '#efe6dc'; c.beginPath(); c.arc(r * 0.25, r * 0.1, r * 0.1, 0, P2); c.fill();
+      hi(-r * 0.4, -r * 0.35, r * 0.35, r * 0.1, 0.18);
+    },
+    steak(r) {
+      sh(20); wob(r * 1.25, r * 0.8, 10, 0.22); c.fillStyle = ball(r, '#d8505a', '#a3232e', '#4e0a12'); c.fill(); sh(0);
+      c.save(); c.clip();
+      c.strokeStyle = '#f3e3d2'; c.lineWidth = r * 0.2; c.beginPath(); c.ellipse(0, 0, r * 1.28, r * 0.83, 0, 3.4, 5.9); c.stroke();
+      c.strokeStyle = 'rgba(250,230,220,0.45)'; c.lineCap = 'round';
+      for (let i = 0; i < 14; i++) { c.lineWidth = R(1.5, 4); c.beginPath(); let x = R(-1, 1) * r, y = R(-0.6, 0.6) * r; c.moveTo(x, y); c.quadraticCurveTo(x + R(-40, 40), y + R(-30, 30), x + R(-70, 70), y + R(-40, 40)); c.stroke(); }
+      c.restore();
+      hi(-r * 0.3, -r * 0.3, r * 0.4, r * 0.1, 0.12);
+    },
+    sausage(r) {
+      for (const dy of [-r * 0.3, r * 0.3]) {
+        c.save(); c.translate(0, dy);
+        sh(12); c.lineCap = 'round'; c.lineWidth = r * 0.5; c.strokeStyle = '#a4502a';
+        c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(0, r * 0.25, r, 0); c.stroke(); sh(0);
+        c.lineWidth = r * 0.3; c.strokeStyle = '#c8703e'; c.beginPath(); c.moveTo(-r, -r * 0.04); c.quadraticCurveTo(0, r * 0.2, r, -r * 0.04); c.stroke();
+        c.lineWidth = r * 0.08; c.strokeStyle = 'rgba(255,220,180,0.5)'; c.beginPath(); c.moveTo(-r * 0.85, -r * 0.12); c.quadraticCurveTo(0, r * 0.08, r * 0.85, -r * 0.12); c.stroke();
+        c.restore();
+      }
+    },
+    bread(r) {
+      const long = rnd() < 0.4, rx = long ? r * 1.8 : r * 1.3, ry = long ? r * 0.5 : r * 0.9;
+      sh(20); wob(rx, ry, 10, 0.08); c.fillStyle = ball(Math.max(rx, ry) * 0.8, '#f0c27a', '#b9742f', '#5e3010'); c.fill(); sh(0);
+      c.save(); c.clip(); dots(rx, ry, 90, 'rgba(255,250,240,0.35)', 3); c.restore();
+      c.lineCap = 'round';
+      const n = long ? 5 : 3;
+      for (let i = 0; i < n; i++) {
+        const x = (i - (n - 1) / 2) * rx * (long ? 0.34 : 0.5);
+        c.strokeStyle = 'rgba(60,25,5,0.55)'; c.lineWidth = r * 0.12; c.beginPath(); c.moveTo(x - ry * 0.35, -ry * 0.55); c.lineTo(x + ry * 0.35, ry * 0.55); c.stroke();
+        c.strokeStyle = '#f4d59c'; c.lineWidth = r * 0.06; c.beginPath(); c.moveTo(x - ry * 0.3, -ry * 0.5); c.lineTo(x + ry * 0.3, ry * 0.5); c.stroke();
+      }
+    },
+    roll(r) {
+      sh(12); wob(r, r * 0.9, 8, 0.08); c.fillStyle = ball(r, '#f3c885', '#c07a33', '#633311'); c.fill(); sh(0);
+      c.strokeStyle = '#f7dca8'; c.lineWidth = r * 0.1; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-r * 0.5, 0); c.lineTo(r * 0.5, 0); c.moveTo(0, -r * 0.45); c.lineTo(0, r * 0.45); c.stroke();
+      c.save(); wob(r, r * 0.9, 8, 0.02); c.clip(); dots(r, r, 25, 'rgba(255,250,240,0.4)', 3); c.restore();
+    },
+    grapes(r) {
+      const t = pick([['#b98ad6', '#5c2c7c', '#1d0a2c'], ['#eef7a8', '#a9c94a', '#4f6a16'], ['#e0708a', '#8a1c3c', '#3a0614']]);
+      const bs = r * 0.23, pts = [];
+      for (let i = 0; i < 60 && pts.length < 22; i++) {
+        const y = R(-0.9, 0.9) * r, wdt = r * 0.75 * (1 - (y / r + 0.9) / 2.2), x = R(-1, 1) * wdt;
+        if (pts.every(p => Math.hypot(p[0] - x, p[1] - y) > bs * 1.35)) pts.push([x, y]);
+      }
+      pts.sort((a, b) => a[1] - b[1]);
+      for (const [x, y] of pts) {
+        c.save(); c.translate(x, y); sh(8); c.beginPath(); c.arc(0, 0, bs, 0, P2); c.fillStyle = ball(bs, ...t); c.fill(); sh(0);
+        hi(-bs * 0.35, -bs * 0.35, bs * 0.25, bs * 0.14, 0.45); c.restore();
+      }
+      c.strokeStyle = '#6b5a2a'; c.lineWidth = r * 0.05; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, -r); c.quadraticCurveTo(r * 0.15, -r * 1.15, r * 0.3, -r * 1.2); c.stroke();
+    },
+    broccoli(r) {
+      sh(14); c.beginPath();
+      const fl = [];
+      for (let i = 0; i < 13; i++) { const a = rnd() * P2, d = Math.sqrt(rnd()) * r * 0.62; fl.push([Math.cos(a) * d, Math.sin(a) * d, r * R(0.26, 0.38)]); }
+      for (const [x, y, s] of fl) { c.moveTo(x + s, y); c.arc(x, y, s, 0, P2); }
+      c.fillStyle = '#2e5e1c'; c.fill(); sh(0);
+      for (const [x, y, s] of fl) {
+        c.save(); c.translate(x, y); c.beginPath(); c.arc(0, 0, s * 0.9, 0, P2); c.fillStyle = ball(s, '#8fc35a', '#3f7a26', '#173a0c'); c.fill();
+        dots(s * 0.8, s * 0.8, 10, 'rgba(190,230,140,0.45)', 3); c.restore();
+      }
+    },
+    cauliflower(r) {
+      sh(18); for (let i = 0; i < 7; i++) {
+        const a = i / 7 * P2 + R(-0.2, 0.2);
+        c.save(); c.rotate(a); c.beginPath(); c.ellipse(r * 0.75, 0, r * 0.55, r * 0.32, 0, 0, P2); c.fillStyle = ball(r * 0.5, '#9ccf6a', '#4d8a2c', '#1f4412'); c.fill();
+        c.strokeStyle = 'rgba(230,250,210,0.5)'; c.lineWidth = r * 0.03; c.beginPath(); c.moveTo(r * 0.3, 0); c.lineTo(r * 1.2, 0); c.stroke(); c.restore();
+      }
+      sh(10);
+      for (let i = 0; i < 16; i++) {
+        const a = rnd() * P2, d = Math.sqrt(rnd()) * r * 0.5, s = r * R(0.18, 0.28);
+        c.save(); c.translate(Math.cos(a) * d, Math.sin(a) * d); c.beginPath(); c.arc(0, 0, s, 0, P2); c.fillStyle = ball(s, '#fffbea', '#e9dfbe', '#a8976a'); c.fill(); c.restore();
+      }
+      sh(0);
+    },
+    cabbage(r) {
+      sh(20); wob(r * 1.1, r, 16, 0.22); c.fillStyle = ball(r, '#c7ea8a', '#6fae3a', '#24521a'); c.fill(); sh(0);
+      c.strokeStyle = 'rgba(235,255,210,0.45)'; c.lineCap = 'round';
+      for (let i = 0; i < 8; i++) { const a = i / 8 * P2 + R(-0.2, 0.2); c.lineWidth = r * 0.03; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.1, Math.sin(a) * r * 0.1); c.quadraticCurveTo(Math.cos(a + 0.2) * r * 0.5, Math.sin(a + 0.2) * r * 0.5, Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95); c.stroke(); }
+      c.beginPath(); wob(r * 0.55, r * 0.5, 10, 0.2); c.fillStyle = 'rgba(210,240,160,0.35)'; c.fill();
+    },
+    pumpkin(r) {
+      sh(20); c.beginPath();
+      for (let i = 0; i < 8; i++) { const a = i / 8 * P2; c.moveTo(Math.cos(a) * r * 0.45 + r * 0.6, Math.sin(a) * r * 0.45); c.arc(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, r * 0.6, 0, P2); }
+      c.fillStyle = ball(r, '#ffb867', '#e0701a', '#6e2c04'); c.fill(); sh(0);
+      c.strokeStyle = 'rgba(110,40,5,0.45)'; c.lineWidth = r * 0.04;
+      for (let i = 0; i < 8; i++) { const a = i / 8 * P2 + P2 / 16; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.2, Math.sin(a) * r * 0.2); c.lineTo(Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95); c.stroke(); }
+      hi(-r * 0.4, -r * 0.4, r * 0.3, r * 0.12, 0.3);
+      c.fillStyle = '#5a4a22'; c.beginPath(); c.arc(0, 0, r * 0.14, 0, P2); c.fill();
+    },
+    mushroom(r) {
+      const white = rnd() < 0.6;
+      sh(10); wob(r, r * 0.95, 7, 0.06); c.fillStyle = white ? ball(r, '#ffffff', '#e9e2d6', '#9d9080') : ball(r, '#e0c09a', '#a37748', '#4e3218'); c.fill(); sh(0);
+      c.save(); c.clip(); dots(r, r, 16, white ? 'rgba(150,130,100,0.25)' : 'rgba(60,35,10,0.35)', 4); c.restore();
+    },
+    garlic(r) {
+      sh(12); wob(r, r * 0.95, 9, 0.1); c.fillStyle = ball(r, '#ffffff', '#ede4d2', '#9b8c72'); c.fill(); sh(0);
+      c.strokeStyle = 'rgba(160,110,140,0.4)'; c.lineWidth = r * 0.04;
+      for (let i = 0; i < 6; i++) { const a = i / 6 * P2; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(Math.cos(a + 0.3) * r * 0.6, Math.sin(a + 0.3) * r * 0.6, Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95); c.stroke(); }
+      c.fillStyle = '#b7a37a'; c.beginPath(); c.arc(0, 0, r * 0.12, 0, P2); c.fill();
+    },
+    onion(r) {
+      sh(12); wob(r, r * 0.95, 8, 0.06); c.fillStyle = ball(r, '#e79ac0', '#9a2f62', '#3e0a24'); c.fill(); sh(0);
+      c.strokeStyle = 'rgba(255,210,235,0.3)'; c.lineWidth = r * 0.03;
+      for (let i = 0; i < 7; i++) { const a = i / 7 * P2; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(Math.cos(a + 0.4) * r * 0.7, Math.sin(a + 0.4) * r * 0.7, Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97); c.stroke(); }
+      hi(-r * 0.35, -r * 0.4, r * 0.22, r * 0.1, 0.35);
+    },
+    carrot(r) {
+      for (let k = 0; k < 3; k++) {
+        c.save(); c.rotate((k - 1) * 0.18); c.translate(0, (k - 1) * r * 0.28);
+        sh(10); c.beginPath(); c.moveTo(-r * 1.1, -r * 0.15); c.quadraticCurveTo(0, -r * 0.2, r * 1.1, 0); c.quadraticCurveTo(0, r * 0.2, -r * 1.1, r * 0.15); c.closePath();
+        const gg = c.createLinearGradient(0, -r * 0.2, 0, r * 0.2); gg.addColorStop(0, '#ffb257'); gg.addColorStop(0.5, '#f07412'); gg.addColorStop(1, '#8a3a02');
+        c.fillStyle = gg; c.fill(); sh(0);
+        c.strokeStyle = 'rgba(120,50,0,0.4)'; c.lineWidth = 2;
+        for (let i = 0; i < 6; i++) { const x = R(-0.9, 0.8) * r; c.beginPath(); c.moveTo(x, -r * 0.1); c.lineTo(x + 3, r * 0.08); c.stroke(); }
+        c.strokeStyle = '#4f8f2a'; c.lineWidth = r * 0.05; c.lineCap = 'round';
+        for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-r * 1.1, 0); c.quadraticCurveTo(-r * 1.35, R(-0.3, 0.3) * r, -r * R(1.5, 1.7), R(-0.4, 0.4) * r); c.stroke(); }
+        c.restore();
+      }
+    },
+    radish(r) {
+      sh(10); wob(r, r * 0.95, 7, 0.06); c.fillStyle = ball(r, '#ff8aa8', '#d61a4c', '#5e0620'); c.fill(); sh(0);
+      c.fillStyle = '#f4ecef'; c.beginPath(); c.arc(r * 0.55, r * 0.55, r * 0.22, 0, P2); c.fill();
+      c.strokeStyle = '#e8d8dc'; c.lineWidth = 2; c.beginPath(); c.moveTo(r * 0.7, r * 0.7); c.lineTo(r * 1.3, r * 1.1); c.stroke();
+      hi(-r * 0.35, -r * 0.4, r * 0.22, r * 0.11, 0.45);
+    },
+    cucumber(r) {
+      for (let k = 0; k < 3; k++) {
+        c.save(); c.translate((k - 1) * r * 0.7, (k % 2) * r * 0.2);
+        sh(9); c.beginPath(); c.arc(0, 0, r * 0.5, 0, P2); c.fillStyle = '#2d5a1c'; c.fill(); sh(0);
+        c.beginPath(); c.arc(0, 0, r * 0.44, 0, P2); c.fillStyle = ball(r * 0.44, '#f4f8d6', '#d2e39a', '#9fb85e'); c.fill();
+        c.fillStyle = 'rgba(240,245,200,0.9)';
+        for (let i = 0; i < 8; i++) { const a = i / 8 * P2; c.beginPath(); c.ellipse(Math.cos(a) * r * 0.2, Math.sin(a) * r * 0.2, r * 0.06, r * 0.03, a, 0, P2); c.fill(); }
+        c.restore();
+      }
+    },
+    avocado(r) {
+      sh(14); c.beginPath(); c.moveTo(0, -r * 1.1); c.bezierCurveTo(r * 0.55, -r * 1.1, r * 0.9, r * 0.2, 0, r * 0.95); c.bezierCurveTo(-r * 0.9, r * 0.2, -r * 0.55, -r * 1.1, 0, -r * 1.1);
+      c.fillStyle = '#243d12'; c.fill(); sh(0);
+      c.save(); c.scale(0.86, 0.9); c.beginPath(); c.moveTo(0, -r * 1.05); c.bezierCurveTo(r * 0.55, -r * 1.05, r * 0.9, r * 0.2, 0, r * 0.95); c.bezierCurveTo(-r * 0.9, r * 0.2, -r * 0.55, -r * 1.05, 0, -r * 1.05);
+      const gg = c.createRadialGradient(0, r * 0.2, r * 0.1, 0, r * 0.1, r); gg.addColorStop(0, '#f2eea0'); gg.addColorStop(0.6, '#c7d86a'); gg.addColorStop(1, '#6e9a2a'); c.fillStyle = gg; c.fill(); c.restore();
+      c.beginPath(); c.arc(0, r * 0.25, r * 0.34, 0, P2); c.fillStyle = ball(r * 0.34, '#c28a5a', '#7a4a22', '#3a1c08'); c.fill();
+    },
+    strawberry(r) {
+      sh(10); c.beginPath(); c.moveTo(0, r * 0.95); c.bezierCurveTo(-r * 1.1, r * 0.1, -r * 0.8, -r * 0.8, 0, -r * 0.7); c.bezierCurveTo(r * 0.8, -r * 0.8, r * 1.1, r * 0.1, 0, r * 0.95);
+      c.fillStyle = ball(r, '#ff7a7a', '#d8121e', '#5e0008'); c.fill(); sh(0);
+      c.fillStyle = 'rgba(255,225,120,0.8)';
+      for (let i = 0; i < 16; i++) { const x = R(-0.55, 0.55) * r, y = R(-0.45, 0.6) * r; c.fillRect(x, y, 3, 3); }
+      c.fillStyle = '#3f8a2a'; c.save(); c.translate(0, -r * 0.72); star(r * 0.45, r * 0.12, 6, 0); c.fill(); c.restore();
+    },
+    blueberry(r) {
+      sh(5); c.beginPath(); c.arc(0, 0, r, 0, P2); c.fillStyle = ball(r, '#8a9ad0', '#2c3a6e', '#0c1024'); c.fill(); sh(0);
+      c.fillStyle = 'rgba(15,20,40,0.8)'; star(r * 0.35, r * 0.12, 5, 0); c.fill();
+    },
+    olive(r) {
+      const green = rnd() < 0.5;
+      sh(5); c.beginPath(); c.ellipse(0, 0, r * 1.25, r * 0.9, 0, 0, P2); c.fillStyle = green ? ball(r, '#d4e07a', '#7a8f24', '#2e3a08') : ball(r, '#7a6a80', '#2a1f30', '#0a060c'); c.fill(); sh(0);
+      hi(-r * 0.4, -r * 0.3, r * 0.3, r * 0.12, 0.5);
+    },
+    nut(r) {
+      sh(6); wob(r, r * 0.9, 9, 0.18); c.fillStyle = ball(r, '#e0b27a', '#9a6a36', '#4a2c10'); c.fill(); sh(0);
+      c.strokeStyle = 'rgba(60,30,5,0.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -r * 0.8); c.lineTo(0, r * 0.8); c.stroke();
+      c.beginPath(); c.arc(-r * 0.4, 0, r * 0.3, 1, 5); c.stroke(); c.beginPath(); c.arc(r * 0.4, 0, r * 0.3, 4, 8); c.stroke();
+    },
+    leaf(r) {
+      const t = pick(['#3f8a2c', '#4f9a34', '#2f6e22', '#5aa83a']);
+      c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(0, -r * 0.55, r, 0); c.quadraticCurveTo(0, r * 0.55, -r, 0);
+      sh(6); c.fillStyle = t; c.fill(); sh(0);
+      c.save(); c.clip(); c.fillStyle = 'rgba(200,240,160,0.18)'; c.fillRect(-r, -r * 0.6, r * 2, r * 0.5); c.restore();
+      c.strokeStyle = 'rgba(220,255,190,0.45)'; c.lineWidth = r * 0.05; c.beginPath(); c.moveTo(-r * 0.95, 0); c.lineTo(r * 0.85, 0); c.stroke();
+    },
+    sprig(r) {
+      c.strokeStyle = '#4a7a2a'; c.lineWidth = r * 0.05; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(0, -r * 0.3, r, R(-0.2, 0.2) * r); c.stroke();
+      for (let i = 0; i < 10; i++) {
+        const t = i / 10, x = -r + t * 2 * r, y = -r * 0.6 * t * (1 - t), s = r * (0.28 - 0.12 * t);
+        for (const sd of [-1, 1]) {
+          c.save(); c.translate(x, y); c.rotate(sd * 0.9 + R(-0.2, 0.2)); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(s * 0.5, -s * 0.4, s, 0); c.quadraticCurveTo(s * 0.5, s * 0.4, 0, 0);
+          c.fillStyle = pick(['#3f8a2c', '#5aa83a', '#2f6e22']); sh(4); c.fill(); sh(0); c.restore();
+        }
+      }
+    },
+  };
+  // Größe je Sorte (Einheiten) und Häufigkeit
+  const BIG = [['ham', 120, 150], ['steak', 110, 140], ['cheese', 110, 150], ['bread', 95, 120], ['cabbage', 110, 140], ['pumpkin', 100, 130], ['cauliflower', 95, 120], ['grapes', 110, 140], ['salami', 110, 140]];
+  const MID = [['tomato', 38, 55, 3], ['apple', 45, 60, 3], ['orange', 42, 56, 2], ['pepper', 50, 66, 3], ['aubergine', 45, 60, 1], ['broccoli', 50, 66, 1], ['mushroom', 30, 42, 1], ['garlic', 30, 40, 1], ['onion', 38, 50, 1], ['carrot', 50, 64, 1], ['radish', 26, 34, 1], ['cucumber', 44, 56, 1], ['avocado', 44, 56, 1], ['strawberry', 28, 38, 2], ['citrusHalf', 38, 50, 1], ['roll', 40, 52, 1], ['sausage', 55, 70, 1], ['grapes', 55, 70, 1], ['cheese', 55, 70, 1], ['salami', 55, 70, 1], ['chili', 45, 60, 1]];
+  const SMALL = [['tomato', 16, 24, 3], ['blueberry', 10, 14, 2], ['olive', 11, 15, 2], ['nut', 13, 18, 1], ['radish', 15, 20, 1], ['strawberry', 16, 21, 1], ['chili', 24, 32, 1]];
+  const wlist = l => { const o = []; for (const e of l) for (let i = 0; i < (e[3] || 1); i++) o.push(e); return o; };
+  const MIDW = wlist(MID), SMALLW = wlist(SMALL);
+  // Rand: t = 0 an der Kante, 1 an der Innenkante des Rahmens
+  const bandT = (x, y) => Math.min(x / 480, (U - x) / 480, y / 275, (V - y) / 270);
+  const items = [];
+  const free = (x, y, r, k) => items.every(p => (p.x - x) ** 2 + (p.y - y) ** 2 > ((p.r + r) * k) ** 2);
+  const put = (kind, x, y, r) => { items.push({ kind, x, y, r, a: rnd() * P2 }); };
+  // große Stücke an den Enden und in regelmäßigen Abständen oben und unten
+  const big = BIG.slice();
+  for (let i = big.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [big[i], big[j]] = [big[j], big[i]]; }   // mischen, in jedem Browser gleich
+  let bi = 0;
+  const nextBig = () => big[bi++ % big.length];
+  for (const [x, y] of [[120, 180], [260, 520], [130, 850], [U - 130, 170], [U - 250, 520], [U - 140, 850]]) { const b = nextBig(); put(b[0], x + R(-40, 40), y + R(-40, 40), R(b[1], b[2])); }
+  for (let x = 640; x < U - 540; x += R(460, 580)) { const b = nextBig(); put(b[0], x, R(45, 110), R(b[1], b[2])); }
+  for (let x = 860; x < U - 540; x += R(460, 580)) { const b = nextBig(); put(b[0], x, V - R(45, 110), R(b[1], b[2])); }
+  // Kräuter und Blätter als Unterlage
+  const under = [];
+  for (let i = 0; i < 170; i++) {
+    const x = rnd() * U, y = rnd() * V, t = bandT(x, y);
+    if (t > 1.05 || rnd() > 1 - t * 0.5) continue;
+    under.push({ kind: rnd() < 0.55 ? 'sprig' : 'leaf', x, y, r: R(35, 70), a: rnd() * P2 });
+  }
+  // mittlere Stücke füllen den Rahmen
+  for (let i = 0; i < 7000; i++) {
+    const x = rnd() * U, y = rnd() * V, t = bandT(x, y);
+    if (t > 1 || rnd() < Math.pow(t, 1.8)) continue;
+    const m = pick(MIDW), r = R(m[1], m[2]) * (1.3 - 0.35 * t);
+    if (free(x, y, r, 0.7)) put(m[0], x, y, r);
+  }
+  // kleine Stücke in die Lücken und locker an die Innenkante
+  for (let i = 0; i < 1600; i++) {
+    const x = rnd() * U, y = rnd() * V, t = bandT(x, y);
+    if (t > 1.18 || (t > 0.8 && rnd() < (t - 0.8) * 2.4)) continue;
+    const m = pick(SMALLW), r = R(m[1], m[2]) * 1.15;
+    if (free(x, y, r, 0.9)) put(m[0], x, y, r);
+  }
+  const draw = it => {
+    c.save(); c.translate(it.x, it.y);
+    const round = !['aubergine', 'cheese', 'bread', 'sausage', 'carrot', 'chili', 'leaf', 'sprig', 'salami', 'cucumber', 'avocado', 'ham', 'steak', 'grapes', 'strawberry'].includes(it.kind);
+    rot = round ? 0 : (it.kind === 'grapes' || it.kind === 'strawberry' || it.kind === 'avocado' ? R(-0.6, 0.6) : it.a);
+    c.rotate(rot); D[it.kind](it.r); c.restore(); rot = 0;
+  };
+  under.forEach(draw);
+  items.forEach(draw);
+  // Streugut: Pfefferkörner, Kräuterflocken, Salz
+  for (let i = 0; i < 380; i++) {
+    const x = rnd() * U, y = rnd() * V, t = bandT(x, y);
+    if (t > 1.35 || t < 0.7 || rnd() < (t - 0.7) * 1.3) continue;
+    const k = rnd();
+    c.fillStyle = k < 0.4 ? 'rgba(20,14,10,0.9)' : k < 0.75 ? 'rgba(90,150,60,0.8)' : 'rgba(240,235,225,0.7)';
+    c.beginPath(); c.ellipse(x, y, R(2, 5), R(2, 5), 0, 0, P2); c.fill();
+  }
+  // leichte Vignette am Rand
+  g = c.createLinearGradient(0, 0, 0, V); g.addColorStop(0, 'rgba(0,0,0,0.25)'); g.addColorStop(0.08, 'rgba(0,0,0,0)'); g.addColorStop(0.92, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.25)');
+  c.fillStyle = g; c.fillRect(0, 0, U, V);
+  c.restore();
+  seed = s0;
+}
+function initBodyLook() {
+  if (M.alu) return;
+  const env = bodyEnv();
+  M.alu = std('#e3e8ed', 0.3, 0.75, { envMap:env, envMapIntensity:1.0 });
+  M.stainless = std('#eef1f4', 0.12, 1.0, { envMap:env, envMapIntensity:1.25 });
+  M.roof = std('#eceff2', 0.62, 0.04);
+  M.mud = std('#262a2e', 0.42, 0.1, { side:T.DoubleSide, envMap:env, envMapIntensity:0.45 });
+  M.flap = std('#0e1012', 0.92);
+  M.box = std('#16191c', 0.5, 0.2, { envMap:env, envMapIntensity:0.35 });
+  M.plate = std('#dfe3e6', 0.5, 0.1);
+  M.redTape = std('#b3151b', 0.4, 0.1, { emissive:'#4a0508' });
+  M.marker = new T.MeshBasicMaterial({ color:0xffa726 });
+  const stripes = (c, w, h) => {
+    c.fillStyle = '#f4f4f2'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#c8161d';
+    for (let x = -h; x < w + h; x += h * 2) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + h, h); c.lineTo(x + 2 * h, 0); c.lineTo(x + h, 0); c.fill(); }
+  };
+  const warn = canvasTex(256, 32, stripes, true); warn.repeat.set(3, 1);
+  M.warn = std('#ffffff', 0.5, 0.05, { map:warn });
+  // Hecktür: glatte Platte, Konturstreifen an der Außenkante, rot-weiße Warnmarkierung unten (Scharnierseite rechts)
+  M.doorSkin = std('#ffffff', 0.42, 0.08, { envMap:env, envMapIntensity:0.3, map:canvasTex(256, 512, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#e9e0d8'); g.addColorStop(1, '#d6cdc5');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(70,80,90,0.28)'; c.lineWidth = 3; c.strokeRect(6, 6, w - 12, h - 12);
+    const sy = h * 0.925, sh = h * 0.05;
+    c.save(); c.translate(0, sy); stripes(c, w, sh); c.restore();
+    c.fillStyle = '#c8161d'; c.fillRect(w - 20, 14, 11, sy - 20);
+    c.fillStyle = '#f39a1e'; c.fillRect(w - 44, sy - h * 0.13, 16, h * 0.11);
+  }) });
+  M.skin = std('#a0a0a0', 0.9, 0.0, { emissive:'#ffffff', emissiveIntensity:0.4 });   // bedruckte Folie, leicht selbstleuchtend: Motiv bleibt nachts auf beiden Seiten lesbar
+  LIV.proc = canvasTex(2048, 1024, paintFoodPanel);
+}
+// Seitenbild auf eine Kofferwand legen: neutrales Motiv gestreckt, eigenes Bild füllend (Rand wird abgeschnitten)
+function applySkin(s) {
+  const tex = LIV.own || LIV.proc;
+  let u0 = 0, u1 = 1, v0 = 0, v1 = 1;
+  if (LIV.own) {
+    const pa = s.userData.pw / s.userData.ph, ia = LIV.aspect;
+    if (ia > pa) { u0 = (1 - pa / ia) / 2; u1 = 1 - u0; } else { v0 = (1 - ia / pa) / 2; v1 = 1 - v0; }
+  }
+  const uv = s.geometry.attributes.uv;
+  uv.setXY(0, u0, v1); uv.setXY(1, u1, v1); uv.setXY(2, u0, v0); uv.setXY(3, u1, v0); uv.needsUpdate = true;
+  s.material.map = tex; s.material.emissiveMap = tex; s.material.needsUpdate = true;
+}
+// Eigenes Seitenbild (Image oder Canvas), null = neutrales Motiv. Höchstens 2048 × 1024 Pixel.
+function setLivery(img) {
+  if (!renderer) return;
+  initBodyLook();
+  if (LIV.own) { LIV.own.dispose(); LIV.own = null; }
+  const iw = img ? img.naturalWidth || img.width : 0, ih = img ? img.naturalHeight || img.height : 0;
+  if (iw && ih) {
+    const k = Math.min(1, 2048 / iw, 1024 / ih), cw = Math.max(1, Math.round(iw * k)), chh = Math.max(1, Math.round(ih * k));
+    LIV.own = canvasTex(cw, chh, c => c.drawImage(img, 0, 0, cw, chh));
+    LIV.aspect = iw / ih;
+  }
+  for (const s of three.skins || []) applySkin(s);
+  requestRender();
+}
 function buildUnit(U) {
+  initBodyLook();
   const grp = new T.Group();
   grp.position.set(U.X0, U.floorY, 0);
   const L = U.L, W = U.W, H = U.H, K = U.K;
@@ -1344,32 +2076,93 @@ function buildUnit(U) {
   floor.userData.unit = U.id; grp.add(floor); three.floors.push(floor);
   const grid = gridLines(U); grp.add(grid); three.grids[U.id] = grid;
   grp.add(mesh(bx(L + K.wallF + K.wallR, 0.14, W + 0.12, -L / 2 + (K.wallF - K.wallR) / 2, -0.07, 0), M.floorSide));
-  const mkWall = (geo, normal, kind, pos, parent) => {
-    const mat = M.body.clone(); mat.transparent = true;
+  const mkWall = (geo, normal, kind, pos, parent, base) => {
+    const mat = (base || M.body).clone(); mat.transparent = true; mat.userData.own = true;
     const m = new T.Mesh(geo, mat); m.position.copy(pos); m.receiveShadow = true;
-    m.userData = { normal:new T.Vector3(...normal), kind, base:pos.clone() };
+    m.userData = { normal:new T.Vector3(...normal), kind, base:pos.clone(), skins:[] };
     (parent || grp).add(m); three.walls.push(m); return m;
   };
-  const extL = L + K.wallF + K.wallR, cx = -L / 2 + (K.wallF - K.wallR) / 2;
-  mkWall(new T.BoxGeometry(extL, H + 0.1, 0.06), [0, 0, -1], 'left', new T.Vector3(cx, H / 2 + 0.03, -W / 2 - 0.03));
-  mkWall(new T.BoxGeometry(extL, H + 0.1, 0.06), [0, 0, 1], 'right', new T.Vector3(cx, H / 2 + 0.03, W / 2 + 0.03));
-  mkWall(new T.BoxGeometry(extL, 0.1, W + 0.12), [0, 1, 0], 'roof', new T.Vector3(cx, H + 0.05, 0));
+  // Anbauteil einer Wand (Seitenbild, Profile, Beschläge): blendet in updateWalls mit der Wand aus
+  const onWall = (wall, geo, base) => {
+    const mat = base.clone(); mat.transparent = true; mat.userData.own = true;
+    const m = new T.Mesh(geo, mat); m.receiveShadow = !mat.isMeshBasicMaterial;
+    wall.add(m); wall.userData.skins.push(m); return m;
+  };
+  const extL = L + K.wallF + K.wallR, cx = -L / 2 + (K.wallF - K.wallR) / 2, yc = H / 2 + 0.03;
+  const sides = [
+    mkWall(new T.BoxGeometry(extL, H + 0.1, 0.06), [0, 0, -1], 'left', new T.Vector3(cx, yc, -W / 2 - 0.03)),
+    mkWall(new T.BoxGeometry(extL, H + 0.1, 0.06), [0, 0, 1], 'right', new T.Vector3(cx, yc, W / 2 + 0.03)),
+  ];
+  mkWall(new T.BoxGeometry(extL, 0.1, W + 0.12), [0, 1, 0], 'roof', new T.Vector3(cx, H + 0.05, 0), null, M.roof);
+  // Seitenwände: Seitenbild zwischen Dach- und Bodenprofil, vorn Eckrunge (hinten sitzt der Heckrahmen)
+  sides.forEach((wall, i) => {
+    const o = i ? 1 : -1, ly = y => y - yc;
+    const pw = extL - 0.21, ph = H - 0.1;
+    const pg = new T.PlaneGeometry(pw, ph);
+    if (o < 0) pg.rotateY(Math.PI);
+    pg.translate(-0.005, ly(0.06 + ph / 2), o * 0.034);
+    const sk = onWall(wall, pg, M.skin); sk.userData.pw = pw; sk.userData.ph = ph;
+    applySkin(sk); three.skins.push(sk);
+    const tr = [
+      bx(extL + 0.02, 0.16, 0.038, 0, ly(H + 0.04), o * 0.039),          // Dachprofil
+      bx(extL + 0.02, 0.03, 0.052, 0, ly(H + 0.105), o * 0.046),         // Tropfkante
+      bx(extL + 0.02, 0.24, 0.038, 0, ly(-0.06), o * 0.039),             // Bodenprofil
+      bx(extL + 0.02, 0.035, 0.06, 0, ly(-0.162), o * 0.05),             // Scheuerleiste
+      bx(0.12, H + 0.3, 0.046, extL / 2 - 0.05, ly(H / 2 - 0.03), o * 0.043),   // Eckrunge vorn, Seite
+      bx(0.03, H + 0.3, 0.12, extL / 2 + 0.005, ly(H / 2 - 0.03), o * 0.005),   // Eckrunge vorn, Stirn
+    ];
+    onWall(wall, merge(tr), M.alu);
+    // Seitenmarkierungsleuchten im Bodenprofil
+    const mk = [], n = Math.max(2, Math.round(extL / 2.3));
+    for (let k = 0; k < n; k++) mk.push(bx(0.07, 0.035, 0.012, -extL / 2 + 0.35 + k * (extL - 0.7) / (n - 1), ly(-0.06), o * 0.062));
+    onWall(wall, merge(mk), M.marker);
+  });
   const P = PRESET(state.preset);
+  let front;
   if (U.kind === 'trailer' && P.durchlade) {
     // Stirnklappe des Durchlade-Anhängers, klappt beim Aufklappen als Brücke nach vorn
     const piv = new T.Group(); piv.position.set(K.wallF, 0, 0); grp.add(piv);
-    mkWall(new T.BoxGeometry(K.wallF, H, W), [1, 0, 0], 'front', new T.Vector3(-K.wallF / 2, H / 2, 0), piv);
+    front = mkWall(new T.BoxGeometry(K.wallF, H, W), [1, 0, 0], 'front', new T.Vector3(-K.wallF / 2, H / 2, 0), piv);
     three.flaps.push(piv);
   } else {
-    mkWall(new T.BoxGeometry(K.wallF, H + 0.1, W + 0.12), [1, 0, 0], 'front', new T.Vector3(K.wallF / 2, H / 2 + 0.03, 0));
+    front = mkWall(new T.BoxGeometry(K.wallF, H + 0.1, W + 0.12), [1, 0, 0], 'front', new T.Vector3(K.wallF / 2, H / 2 + 0.03, 0));
   }
+  // Stirnwand: Rahmen oben und unten
+  const fp = front.geometry.parameters;
+  onWall(front, merge([
+    bx(0.035, 0.15, fp.depth, fp.width / 2 + 0.012, fp.height / 2 - 0.045, 0),
+    bx(0.035, 0.24, fp.depth, fp.width / 2 + 0.012, -fp.height / 2 - 0.04, 0),
+  ]), M.alu);
+  // Hecktüren mit Verschlussstangen und Scharnieren
+  const dt = K.wallR * 0.8, dw = W / 2;
   for (const side of [-1, 1]) {
     const piv = new T.Group(); piv.position.set(-L - K.wallR / 2, 0, side * W / 2); piv.userData = { side };
     grp.add(piv);
-    mkWall(new T.BoxGeometry(K.wallR * 0.8, H, W / 2), [-1, 0, 0], 'door', new T.Vector3(0, H / 2, -side * W / 4), piv);
+    const door = mkWall(new T.BoxGeometry(dt, H, dw), [-1, 0, 0], 'door', new T.Vector3(0, H / 2, -side * W / 4), piv);
     three.doors.push(piv);
-    grp.add(new T.Mesh(bx(0.05, H, 0.05, -L - K.wallR, H / 2, side * (W / 2 + 0.02)), M.steel));
+    const sg = new T.PlaneGeometry(dw - 0.01, H - 0.01); sg.rotateY(-Math.PI / 2); sg.translate(-dt / 2 - 0.002, 0, 0);
+    if (side < 0) { const uv = sg.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setX(k, 1 - uv.getX(k)); }
+    onWall(door, sg, M.doorSkin);
+    const hw = [], xo = -dt / 2 - 0.026, dy = y => y - H / 2;
+    for (const f of [0.13, 0.62]) {
+      const z = -side * dw / 2 + side * f * dw;
+      hw.push(cyl(0.017, H - 0.1, xo, 0, z, 'y', 8));
+      hw.push(bx(0.045, 0.08, 0.07, xo + 0.008, dy(H - 0.07), z), bx(0.045, 0.08, 0.07, xo + 0.008, dy(0.07), z));   // Riegel
+      hw.push(bx(0.03, 0.42, 0.04, xo - 0.028, dy(0.92), z), bx(0.05, 0.05, 0.05, xo - 0.012, dy(1.12), z));       // Hebel
+      hw.push(bx(0.035, 0.06, 0.1, xo + 0.005, dy(0.7), z + side * 0.02));
+    }
+    for (const y of [0.22, 0.82, 1.42, 2.02]) hw.push(bx(0.034, 0.09, 0.19, -dt / 2 - 0.016, dy(y), side * dw / 2 - side * 0.09));   // Scharniere
+    onWall(door, merge(hw), M.alu);
   }
+  // Heckrahmen: Eckrungen, Dachquerträger und Schwelle, rote Konturmarkierung
+  const xr = -L - K.wallR;
+  const port = [bx(0.13, 0.17, W + 0.22, xr + 0.035, H + 0.035, 0), bx(0.13, 0.22, W + 0.22, xr + 0.035, -0.07, 0)];
+  const tape = [bx(0.004, 0.05, W + 0.1, xr - 0.032, H + 0.07, 0)];
+  for (const s of [-1, 1]) {
+    port.push(bx(0.13, H + 0.3, 0.1, xr + 0.035, H / 2 - 0.03, s * (W / 2 + 0.06)));
+    tape.push(bx(0.004, H - 0.1, 0.05, xr - 0.032, H / 2 + 0.02, s * (W / 2 + 0.07)));
+  }
+  grp.add(mesh(merge(port), M.alu), mesh(merge(tape), M.redTape, false));
   const edges = new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(extL, H + 0.2, W + 0.12)), M.bodyEdge);
   edges.position.set(cx, H / 2 + 0.03, 0); grp.add(edges);
   if (U.wall) {
@@ -1382,51 +2175,98 @@ function buildUnit(U) {
     grp.add(mesh(bx(0.03, 0.03, W - 0.1, -U.wall.x + 0.02, 0.015, 0), M.steel));
   }
 
-  // Unterbau in Weltkoordinaten
+  // Unterbau in Weltkoordinaten, Teile gleichen Materials werden zusammengefasst
   const ch = new T.Group(); ch.position.set(-U.X0, -U.floorY, 0);
+  const parts = new Map();
+  const put = (mat, ...gs) => { if (!parts.has(mat)) parts.set(mat, []); parts.get(mat).push(...gs); };
   const frameTop = U.floorY - 0.16;
   const railFrom = U.kind === 'motor' ? -0.35 : U.extFront - 0.2, railTo = U.extRear + 0.2;
-  for (const z of [-0.44, 0.44]) ch.add(mesh(bx(railFrom - railTo, 0.26, 0.09, (railFrom + railTo) / 2, frameTop - 0.13, z), M.dark));
-  ch.add(mesh(bx(0.12, 0.14, 2.35, U.extRear + 0.2, 0.62, 0), M.dark));
-  for (const z of [-0.95, 0.95]) ch.add(mesh(bx(0.05, 0.1, 0.22, U.extRear + 0.16, 0.95, z), M.redLight, false));
+  for (const z of [-0.44, 0.44]) put(M.dark, bx(railFrom - railTo, 0.26, 0.09, (railFrom + railTo) / 2, frameTop - 0.13, z));
+  // Heck: Unterfahrschutz mit Leuchten und leerem Kennzeichenhalter
+  const xb = U.kind === 'trailer' ? U.extRear + 0.06 : U.extRear + 0.2, xf = xb - 0.05;
+  put(M.alu, bx(0.1, 0.13, 2.36, xb, 0.52, 0));
+  for (const z of [-0.44, 0.44]) put(M.dark, bx(0.07, frameTop - 0.26 - 0.56, 0.07, xb + 0.05, (frameTop - 0.26 + 0.56) / 2, z));
+  for (const s of [-1, 1]) {
+    put(M.darker, bx(0.07, 0.17, 0.46, xf + 0.02, 0.665, s * 0.84));
+    put(M.redLight, bx(0.012, 0.11, 0.2, xf - 0.018, 0.665, s * 0.82));
+    put(M.amber, bx(0.012, 0.11, 0.1, xf - 0.018, 0.665, s * 0.99));
+    put(M.light, bx(0.012, 0.11, 0.07, xf - 0.018, 0.665, s * 0.665));
+  }
+  put(M.darker, bx(0.012, 0.13, 0.54, xf - 0.004, 0.665, 0.34));
+  put(M.plate, bx(0.012, 0.11, 0.5, xf - 0.01, 0.665, 0.34));
+  // Kotflügel als Bogen über dem Rad, außen z0..z1
+  const mudguard = (x, wr, r, z0, z1) => {
+    for (const s of [-1, 1]) {
+      const g = new T.CylinderGeometry(r, r, z1 - z0, 22, 1, true, Math.PI / 2 + 0.16, Math.PI - 0.32);
+      g.rotateX(Math.PI / 2); g.translate(x, wr, s * (z0 + z1) / 2); put(M.mud, g);
+    }
+  };
+  const flaps = (x, z0, z1) => { for (const s of [-1, 1]) put(M.flap, bx(0.02, 0.62, z1 - z0, x, 0.52, s * (z0 + z1) / 2)); };
+  // Seitlicher Unterfahrschutz: zwei Alu-Holme mit Haltern, xa vorn bis xe hinten
+  const guard = (s, xa, xe, mid) => {
+    const len = xa - xe, xm = (xa + xe) / 2, z = s * 1.2;
+    for (const y of [0.5, 0.88]) put(M.alu, bx(len, 0.1, 0.035, xm, y, z)), put(M.dark, bx(len - 0.02, 0.012, 0.004, xm, y, z + s * 0.018));
+    for (const x of [xa - 0.06, xe + 0.06].concat(mid != null ? [mid] : len > 2.6 ? [xm] : [])) put(M.alu, bx(0.05, frameTop - 0.44, 0.03, x, (frameTop + 0.44) / 2, z - s * 0.03));
+  };
   if (U.kind === 'motor') {
     axle(ch, U.XF, 0.53, 0.38, false, 1.03);
     axle(ch, U.XD, 0.53, 0.3, true, 0.92);
     axle(ch, U.XT, 0.53, 0.38, false, 1.03);
-    ch.add(mesh(cyl(0.34, 1.35, (U.XF + U.XD) / 2 - 0.2, 0.82, -0.96, 'x', 20), M.lng));      // LNG-Tank links
-    ch.add(mesh(bx(0.5, 0.45, 0.42, U.XD + 0.75, 0.85, 0.98), M.steel));
-    for (const x of [U.XD, U.XT]) ch.add(mesh(bx(0.8, 0.06, 2.46, x, 1.12, 0), M.dark));
+    // LNG-Tank links: Edelstahl mit gewölbten Böden und zwei Spannbändern
+    const tx = (U.XF + U.XD) / 2 - 0.2, tr = 0.32, tl = 1.35, ty = 0.74, tz = -0.84;
+    put(M.stainless, cyl(tr, tl, tx, ty, tz, 'x', 32));
+    for (const s of [-1, 1]) {
+      const d = new T.SphereGeometry(tr, 24, 12); d.scale(0.3, 1, 1); d.translate(tx + s * tl / 2, ty, tz); put(M.stainless, d);
+      put(M.dark, cyl(tr + 0.012, 0.06, tx + s * 0.42, ty, tz, 'x', 32));
+    }
+    // Batteriekasten links hinter dem Fahrerhaus
+    put(M.box, bx(0.7, 0.55, 0.62, -2.92, 0.75, -0.9));
+    put(M.steel, bx(0.64, 0.03, 0.02, -2.92, 0.94, -1.215), bx(0.16, 0.04, 0.03, -2.92, 0.62, -1.22));
+    guard(-1, -3.32, U.XD + 0.68);
+    guard(1, -2.6, U.XD + 0.68, -3.75);
+    mudguard(U.XD, 0.53, 0.62, 0.58, 1.26); mudguard(U.XT, 0.53, 0.62, 0.58, 1.26);
+    flaps(U.XT - 0.68, 0.6, 1.24);
+    put(M.steel, bx(0.5, 0.45, 0.42, U.XD + 0.75, 0.85, 0.98));
+    put(M.dark, bx(0.3, 0.26, 0.34, U.XC + 0.08, 0.72, 0));                 // Anhängekupplung
     // Frigoblock-Aggregat unterflur, rechts zwischen den Achsen
     const ux = (U.XF + U.XD) / 2 - 0.5;
-    ch.add(mesh(bx(1.1, 0.56, 0.62, ux, U.floorY - 0.52, 0.86), M.unit));
-    ch.add(mesh(bx(0.9, 0.36, 0.02, ux, U.floorY - 0.52, 1.175), M.grille, false));
+    put(M.unit, bx(1.1, 0.56, 0.62, ux, U.floorY - 0.52, 0.86));
+    put(M.grille, bx(0.9, 0.36, 0.02, ux, U.floorY - 0.52, 1.175));
     addLed(ch, U, ux + 0.3, U.floorY - 0.46, 1.18);
     if (U.wall) addLed(ch, U, ux - 0.25, U.floorY - 0.46, 1.18, 'k');
   } else if (U.kind === 'trailer') {
     axle(ch, U.XA + 0.655, 0.5, 0.40, false, 1.04);
     axle(ch, U.XA - 0.655, 0.5, 0.40, false, 1.04);
-    for (const z of [-1, 1]) ch.add(mesh(bx(2.3, 0.05, 0.5, U.XA, 1.06, z * 1.03), M.dark));
-    const xc = U.XC, xf = U.extFront - 0.3;
+    mudguard(U.XA + 0.655, 0.5, 0.59, 0.8, 1.27); mudguard(U.XA - 0.655, 0.5, 0.59, 0.8, 1.27);
+    flaps(U.XA - 0.655 - 0.66, 0.8, 1.26);
+    guard(-1, U.extFront - 0.4, U.XA + 0.655 + 0.66);
+    guard(1, U.extFront - 0.4, U.XA + 0.655 + 0.66);
+    // Deichsel als dunkles A-Gestell mit Zugöse
+    const xc = U.XC, xd = U.extFront - 0.3;
     for (const z of [-0.45, 0.45]) {
-      const len = Math.hypot(xc - xf, z); const b = mesh(new T.BoxGeometry(len, 0.14, 0.1), M.dark);
-      b.position.set((xc + xf) / 2, 0.72, z / 2); b.rotation.y = -Math.atan2(z, xf - xc); ch.add(b);
+      const len = Math.hypot(xc - xd, z), g = new T.BoxGeometry(len, 0.14, 0.1);
+      g.rotateY(-Math.atan2(z, xd - xc)); g.translate((xc + xd) / 2, 0.72, z / 2); put(M.dark, g);
     }
-    ch.add(mesh(cyl(0.09, 0.14, xc, 0.72, 0, 'y', 12), M.steel));
-    // Unterflur-Kühlaggregat und hochgeklappte Ladebordwand
+    put(M.dark, bx(0.12, 0.12, 1.0, xd, 0.72, 0));
+    put(M.steel, cyl(0.09, 0.14, xc, 0.72, 0, 'y', 12));
+    // Unterflur-Kühlaggregat und hochgeklappte Ladebordwand mit Warnmarkierung
     const ux = U.extFront - 1.2;
-    ch.add(mesh(bx(1.3, 0.62, 1.5, ux, U.floorY - 0.55, 0), M.unit));
-    ch.add(mesh(bx(1.1, 0.4, 0.02, ux, U.floorY - 0.55, 0.76), M.grille, false));
+    put(M.unit, bx(1.3, 0.62, 1.5, ux, U.floorY - 0.55, 0));
+    put(M.grille, bx(1.1, 0.4, 0.02, ux, U.floorY - 0.55, 0.76));
     addLed(ch, U, ux - 0.45, U.floorY - 0.55, 0.77);
-    ch.add(mesh(bx(0.08, 0.5, 2.4, U.extRear - 0.05, U.floorY - 0.3, 0), M.steel));
+    put(M.steel, bx(0.08, 0.4, 2.4, U.extRear - 0.05, U.floorY - 0.24, 0));
+    const wp = new T.PlaneGeometry(2.3, 0.1); wp.rotateY(-Math.PI / 2); wp.translate(U.extRear - 0.092, U.floorY - 0.37, 0); put(M.warn, wp);
   } else {
     for (let k = -1; k <= 1; k++) axle(ch, U.XA + k * 1.31, 0.5, 0.40, false, 1.04);
-    for (const z of [-1, 1]) ch.add(mesh(bx(3.9, 0.05, 0.5, U.XA, 1.06, z * 1.03), M.dark));
-    for (const z of [-0.8, 0.8]) ch.add(mesh(bx(0.12, U.floorY - 0.3, 0.12, U.XK - 1.6, (U.floorY - 0.3) / 2, z), M.steel));
+    for (let k = -1; k <= 1; k++) mudguard(U.XA + k * 1.31, 0.5, 0.59, 0.8, 1.27);
+    flaps(U.XA - 1.31 - 0.66, 0.8, 1.26);
+    for (const z of [-0.8, 0.8]) put(M.steel, bx(0.12, U.floorY - 0.3, 0.12, U.XK - 1.6, (U.floorY - 0.3) / 2, z));
     const uy = U.floorY + H - 0.7;
-    ch.add(mesh(bx(0.5, 1.1, 1.95, U.extFront + 0.25, uy, 0), M.unit));
-    ch.add(mesh(bx(0.03, 0.8, 1.5, U.extFront + 0.51, uy, 0), M.grille, false));
+    put(M.unit, bx(0.5, 1.1, 1.95, U.extFront + 0.25, uy, 0));
+    put(M.grille, bx(0.03, 0.8, 1.5, U.extFront + 0.51, uy, 0));
     addLed(ch, U, U.extFront + 0.25, uy, 0.99);
   }
+  for (const [mat, gs] of parts) ch.add(mesh(merge(gs), mat, !mat.isMeshBasicMaterial && mat !== M.grille));
   grp.add(ch);
   // Sperrbalken
   const bar = new T.Group();
@@ -1496,6 +2336,7 @@ function disposeTree(root) {
   root.traverse(o => {
     if (o.userData && o.userData.isItem) return;
     if (o.geometry && !shared.has(o.geometry)) o.geometry.dispose();
+    if (o.material && o.material.userData && o.material.userData.own) o.material.dispose();
   });
 }
 function rebuildVehicle() {
@@ -1508,7 +2349,7 @@ function rebuildVehicle() {
   if (three.vehicle) { scene.remove(three.vehicle); disposeTree(three.vehicle); }
   if (three.unitGroups.r) { scene.remove(three.unitGroups.r); disposeTree(three.unitGroups.r); }
   three.walls = []; three.floors = []; three.doors = []; three.flaps = []; three.unitGroups = {};
-  three.bars = {}; three.leds = {}; three.fronts = {}; three.grids = {};
+  three.bars = {}; three.leds = {}; three.fronts = {}; three.grids = {}; three.skins = [];
   const veh = new T.Group();
   const head = new T.Group();
   if (G.cab || G.tractor) {
@@ -1541,6 +2382,89 @@ function resetCarrierMeshes() {
   three.meshes.forEach(m => m.parent && m.parent.remove(m));
   three.meshes.clear(); three.hit = [];
 }
+// Quader mit Texturbereich je Seite (Atlas). R: { nx, px, ny, py, nz, pz, def } als [u0, v0, u1, v1]
+function boxUV(sx, sy, sz, cx, cy, cz, R) {
+  const g = new T.BoxGeometry(sx, sy, sz);
+  const pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i) / sx + 0.5, y = pos.getY(i) / sy + 0.5, z = pos.getZ(i) / sz + 0.5;
+    const nx = nor.getX(i), ny = nor.getY(i), nz = nor.getZ(i);
+    let k, s, t = y;
+    if (nx < -0.5) { k = 'nx'; s = z; } else if (nx > 0.5) { k = 'px'; s = 1 - z; }
+    else if (Math.abs(nz) > 0.5) { k = nz > 0 ? 'pz' : 'nz'; s = x; }     // beide Seiten gleich: Griffmulde hinten
+    else { k = ny > 0 ? 'py' : 'ny'; s = x; t = 1 - z; }
+    const r = R[k] || R.def;
+    uv.setXY(i, r[0] + s * (r[2] - r[0]), r[1] + t * (r[3] - r[1]));
+  }
+  g.translate(cx, cy, cz);
+  return g;
+}
+// Isotainer-Atlas 1024 × 1024: Tür oben | Feld unten | Seite; 'plain' = glatte Fläche für verdeckte Seiten
+const ISO_UV = (() => {
+  const r = (x0, y0, x1, y1) => [x0 / 1024, 1 - y1 / 1024, x1 / 1024, 1 - y0 / 1024];
+  return { door:r(0, 0, 512, 600), low:r(0, 600, 512, 1024), side:r(512, 0, 1024, 1024), plain:r(120, 700, 400, 920) };
+})();
+// Paneel-Material je Farbe. Graue Paneele (z. B. '#C9D1D8') werden gebürstetes Alu, sonst glänzender Kunststoff.
+const isoMats = {};
+function isoPanelMat(c) {
+  const panel = c.panel || '#4DAEE3';
+  const rgb = [1, 3, 5].map(i => parseInt(panel.slice(i, i + 2), 16) / 255);
+  const mx = Math.max(...rgb), mn = Math.min(...rgb);
+  const alu = c.finish ? c.finish === 'alu' : mx - mn < 0.12 && (mx + mn) / 2 < 0.85;
+  const key = panel + (alu ? ':alu' : '');
+  if (isoMats[key]) return isoMats[key];
+  let sd = 9;
+  const rand = () => (sd = sd * 16807 % 2147483647) / 2147483647;     // eigene Folge, rnd() bleibt unberührt
+  const map = canvasTex(1024, 1024, (x, W, Hh) => {
+    const rr = (px, py, pw, ph, r) => { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + pw, py, px + pw, py + ph, r); x.arcTo(px + pw, py + ph, px, py + ph, r); x.arcTo(px, py + ph, px, py, r); x.arcTo(px, py, px + pw, py, r); x.closePath(); };
+    x.fillStyle = panel; x.fillRect(0, 0, W, Hh);
+    if (alu) {
+      // Bürststrich waagerecht
+      for (let i = 0; i < 9000; i++) {
+        x.fillStyle = rand() < 0.55 ? `rgba(255,255,255,${0.03 + rand() * 0.05})` : `rgba(40,50,60,${0.015 + rand() * 0.035})`;
+        x.fillRect(rand() * W - 120, rand() * Hh, 60 + rand() * 360, 1);
+      }
+    } else {
+      for (let i = 0; i < 3000; i++) { x.fillStyle = `rgba(255,255,255,${rand() * 0.05})`; x.fillRect(rand() * W, rand() * Hh, 2, 2); }
+    }
+    // jedes Feld: oben etwas heller, zum Rahmen hin dunkler
+    for (const [fx, fy, fw, fh] of [[0, 0, 512, 600], [0, 600, 512, 424], [512, 0, 512, 1024]]) {
+      const g = x.createLinearGradient(0, fy, 0, fy + fh);
+      g.addColorStop(0, 'rgba(255,255,255,.12)'); g.addColorStop(0.55, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.07)');
+      x.fillStyle = g; x.fillRect(fx, fy, fw, fh);
+      x.strokeStyle = 'rgba(0,0,0,.08)'; x.lineWidth = 18; x.strokeRect(fx, fy, fw, fh);
+      x.strokeStyle = 'rgba(0,0,0,.16)'; x.lineWidth = 6; x.strokeRect(fx, fy, fw, fh);
+    }
+    // Tür: erhabenes Feld (Licht von oben links)
+    const plateau = () => rr(40, 58, 432, 296, 26);
+    x.save(); plateau(); x.rect(W, 0, -W, Hh); x.clip('evenodd');                // außen: Schlagschatten unten rechts
+    x.shadowColor = 'rgba(0,0,0,.30)'; x.shadowBlur = 7; x.shadowOffsetX = 3 - 2000; x.shadowOffsetY = 5;
+    x.translate(2000, 0); plateau(); x.fillStyle = '#000'; x.fill(); x.restore();
+    x.save(); plateau(); x.clip();                                                  // innen: Lichtkante oben links
+    x.filter = 'blur(1.5px)'; x.translate(3, 3); plateau(); x.strokeStyle = 'rgba(255,255,255,.42)'; x.lineWidth = 6; x.stroke(); x.restore();
+    x.save(); plateau(); x.fillStyle = 'rgba(255,255,255,.04)'; x.fill(); x.restore();
+    // Schild mit vier Schrauben
+    x.save(); x.shadowColor = 'rgba(0,0,0,.35)'; x.shadowBlur = 5; x.shadowOffsetX = 3; x.shadowOffsetY = 4;
+    const pg = x.createLinearGradient(0, 80, 0, 205); pg.addColorStop(0, '#e3e6e8'); pg.addColorStop(1, '#c3c8cc');
+    x.fillStyle = pg; x.fillRect(170, 80, 158, 125); x.restore();
+    x.strokeStyle = '#9ba3a9'; x.lineWidth = 2; x.strokeRect(171, 81, 156, 123);
+    x.fillStyle = '#6f777d'; for (const [sx, sy] of [[180, 90], [318, 90], [180, 195], [318, 195]]) { x.beginPath(); x.arc(sx, sy, 3.2, 0, Math.PI * 2); x.fill(); }
+    // Drahtfach für Lieferpapiere (U-förmig, 5 Spalten)
+    x.save(); x.shadowColor = 'rgba(0,0,0,.4)'; x.shadowBlur = 3; x.shadowOffsetX = 4; x.shadowOffsetY = 5;
+    x.strokeStyle = '#111416'; x.lineWidth = 4; x.lineCap = 'round'; x.beginPath();
+    const gx = [148, 188, 228, 268, 308, 348], gTop = 318, gMid = 386, gBot = 498;
+    for (const [i, xx] of gx.entries()) { x.moveTo(xx, i < 2 || i > 3 ? gTop : gMid); x.lineTo(xx, gBot); }
+    for (const yy of [gMid, 442, gBot]) { x.moveTo(gx[0], yy); x.lineTo(gx[5], yy); }
+    x.moveTo(gx[0], gTop); x.lineTo(gx[1], gTop); x.moveTo(gx[4], gTop); x.lineTo(gx[5], gTop);
+    x.stroke(); x.restore();
+    // Seite: Griffmulde hinten, vertieft (Schatten oben links, Licht unten rechts)
+    const grip = () => rr(930, 372, 46, 92, 20);
+    x.save(); grip(); x.fillStyle = 'rgba(0,0,0,.16)'; x.fill(); x.clip();
+    x.filter = 'blur(2px)'; x.translate(4, 5); grip(); x.strokeStyle = 'rgba(0,0,0,.4)'; x.lineWidth = 12; x.stroke();
+    x.translate(-7, -9); grip(); x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 8; x.stroke(); x.restore();
+  });
+  return (isoMats[key] = alu ? std('#ffffff', 0.3, 0.3, { map }) : std('#ffffff', 0.3, 0.02, { map }));
+}
 function carrierParts(c) {
   const key = c.id + ':' + c.vkey;
   if (modelCache[key]) return modelCache[key];
@@ -1570,9 +2494,49 @@ function carrierParts(c) {
     }
     top = goods.y + goods.h;
   } else if (c.model === 'iso') {
-    castors(0.1, 0.16);
-    add(M.iso, [bx(d - 0.02, h - 0.2, w - 0.02, 0, 0.2 + (h - 0.2) / 2, 0)]);
-    add(M.isoTrim, [bx(d, 0.05, w, 0, 0.19, 0), bx(d, 0.05, w, 0, h - 0.025, 0)]);
+    // Isotainer: Alu-Vierkantrahmen, gedämmte Paneele, dunkles Schlossband mit Bügelgriff. Tür zur Hecktür (−x).
+    // Alles bleibt innerhalb d × w × h, damit dicht gestellte Behälter nicht ineinander ragen.
+    const yb = 0.15, p = 0.034, pb = 0.04, xf = -d / 2, H = h - yb;
+    const y0 = h * 0.4, y1 = Math.min(h - 0.4, y0 + 0.27), hb = y1 - y0;   // Schlossband unten/oben
+    const frame = [], chrome = [], wheels = [], U = ISO_UV;
+    // vier Lenkrollen
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const x = sx * (d / 2 - 0.075), z = sz * (w / 2 - 0.07);
+      wheels.push(cyl(0.062, 0.032, x, 0.062, z, 'z', 16));
+      frame.push(cyl(0.02, 0.05, x, 0.062, z, 'z', 8), bx(0.05, 0.075, 0.006, x, 0.09, z - 0.022), bx(0.05, 0.075, 0.006, x, 0.09, z + 0.022),
+        bx(0.05, 0.01, 0.05, x, 0.128, z), cyl(0.018, 0.012, x, 0.139, z, null, 10), bx(0.08, 0.006, 0.08, x, yb - 0.003, z));
+    }
+    // Rahmen: Eckpfosten, Ring oben und unten, Profile ober- und unterhalb des Bands
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) frame.push(bx(p, H, p, sx * (d / 2 - p / 2), yb + H / 2, sz * (w / 2 - p / 2)));
+    for (const [y, t] of [[yb + pb / 2, pb], [h - p / 2, p]]) {
+      for (const sz of [-1, 1]) frame.push(bx(d, t, p, 0, y, sz * (w / 2 - p / 2)));
+      for (const sx of [-1, 1]) frame.push(bx(p, t, w - 2 * p, sx * (d / 2 - p / 2), y, 0));
+    }
+    for (const y of [y0, y1]) frame.push(bx(0.026, 0.026, w - 2 * p, xf + 0.013, y, 0));
+    for (const sz of [-1, 1]) {
+      const z = sz * (w / 2 - 0.006);
+      frame.push(bx(0.02, H - pb - p, 0.012, xf + p + 0.016, yb + pb + (H - pb - p) / 2, z));      // Türpfosten
+      frame.push(bx(d - 2 * p, 0.04, 0.012, 0, y0 + hb * 0.55, z), bx(d - 2 * p, 0.026, 0.012, 0, y0 + hb * 0.12, z));   // Seitenschiene
+      frame.push(bx(d - 2 * p, 0.03, 0.012, 0, yb + 0.14, z));                                         // Rammschutz unten
+      frame.push(bx(0.03, 0.03, 0.05, xf + 0.015, y1 + 0.178, sz * (w / 2 - p - 0.022)));              // Halter Führung
+      chrome.push(cyl(0.012, 0.15, xf + 0.014, y1 + 0.088, sz * (w / 2 - p - 0.022), null, 10));        // Führungszylinder
+    }
+    // Beschläge im Band: zwei Schließbleche, Bügelgriff, flacher Hebel, Riegelstange
+    const zl = -w / 2 + w * 0.17, zr = -w / 2 + w * 0.77, yp = y0 + hb * 0.3, yh = y0 + hb * 0.14;
+    for (const z of [zl, zr]) chrome.push(bx(0.008, 0.052, 0.075, xf + 0.032, yp, z), cyl(0.0065, yp - yh, xf + 0.012, (yp + yh) / 2, z, null, 8), cyl(0.0065, 0.018, xf + 0.02, yp, z, 'x', 8));
+    chrome.push(cyl(0.0075, zr - zl + 0.013, xf + 0.012, yh, (zl + zr) / 2, 'z', 8));
+    chrome.push(bx(0.006, 0.026, w * 0.4, xf + 0.03, y0 + hb * 0.52, -w / 2 + p + 0.02 + w * 0.2), bx(0.012, 0.042, 0.032, xf + 0.03, y0 + hb * 0.52, -w / 2 + p + 0.022));
+    chrome.push(cyl(0.006, hb - 0.03, xf + 0.03, y0 + hb / 2, -w / 2 + p + 0.008, null, 8));
+    // Paneele aus einem Atlas: Tür oben (Prägung, Schild, Drahtfach), Feld unten, Seiten mit Griffmulde
+    const bf = xf + 0.05, zi = w - 2 * p;
+    const panels = [
+      boxUV(d / 2 - 0.008 - bf, h - 0.005 - yb - 0.01, w - 0.016, (bf + d / 2 - 0.008) / 2, (h - 0.005 + yb + 0.01) / 2, 0, { pz:U.side, nz:U.side, px:U.low, py:U.low, def:U.plain }),
+      boxUV(bf - xf - 0.006, h - p - y1 - 0.013, zi, (bf + xf + 0.006) / 2, (h - p + y1 + 0.013) / 2, 0, { nx:U.door, def:U.plain }),
+      boxUV(bf - xf - 0.01, y0 - 0.013 - yb - pb, zi, (bf + xf + 0.01) / 2, (y0 - 0.013 + yb + pb) / 2, 0, { nx:U.low, def:U.plain }),
+    ];
+    add(M.isoWheel, wheels); add(M.isoFrame, frame); add(M.isoChrome, chrome);
+    add(M.isoBand, [bx(bf - xf - 0.036, hb - 0.026, zi, (bf + xf + 0.036) / 2, y0 + hb / 2, 0)]);
+    add(isoPanelMat(c), panels);
   } else if (c.model === 'i2d') {
     // zwei Dollies 60 × 40 nebeneinander, darauf E2-Kisten
     const crates = [], rims = [], base = [];
@@ -1620,7 +2584,7 @@ function makeItemMesh(it) {
   }
   const hit = new T.Mesh(GEO.unitBox, new T.MeshBasicMaterial({ visible:false }));
   hit.scale.set(c.d, c.h, c.w); hit.position.y = c.h / 2; hit.userData.itemId = it.id; inner.add(hit);
-  g.userData.hit = hit; g.userData.inner = inner; g.userData.vkey = c.vkey;
+  g.userData.hit = hit; g.userData.inner = inner; g.userData.vkey = c.vkey; g.userData.t = it.t;
   three.hit.push(hit);
   return g;
 }
@@ -1637,6 +2601,8 @@ function syncItems(st) {
   for (const it of state.items) {
     alive.add(it.id);
     let g = three.meshes.get(it.id);
+    // gleiche Nummer, anderer Typ (z. B. nach der Beispielladung): Modell neu bauen
+    if (g && g.userData.t !== it.t) { if (g.parent) g.parent.remove(g); three.hit = three.hit.filter(h => h !== g.userData.hit); three.meshes.delete(it.id); g = null; }
     const isNew = !g;
     if (!g) { g = makeItemMesh(it); three.meshes.set(it.id, g); }
     if (!drag || drag.id !== it.id) placeMesh(g, it);
@@ -1786,20 +2752,35 @@ function updateWalls() {
   const cp = camera.position;
   const wp = _wp.v || (_wp.v = new T.Vector3());
   const ek = three.explodeK, dk = Math.max(ek, three.doorK);
+  const skin = three.skin && !view.exploded;       // Außenhaut: alle Wände zu, egal von welcher Seite
   for (const w of three.walls) {
     w.getWorldPosition(wp);
     const n = w.userData.normal, kind = w.userData.kind;
     let target;
-    if (kind === 'roof') target = cp.y > wp.y - 0.2 ? 0.05 : 0.9;
+    if (skin) target = 1;
+    else if (kind === 'roof') target = cp.y > wp.y - 0.2 ? 0.05 : 0.9;
     else target = n.x * (cp.x - wp.x) + n.y * (cp.y - wp.y) + n.z * (cp.z - wp.z) > 0 ? 0.06 : 0.92;
-    if (kind === 'door' && dk > 0.5) target = Math.min(target, 0.3);
+    if (kind === 'door' && dk > 0.5 && !skin) target = Math.min(target, 0.3);
     if (kind === 'roof') target *= 1 - 0.9 * ek;
     else if (kind === 'left' || kind === 'right') target *= 1 - 0.8 * ek;
     const m = w.material;
-    const op = m.opacity + (target - m.opacity) * 0.22;
+    let op = m.opacity + (target - m.opacity) * 0.22;
+    if (target === 1 && op > 0.985) op = 1;          // Außenhaut ganz deckend, sonst schimmert die Ladung durch
     if (Math.abs(target - op) > 0.004) moving = true;
     m.opacity = op; m.depthWrite = op > 0.85; w.visible = op > 0.03;
+    w.castShadow = skin;                          // geschlossener Koffer wirft einen Schatten, offener nicht
+    // Anbauteile (Seitenbild, Profile, Beschläge) gehen mit, im Schnitt schneller weg
+    const so = op * op;
+    for (const s of w.userData.skins) { s.material.opacity = so; s.material.depthWrite = so > 0.85; }
   }
+  // Koffer ganz zu: geladene Behälter ausblenden (spart Zeichenaufrufe, nichts schimmert bei grober Tiefenauflösung durch).
+  // Was auf der Rampe steht, bleibt sichtbar.
+  const closed = skin && ek === 0 && three.doorK === 0 && three.walls.every(w => w.material.opacity === 1);
+  three.meshes.forEach(g => { g.visible = !closed || g.parent === three.unitGroups.r; });
+  // Leuchtkanten des Koffers passen nicht zur geschlossenen Außenhaut
+  const et = skin ? 0 : 0.32, eo = M.bodyEdge.opacity + (et - M.bodyEdge.opacity) * 0.22;
+  if (Math.abs(et - eo) > 0.004) moving = true;
+  M.bodyEdge.opacity = Math.abs(et - eo) > 0.004 ? eo : et;
   return moving;
 }
 
@@ -2202,11 +3183,18 @@ function update() {
   save();
 }
 
+// Isotainer schräg von vorn: Paneele in Paneelfarbe, grauer Rahmen, dunkles Band mit Griff, Schild, Drahtfach, Rollen
+const isoGlyph = p => `<path d="M6 4L15 1.5H34L25 4Z" fill="${p}"/><path d="M6 4L15 1.5H34L25 4Z" fill="#fff" fill-opacity=".3"/>`
+  + `<path d="M25 4L34 1.5V26L25 28.5Z" fill="${p}"/><path d="M25 4L34 1.5V26L25 28.5Z" fill="#000" fill-opacity=".24"/><rect x="6" y="4" width="19" height="24.5" fill="${p}"/>`
+  + `<rect x="6.6" y="15" width="17.8" height="4.4" fill="#3A3F45"/><path d="M9.5 18.2h11" stroke="#E6EAED" stroke-width="1.1" stroke-linecap="round"/>`
+  + `<rect x="11.8" y="6.2" width="7.4" height="3.8" rx=".5" fill="#E4E8EB"/><path d="M11.3 11.4v3h8.4v-3M14.1 12.6v1.8M16.9 12.6v1.8" stroke="#15181B" stroke-width=".75" fill="none"/>`
+  + `<path d="M6 4H25V28.5H6ZM25 4L34 1.5V26L25 28.5M6 4L15 1.5H34M6 15H25M6 19.4H25M25 17.2L34 14.7" fill="none" stroke="#8E98A1" stroke-width="1.1" stroke-linejoin="round"/>`
+  + `<circle cx="9" cy="31" r="2.2" fill="#C4CACF"/><circle cx="22" cy="31" r="2.2" fill="#C4CACF"/><circle cx="31.5" cy="28.4" r="1.9" fill="#AEB5BB"/>`;
 const GLYPH = {
   rbh:c => `<rect x="3" y="25" width="34" height="4" rx="1" fill="${c}"/><rect x="5" y="4" width="3" height="22" rx="1.5" fill="${c}"/><rect x="32" y="4" width="3" height="22" rx="1.5" fill="${c}"/><rect x="10" y="12" width="20" height="13" fill="#C7A57A"/><circle cx="8" cy="31" r="2.2" fill="#9ea8c2"/><circle cx="32" cy="31" r="2.2" fill="#9ea8c2"/>`,
   hyg:c => `<rect x="3" y="25" width="34" height="4" rx="1" fill="${c}"/><rect x="5" y="3" width="30" height="22" rx="2" fill="#C8D0D6" stroke="${c}" stroke-width="1.5"/><path d="M8 8h24M8 12h24M8 16h24M8 20h24" stroke="${c}" stroke-width="1"/><circle cx="8" cy="31" r="2.2" fill="#9ea8c2"/><circle cx="32" cy="31" r="2.2" fill="#9ea8c2"/>`,
-  iso:c => `<rect x="4" y="2" width="32" height="25" rx="3" fill="#E6ECF0" stroke="#7D8A95" stroke-width="1.5"/><rect x="4" y="5" width="32" height="4" fill="#2E6CC7"/><rect x="29" y="13" width="3" height="7" fill="#7D8A95"/><circle cx="9" cy="31" r="2.2" fill="#9ea8c2"/><circle cx="31" cy="31" r="2.2" fill="#9ea8c2"/>`,
-  i2:c => `<rect x="1" y="27" width="38" height="5" fill="#9C7646"/><rect x="2" y="20" width="17" height="6" fill="${c}"/><rect x="21" y="20" width="17" height="6" fill="${c}"/><rect x="2" y="13" width="17" height="6" fill="${c}"/><rect x="21" y="13" width="17" height="6" fill="${c}"/><rect x="2" y="6" width="17" height="6" fill="${c}"/><rect x="21" y="6" width="17" height="6" fill="${c}"/>`,
+  iso:c => isoGlyph((CT.iso && CT.iso.panel) || '#4DAEE3'),
+  i2:c => CT.i2 && CT.i2.model === 'iso' ? isoGlyph(CT.i2.panel || '#C9D1D8') : `<rect x="1" y="27" width="38" height="5" fill="#9C7646"/><rect x="2" y="20" width="17" height="6" fill="${c}"/><rect x="21" y="20" width="17" height="6" fill="${c}"/><rect x="2" y="13" width="17" height="6" fill="${c}"/><rect x="21" y="13" width="17" height="6" fill="${c}"/><rect x="2" y="6" width="17" height="6" fill="${c}"/><rect x="21" y="6" width="17" height="6" fill="${c}"/>`,
   ep:c => `<rect x="1" y="27" width="38" height="5" fill="#9C7646"/><rect x="2" y="5" width="36" height="21" rx="1" fill="#C7A57A"/><path d="M2 12h36M2 19h36M15 5v21M28 5v21" stroke="rgba(80,55,25,.45)"/>`,
   ch3:c => `<rect x="1" y="27" width="38" height="5" fill="${c}"/><rect x="2" y="7" width="36" height="19" rx="1" fill="#C7A57A"/><path d="M2 13h36M2 20h36M20 7v19" stroke="rgba(80,55,25,.45)"/>`,
 };
@@ -2233,7 +3221,7 @@ function renderDock() {
     tiles.querySelector(`[data-type="${c.id}"]`).dataset.armed = String(armed);
     tiles.querySelector(`[data-arm="${c.id}"]`).setAttribute('aria-pressed', String(armed));
     tiles.querySelector(`[data-arm="${c.id}"]`).title = `${c.name} (${c.vlabel}) setzen: antippen, dann auf den Ladeboden tippen`;
-    const g = tiles.querySelector(`[data-glyph="${c.id}"]`); if (!g.innerHTML) g.innerHTML = glyph(c);
+    const g = tiles.querySelector(`[data-glyph="${c.id}"]`); if (g.dataset.v !== c.vkey) { g.innerHTML = glyph(c); g.dataset.v = c.vkey; }   // neu bei Variantenwechsel
     tiles.querySelector(`[data-sub="${c.id}"]`).textContent = `${Math.floor(c.d * 100 + 0.01)}×${Math.floor(c.w * 100 + 0.01)} · ${slotEq(c)}`;
   }
 }
@@ -2871,7 +3859,9 @@ function start() {
   if (!saved && !reduced && renderer) setTimeout(() => { if (!view.armed && view.selected == null && !ptr) startTour(); }, 900);
   window.ladeplan = { get state() { return state; }, stats:() => lastStats, autoLoad, geometry:() => G, setFocus, setExploded, setVariant, view, CT,
     // Kamera für Tests und Bildschirmfotos: ladeplan.look([x, y, z], [zx, zy, zz])
-    look:(pos, target) => { stopTour(); camera.position.set(...pos); controls.target.set(...target); controls.update(); requestRender(); } };
+    look:(pos, target) => { stopTour(); camera.position.set(...pos); controls.target.set(...target); controls.update(); requestRender(); },
+    // Außenhaut und Seitenbild ohne Bedienung umschalten (Tests)
+    skin:(on) => { three.skin = !!on; requestRender(); }, setLivery };
 }
 start();
 // Offline-Cache, nur auf einer echten Website (http/https) und nicht in eingebetteten Vorschauen
