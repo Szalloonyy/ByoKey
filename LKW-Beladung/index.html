@@ -123,10 +123,6 @@ select.pick option{background:#111727;color:var(--ink)}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px;align-items:center;margin:0}
 .kv dt{color:var(--mute)}
 .kv dd{margin:0;text-align:right;font:500 12px/1.35 var(--font-mono);font-variant-numeric:tabular-nums}
-.meter{position:relative;height:3px;border-radius:2px;background:rgba(255,255,255,.1);grid-column:1/-1;margin:0 0 5px}
-.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--cyan);box-shadow:0 0 6px rgba(127,227,255,.5)}
-.meter i.warn{background:var(--amber);box-shadow:0 0 6px rgba(255,180,84,.5)}
-.meter i.bad{background:var(--red);box-shadow:0 0 6px rgba(255,107,94,.5)}
 .temp{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--mute)}
 .temp .led{font:600 14px/1 var(--font-mono);color:var(--cyan);background:#04090d;border:1px solid rgba(127,227,255,.2);border-radius:6px;padding:6px 8px;min-width:84px;text-align:center;text-shadow:0 0 8px rgba(127,227,255,.6)}
 .temp .step{display:flex;gap:4px;align-items:center}
@@ -177,7 +173,7 @@ select.pick option{background:#111727;color:var(--ink)}
 .sel-h small{display:block;font:400 11.5px/1.3 var(--font-mono);color:var(--mute);margin-top:2px}
 .sel-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sel-row label{font-size:12px;color:var(--mute);display:flex;gap:6px;align-items:center}
-.sel-row input,.kgin{width:78px;border:1px solid var(--edge);border-radius:7px;background:var(--fill);padding:4px 7px;font:500 12.5px/1.3 var(--font-mono)}
+.sel-row input{width:78px;border:1px solid var(--edge);border-radius:7px;background:var(--fill);padding:4px 7px;font:500 12.5px/1.3 var(--font-mono)}
 .toast{position:absolute;left:50%;top:60px;transform:translateX(-50%);z-index:20;background:rgba(9,13,22,.92);border:1px solid var(--edge);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:600;box-shadow:0 18px 50px -20px #000;max-width:calc(100% - 32px);text-align:center}
 .stage-tools{display:none}
 #tabs{display:none}
@@ -275,7 +271,7 @@ tr:last-child td{border-bottom:0}
   <aside class="hud glass" id="hudLeft" aria-label="Fahrzeug und Auslastung">
     <section id="secBrand">
       <h1 class="title"><span class="t1" id="titleT1">Der Hängerzug,</span><span class="t2">aufgemacht</span></h1>
-      <p class="lede">Jeder Fahrer merkt, wenn der Zug voll ist. Hier siehst du es vorher: wo jeder Behälter steht, wie viele Stellplätze frei sind und was die Achsen tragen.</p>
+      <p class="lede">Jeder Fahrer merkt, wenn der Zug voll ist. Hier siehst du es vorher: wo jeder Behälter steht, wie viele Stellplätze frei sind und was noch passt.</p>
       <div class="veh">
         <label class="sr" for="presetSel">Fahrzeug wählen</label>
         <select class="pick" id="presetSel"></select>
@@ -347,7 +343,7 @@ tr:last-child td{border-bottom:0}
       <ul>
         <li>Unten einen Ladungsträger antippen, dann auf den Ladeboden tippen, im 3D-Bild oder im Stellplatzplan. Die Vorschau rastet an Wand, Reihe und Nachbarn ein. Mit <b>+</b> sucht der Planer selbst den nächsten freien Platz.</li>
         <li>Einen Behälter ziehen, um ihn zu versetzen. Das geht auch von der Maschine in den Anhänger oder auf die Rampe.</li>
-        <li><b>Automatisch verteilen</b> stellt alles neu: Paletten und schwere Ware nach vorn an die Stirnwand, dann die Rollware. Das Gewicht verteilt der Planer im Verhältnis zur Nutzlast auf Maschine und Anhänger.</li>
+        <li><b>Automatisch verteilen</b> stellt alles neu: Paletten nach vorn an die Stirnwand, dann die Rollware. Gefüllt wird erst die Maschine, dann der Anhänger.</li>
         <li><b>Nachrücken</b> schiebt alle Behälter bündig nach vorn, ohne sie umzusortieren.</li>
         <li>Was nicht passt, bleibt auf der Rampe hinter dem Fahrzeug stehen.</li>
       </ul>
@@ -356,7 +352,6 @@ tr:last-child td{border-bottom:0}
         <li><b>Stellplätze</b> sind die belegten Rasterfelder, eines je Rollbehälter. Eine Europalette längs belegt zwei Felder und ein Stück vom dritten: drei Paletten hintereinander brauchen so viel Platz wie fünf Rollbehälter.</li>
         <li><b>Passt noch</b> zählt, wie viele Rollbehälter oder Europaletten der Planer auf den freien Boden noch stellen kann.</li>
         <li>Die <b>Ladungsfront</b> ist die leuchtende Ebene hinter der letzten Reihe. Dort gehört der Sperrbalken hin.</li>
-        <li><b>Achslasten</b> sind eine Hebel-Näherung aus Leergewicht, Radstand und Schwerpunkt der Ladung. Sie ersetzen keine Waage.</li>
         <li><b>Kühlung</b>: Fleisch und Hygiene-Ware brauchen höchstens +4 °C. Tiefkühlware fährt im vorgekühlten Isotainer mit.</li>
       </ul>
       <h3>Tasten</h3>
@@ -373,7 +368,7 @@ tr:last-child td{border-bottom:0}
         <span><kbd>H</kbd> / <kbd>/</kbd></span><span>Bedienung aus- und einblenden</span>
         <span>Maus, Finger</span><span>Ziehen dreht, Mausrad oder zwei Finger zoomen, rechte Maustaste verschiebt</span>
       </div>
-      <p class="foot">Inoffizielles Planungswerkzeug, nicht von EDEKA, IVECO, ROHR oder Wüllhorst. Alle Werte ohne Gewähr. Maßgeblich sind Fahrzeugpapiere, Waage und die Vorgaben eurer Niederlassung.</p>
+      <p class="foot">Inoffizielles Planungswerkzeug, nicht von EDEKA, IVECO, ROHR oder Wüllhorst. Alle Werte ohne Gewähr. Gewichte rechnet der Planer nicht, die gehören auf die Waage. Maßgeblich sind Fahrzeugpapiere und die Vorgaben eurer Niederlassung.</p>
     </div>
   </div>
 
@@ -401,30 +396,30 @@ tr:last-child td{border-bottom:0}
 const SLOT_D = 0.724;         // Reihentiefe: Rollbehälter 724 × 815 mm, die 815er-Gitterseite steht quer
 const EPS = 0.004;
 
-// Ladungsträger. d = Maß in Fahrtrichtung, w = quer, h = Höhe (m). kg = Vorgabe brutto (Ware + Behälter).
+// Ladungsträger. d = Maß in Fahrtrichtung, w = quer, h = Höhe (m). Gewichte bewusst nicht: die Ware ist immer anders gepackt.
 const CARRIER_BASE = [
   { id:'rbh', name:'Rollbehälter', tile:'Roll\u00adbehälter', short:'RBH', color:'#1F55B8', need:'frisch',
-    variants:[{ key:'std', label:'blau, 2 Gitter', sub:'72,4 × 81,5 × 163 cm', d:0.724, w:0.815, h:1.63, tare:20, kg:270, max:520, model:'rbh' }] },
+    variants:[{ key:'std', label:'blau, 2 Gitter', sub:'72,4 × 81,5 × 163 cm', d:0.724, w:0.815, h:1.63, model:'rbh' }] },
   { id:'hyg', name:'Hygiene-RBH', short:'HYG', color:'#8E9AA5', need:'kalt',
     variants:[
-      { key:'k163', label:'Hygiene-Grau, 163 cm', sub:'72,4 × 81,5 × 163 cm', d:0.724, w:0.815, h:1.63, tare:25, kg:275, max:525, model:'hyg' },
-      { key:'edel', label:'Edelstahl, 176 cm', sub:'72,4 × 81,5 × 176 cm', d:0.724, w:0.815, h:1.755, tare:30, kg:280, max:530, model:'hyg' },
-      { key:'k153', label:'Kunststoff, 153 cm', sub:'72,4 × 81,5 × 153 cm', d:0.724, w:0.815, h:1.53, tare:24, kg:270, max:524, model:'hyg' } ] },
+      { key:'k163', label:'Hygiene-Grau, 163 cm', sub:'72,4 × 81,5 × 163 cm', d:0.724, w:0.815, h:1.63, model:'hyg' },
+      { key:'edel', label:'Edelstahl, 176 cm', sub:'72,4 × 81,5 × 176 cm', d:0.724, w:0.815, h:1.755, model:'hyg' },
+      { key:'k153', label:'Kunststoff, 153 cm', sub:'72,4 × 81,5 × 153 cm', d:0.724, w:0.815, h:1.53, model:'hyg' } ] },
   { id:'iso', name:'TK-Isotainer', short:'ISO', color:'#D9E2E8', need:'tk',
     variants:[
-      { key:'c580', label:'TKT C-580', sub:'73,5 × 82,5 × 177 cm', d:0.735, w:0.825, h:1.77, tare:85, kg:300, max:535, model:'iso' },
-      { key:'olivo', label:'Olivo Roll 580', sub:'71,5 × 81 × 190 cm', d:0.715, w:0.81, h:1.90, tare:102, kg:320, max:600, model:'iso' },
-      { key:'e1070', label:'TKT E-1070 (Palettenmaß)', sub:'120 × 80 × 200 cm', d:1.20, w:0.80, h:2.00, tare:125, kg:420, max:625, model:'iso' } ] },
+      { key:'c580', label:'TKT C-580', sub:'73,5 × 82,5 × 177 cm', d:0.735, w:0.825, h:1.77, model:'iso' },
+      { key:'olivo', label:'Olivo Roll 580', sub:'71,5 × 81 × 190 cm', d:0.715, w:0.81, h:1.90, model:'iso' },
+      { key:'e1070', label:'TKT E-1070 (Palettenmaß)', sub:'120 × 80 × 200 cm', d:1.20, w:0.80, h:2.00, model:'iso' } ] },
   { id:'i2', name:'I2 Fleisch', short:'I2', color:'#C23A33', need:'kalt',
     variants:[
-      { key:'pal', label:'E2-Kisten auf H1-Palette', sub:'120 × 80 × 176 cm', d:1.20, w:0.80, h:1.76, tare:84, kg:724, max:1084, model:'i2' },
-      { key:'dolly', label:'E2-Kisten auf 2 Dollies', sub:'60 × 80 × 175 cm', d:0.60, w:0.80, h:1.75, tare:44, kg:364, max:544, model:'i2d' } ] },
+      { key:'pal', label:'E2-Kisten auf H1-Palette', sub:'120 × 80 × 176 cm', d:1.20, w:0.80, h:1.76, model:'i2' },
+      { key:'dolly', label:'E2-Kisten auf 2 Dollies', sub:'60 × 80 × 175 cm', d:0.60, w:0.80, h:1.75, model:'i2d' } ] },
   { id:'ep', name:'Euro-Palette', short:'EP', color:'#C49A62', need:'egal',
-    variants:[{ key:'std', label:'EPAL 1, längs', sub:'120 × 80 × 170 cm', d:1.20, w:0.80, h:1.70, tare:25, kg:525, max:1525, model:'ep' }] },
+    variants:[{ key:'std', label:'EPAL 1, längs', sub:'120 × 80 × 170 cm', d:1.20, w:0.80, h:1.70, model:'ep' }] },
   { id:'ch3', name:'CH3-Palette', short:'CH3', color:'#2E6CC7', need:'egal',
     variants:[
-      { key:'voll', label:'CHEP 1/1', sub:'120 × 80 × 170 cm · blau', d:1.20, w:0.80, h:1.70, tare:28, kg:528, max:1278, model:'ch3' },
-      { key:'halb', label:'CHEP-Halbpalette', sub:'60 × 80 × 150 cm · blau', d:0.60, w:0.80, h:1.50, tare:10, kg:260, max:510, model:'ch3' } ] },
+      { key:'voll', label:'CHEP 1/1', sub:'120 × 80 × 170 cm · blau', d:1.20, w:0.80, h:1.70, model:'ch3' },
+      { key:'halb', label:'CHEP-Halbpalette', sub:'60 × 80 × 150 cm · blau', d:0.60, w:0.80, h:1.50, model:'ch3' } ] },
 ];
 const CT = {};                                           // wirksame Daten je Typ (Grundwerte + gewählte Variante)
 const TYPE_ORDER = ['ep', 'ch3', 'i2', 'iso', 'hyg', 'rbh'];   // Ladefolge beim automatischen Verteilen: Paletten zuerst, dann Rollware
@@ -437,33 +432,30 @@ function rebuildCT() {
 }
 const CARRIERS = () => CARRIER_BASE.map(b => CT[b.id]);
 
-// Fahrzeugarten (Leergewichte und Achsgrenzen: Näherung aus Inseraten und StVZO, siehe Datenblatt)
+// Fahrzeugarten (Maße siehe Datenblatt)
 const KIND = {
-  motor:   { label:'Maschine', long:'Motorwagen', floorY:1.20, W:2.48, H:2.25, wallF:0.065, wallR:0.065,
-             tare:13500, tare1:6400, tare2:7100, gvw:26000, max1:8000, max2:19000 },
-  trailer: { label:'Anhänger', long:'Tandem-Anhänger', floorY:1.20, W:2.48, H:2.25, wallF:0.065, wallR:0.065,
-             tare:6600, s0:250, gvw:18000, maxA:18000, maxS:1000 },
-  semi:    { label:'Auflieger', long:'Kühlauflieger', floorY:1.25, W:2.48, H:2.55, wallF:0.10, wallR:0.12,
-             tare:8800, k0:3300, maxA:24000, tractorTare:7800, t1:5300, t2:2500, max1:8000, max2:11500 },
+  motor:   { label:'Maschine', long:'Motorwagen', floorY:1.20, W:2.48, H:2.25, wallF:0.065, wallR:0.065 },
+  trailer: { label:'Anhänger', long:'Tandem-Anhänger', floorY:1.20, W:2.48, H:2.25, wallF:0.065, wallR:0.065 },
+  semi:    { label:'Auflieger', long:'Kühlauflieger', floorY:1.25, W:2.48, H:2.55, wallF:0.10, wallR:0.12 },
 };
 
 const PRESETS = [
   { id:'221', name:'LKW 221', type:'Durchlade-Hängerzug', noun:'Der Hängerzug,', body:'ROHR DLE31 bzw. Wüllhorst Durchladesystem', chassis:'Iveco S-Way AS260S46Y/FS-CM LNG · 6x2 · 460 PS',
-    units:[{ kind:'motor', L:8.08 }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true, train:40000 },
+    units:[{ kind:'motor', L:8.08 }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true },
   { id:'219s', name:'LKW 219', type:'Sattelzug 54 (Annahme)', noun:'Der Sattelzug,', body:'Kühlauflieger 13,6 m', chassis:'Iveco S-Way AS440S46TP LNG · 4x2',
-    units:[{ kind:'semi', L:13.30 }], train:40000 },
+    units:[{ kind:'semi', L:13.30 }] },
   { id:'219h', name:'LKW 219', type:'Hängerzug 24 + 30 (Alternative)', noun:'Der Hängerzug,', body:'Kühlkoffer 6,23 m + 7,43 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:6.10 }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true, train:40000 },
+    units:[{ kind:'motor', L:6.10 }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true },
   { id:'219k', name:'LKW 219', type:'Hängerzug 27 + 27 (Alternative)', noun:'Der Hängerzug,', body:'2 × Kühlkoffer 6,73 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:6.60 }, { kind:'trailer', L:6.60 }], gap:0.75, durchlade:true, train:40000 },
+    units:[{ kind:'motor', L:6.60 }, { kind:'trailer', L:6.60 }], gap:0.75, durchlade:true },
   { id:'hz60', name:'Hängerzug', type:'Tandem 30 + 30', noun:'Der Hängerzug,', body:'2 × 7,825-m-Kühlkoffer', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:7.60 }, { kind:'trailer', L:7.60 }], gap:0.75, durchlade:false, train:40000 },
+    units:[{ kind:'motor', L:7.60 }, { kind:'trailer', L:7.60 }], gap:0.75, durchlade:false },
   { id:'solo33', name:'Solo-LKW', type:'33 Stellplätze', noun:'Der Solo-LKW,', body:'Kühlkoffer 8,21 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:8.08 }], train:26000 },
+    units:[{ kind:'motor', L:8.08 }] },
   { id:'solo30', name:'Solo-LKW', type:'30 Stellplätze', noun:'Der Solo-LKW,', body:'Kühlkoffer 7,73 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:7.60 }], train:26000 },
+    units:[{ kind:'motor', L:7.60 }] },
   { id:'anh30', name:'Anhänger', type:'30 Stellplätze', noun:'Der Anhänger,', body:'Durchlade-Kühlkoffer 7,43 m', chassis:'Tandem-Zentralachse · 18 t',
-    units:[{ kind:'trailer', L:7.30 }], train:18000 },
+    units:[{ kind:'trailer', L:7.30 }] },
 ];
 const PRESET = id => PRESETS.find(p => p.id === id) || PRESETS[0];
 
@@ -471,7 +463,7 @@ const PRESET = id => PRESETS.find(p => p.id === id) || PRESETS[0];
 /* =====================================================================
    Zustand
    ===================================================================== */
-const STORE_KEY = 'ladeplan-haengerzug-v3';
+const STORE_KEY = 'ladeplan-haengerzug-v4';
 let state = null;
 const view = { focus:'zug', cam:0, exploded:false, armed:null, selected:null, uiOff:false, tour:false };
 let undoStack = [];
@@ -483,9 +475,9 @@ function unitsFor(p) {
 function freshState(presetId) {
   const p = PRESET(presetId || '221');
   return {
-    v:3, preset:p.id, units:unitsFor(p), items:[], nextId:1,
+    v:4, preset:p.id, units:unitsFor(p), items:[], nextId:1,
     variant:Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].key])),
-    kg:Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].kg])), sample:false,
+    sample:false,
   };
 }
 function loadSaved() {
@@ -493,12 +485,11 @@ function loadSaved() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s || s.v !== 3 || !Array.isArray(s.items) || !Array.isArray(s.units)) return null;
+    if (!s || s.v !== 4 || !Array.isArray(s.items) || !Array.isArray(s.units)) return null;
     const known = new Set(CARRIER_BASE.map(b => b.id));
     s.items = s.items.filter(it => known.has(it.t) && typeof it.x === 'number' && typeof it.y === 'number');
     if (!PRESETS.some(p => p.id === s.preset)) return null;
     s.variant = Object.assign(Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].key])), s.variant || {});
-    s.kg = Object.assign(Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].kg])), s.kg || {});
     return s;
   } catch (e) { return null; }
 }
@@ -656,88 +647,26 @@ function packStep(P, it) {
   for (let l = 0; l < 3; l++) if (s.y < (l + 1) * lw - EPS && s.y + s.w > l * lw + EPS) P.lanes[l] = Math.max(P.lanes[l], s.x + s.d);
   return s;
 }
-// Achslasten einer Einheit nach dem Hebelgesetz. cogX = Schwerpunkt der Ladung ab Stirnwand, S = Stützlast eines Anhängers.
-function axleFor(U, kg, cogX, S) {
-  const xc = U.X0 - (cogX || 0);                                   // Schwerpunkt in Welt-X
-  if (U.kind === 'trailer') {
-    const share = kg ? (xc - U.XA) / (U.XC - U.XA) : 0;
-    return { stuetz:U.K.s0 + kg * share, axles:U.K.tare - U.K.s0 + kg * (1 - share), gross:U.K.tare + kg };
-  }
-  if (U.kind === 'semi') {
-    const share = kg ? (xc - U.XA) / (U.XK - U.XA) : 0;
-    const king = U.K.k0 + kg * share, kr = (U.TF - U.XK) / (U.TF - U.TD);
-    return { king, axles:U.K.tare - U.K.k0 + kg * (1 - share), front:U.K.t1 + king * (1 - kr), rear:U.K.t2 + king * kr, gross:U.K.tare + U.K.tractorTare + kg };
-  }
-  const lever = x => (U.XF - x) / (U.XF - U.XR);
-  let front = U.K.tare1, rear = U.K.tare2;
-  if (kg) { const r = lever(xc); rear += kg * r; front += kg * (1 - r); }
-  if (S) { const r = lever(U.XC); rear += S * r; front += S * (1 - r); }
-  return { front, rear, gross:front + rear };
-}
-// Wie knapp sind die Achsen? 1 = an der Grenze. Verbotene Zustände kosten extra.
-function axleScore(U, a) {
-  if (U.kind === 'trailer') return Math.max(a.axles / U.K.maxA, a.stuetz / U.K.maxS) + (a.stuetz < 100 ? 10 : 0);
-  if (U.kind === 'semi') return Math.max(a.front / U.K.max1, a.rear / U.K.max2, a.axles / U.K.maxA);
-  return Math.max(a.front / U.K.max1, a.rear / U.K.max2) + (a.front < 0.22 * a.gross ? 10 : 0);
-}
-function payloadOf(U) {
-  return U.kind === 'semi' ? PRESET(state.preset).train - U.K.tare - U.K.tractorTare : U.K.gvw - U.K.tare;
-}
-// Automatisch verteilen: Paletten zuerst, jeweils in die Einheit, die im Verhältnis zu ihrer Nutzlast
-// am wenigsten trägt. Danach rückt balanceUnit die schweren Paletten dorthin, wo die Achsen es vertragen.
+// Automatisch verteilen: Paletten zuerst an die Stirnwand, dann die Rollware. Gefüllt wird in Ladereihenfolge:
+// erst die Maschine (beim Durchladezug wird sie durch den Anhänger beladen), dann der Anhänger.
 function autoLoad(silent, noUndo) {
   if (!noUndo) pushUndo();
-  const list = state.items.slice().sort((a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t) || b.kg - a.kg || a.id - b.id);
-  const packs = G.units.map(U => ({ U, lanes:[0, 0, 0], boxes:[], kg:0, area:0, payload:payloadOf(U) }));
+  const list = state.items.slice().sort((a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t) || a.id - b.id);
+  const packs = G.units.map(U => ({ U, lanes:[0, 0, 0], boxes:[] }));
   const rest = [];
   for (const it of list) {
-    const order = packs.slice().sort((p, q) => p.kg / p.payload - q.kg / q.payload || p.area / (p.U.L * p.U.W) - q.area / (q.U.L * q.U.W));
     let placed = false;
-    for (const P of order) {
+    for (const P of packs) {
       const s = packStep(P, it);
       if (!s) continue;
-      it.u = P.U.id; it.x = s.x; it.y = s.y; it.r = s.r;
-      P.kg += it.kg; P.area += s.d * s.w; placed = true; break;
+      it.u = P.U.id; it.x = s.x; it.y = s.y; it.r = s.r; placed = true; break;
     }
     if (!placed) rest.push(it);
-  }
-  // Achslasten ausgleichen: zuerst den Anhänger, dann die Maschine mit dessen Stützlast
-  let S = 0;
-  for (const U of G.units.slice().sort((p, q) => (p.kind === 'motor') - (q.kind === 'motor'))) {
-    balanceUnit(U, U.kind === 'motor' ? S : 0);
-    if (U.kind === 'trailer') { const l = unitLoad(U); S = axleFor(U, l.kg, l.cogX).stuetz; }
   }
   toRamp(rest);
   view.selected = null;
   update();
-  if (!silent) toast(rest.length ? `Verteilt. ${rest.length} ${rest.length === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : 'Verteilt: Gewicht gleichmäßig auf die Einheiten, Paletten achsgerecht');
-}
-// Schwere Paletten dorthin, wo die Achsen es am besten vertragen: beim Anhänger über die Tandemachse, bei der
-// Maschine Richtung Hinterachsen, beim Auflieger vor das Achsaggregat. Probiert, wie viel Rollware vor die Paletten
-// kommt, und nimmt die Anordnung mit den ruhigsten Achslasten. Passt keine neue Anordnung, bleibt die alte.
-function balanceUnit(U, S) {
-  const its = itemsIn(U.id);
-  const heavy = its.filter(it => CT[it.t].d > 1 || it.kg >= 450), light = its.filter(it => !heavy.includes(it));
-  if (!heavy.length || !light.length) return;
-  let best = null;
-  for (let k = 0; k <= light.length; k++) {
-    const order = light.slice(0, k).concat(heavy, light.slice(k));
-    const P = { U, lanes:[0, 0, 0], boxes:[] }, spots = [];
-    let ok = true, kg = 0, mx = 0;
-    for (const it of order) {
-      const sp = packStep(P, it); if (!sp) { ok = false; break; }
-      spots.push(sp); kg += it.kg; mx += it.kg * (sp.x + sp.d / 2);
-    }
-    if (!ok) continue;
-    const score = axleScore(U, axleFor(U, kg, mx / kg, S)) + k * 1e-4;    // bei Gleichstand: Paletten weiter vorn
-    if (!best || score < best.score) best = { score, order, spots };
-  }
-  if (best) best.order.forEach((it, i) => { it.x = best.spots[i].x; it.y = best.spots[i].y; it.r = best.spots[i].r; });
-}
-function unitLoad(U) {
-  let kg = 0, mx = 0;
-  for (const it of itemsIn(U.id)) { const k = dims(it); kg += it.kg; mx += it.kg * (it.x + k.d / 2); }
-  return { kg, cogX:kg ? mx / kg : 0 };
+  if (!silent) toast(rest.length ? `Verteilt. ${rest.length} ${rest.length === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : (G.units.length > 1 ? 'Verteilt: Paletten vorn, erst die Maschine, dann der Anhänger' : 'Verteilt: Paletten vorn, Rollware dahinter'));
 }
 function toRamp(list) {
   const R = G.ramp;
@@ -770,7 +699,7 @@ function placeNew(type, preferUnit) {
   return s ? { u:'r', x:s.x, y:s.y, r:s.r } : { u:'r', x:0, y:0, r:0 };
 }
 function newItem(type, pos) {
-  const it = { id:state.nextId++, t:type, kg:state.kg[type], u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0 };
+  const it = { id:state.nextId++, t:type, u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0 };
   state.items.push(it);
   return it;
 }
@@ -812,35 +741,19 @@ function coveredCells(U, boxes) {
   return { n, cells };
 }
 function computeStats() {
-  const P = PRESET(state.preset);
-  const st = { units:{}, warns:[], total:{ kg:0, n:0 }, ramp:itemsIn('r').length };
+  const st = { units:{}, warns:[], total:{ n:0 }, ramp:itemsIn('r').length };
   for (const U of G.units) {
     const its = itemsIn(U.id), boxes = its.map(box);
-    let kg = 0, mx = 0, mz = 0, end = 0;
-    for (const it of its) {
-      const k = dims(it);
-      kg += it.kg; mx += it.kg * (it.x + k.d / 2); mz += it.kg * (it.y + k.w / 2 - U.W / 2);
-      end = Math.max(end, it.x + k.d);
-    }
+    let end = 0;
+    for (const it of its) end = Math.max(end, it.x + dims(it).d);
     const cov = coveredCells(U, boxes);
     st.units[U.id] = {
-      U, its, n:its.length, kg, cogX:kg ? mx / kg : null, cogZ:kg ? mz / kg : 0, end,
-      cells:cov.cells, used:cov.n, fitRbh:countFit(U, boxes, 'rbh'), fitEp:countFit(U, boxes, 'ep'),
-      payload:payloadOf(U),
+      U, its, n:its.length, end, cells:cov.cells, used:cov.n,
+      fitRbh:countFit(U, boxes, 'rbh'), fitEp:countFit(U, boxes, 'ep'),
       temp:state.units.find(x => x.id === U.id).temp,
     };
-    st.total.kg += kg; st.total.n += its.length;
+    st.total.n += its.length;
   }
-  // Achslasten per Hebelgesetz; erst Anhänger und Auflieger, dann die Maschine mit der Stützlast
-  const tr = G.units.find(g => g.kind === 'trailer');
-  for (const U of G.units.slice().sort((p, q) => (p.kind === 'motor') - (q.kind === 'motor'))) {
-    const u = st.units[U.id];
-    Object.assign(u, axleFor(U, u.kg, u.cogX, U.kind === 'motor' && tr ? st.units[tr.id].stuetz : 0));
-  }
-  const tareSum = G.units.reduce((a, U) => a + U.K.tare + (U.kind === 'semi' ? U.K.tractorTare : 0), 0);
-  st.total.gross = tareSum + st.total.kg;
-  st.total.payload = P.train - tareSum;
-  st.total.limit = P.train;
   st.total.cap = G.units.reduce((a, U) => a + U.cap, 0);
   st.total.used = G.units.reduce((a, U) => a + st.units[U.id].used, 0);
 
@@ -849,35 +762,9 @@ function computeStats() {
   const add = (lvl, txt, why) => W.push({ lvl, txt, why:why || null });
   if (st.ramp) add('bad', `${st.ramp} ${st.ramp === 1 ? 'Behälter steht' : 'Behälter stehen'} noch auf der Rampe. Platz schaffen oder auf eine Einheit ziehen.`,
     `<b class="a">${st.ramp} ${st.ramp === 1 ? 'Behälter passt' : 'Behälter passen'}</b> nicht mehr rein und ${st.ramp === 1 ? 'steht' : 'stehen'} auf der Rampe.`);
-  if (st.total.gross > P.train + 1) add('bad', `Überladen: ${fmtT(st.total.gross)} bei ${fmtT(P.train)} zulässig.`,
-    `${G.units.length > 1 || G.tractor ? 'Der Zug' : 'Das Fahrzeug'} wiegt <b class="r">${fmtT(st.total.gross)}</b>, das sind <b class="r">${fmtT(st.total.gross - P.train)}</b> zu viel.`);
   for (const U of G.units) {
     const u = st.units[U.id];
     if (!u.n) continue;
-    if (u.kg > u.payload + 1) add('bad', `${U.label}: Ladung ${fmtT(u.kg)} über der Nutzlast von ${fmtT(u.payload)}.`,
-      `Die <b>${U.label}</b> trägt <b class="r">${fmtT(u.kg)}</b> Ladung, ausgelegt ist sie für ${fmtT(u.payload)}.`);
-    if (U.kind === 'motor') {
-      if (u.front > U.K.max1 + 1) add('bad', `${U.label}: Vorderachse ${fmtT(u.front)} über ${fmtT(U.K.max1)}. Schwere Ware weiter nach hinten.`,
-        `Die Vorderachse der <b>${U.label}</b> trägt <b class="r">${fmtT(u.front)}</b>. Schwere Paletten weiter nach hinten.`);
-      if (u.rear > U.K.max2 + 1) add('bad', `${U.label}: Hinterachsen ${fmtT(u.rear)} über ${fmtT(U.K.max2)}. Schwere Ware weiter nach vorn.`,
-        `Die Hinterachsen der <b>${U.label}</b> tragen <b class="r">${fmtT(u.rear)}</b>. Schwere Ware nach vorn an die Stirnwand.`);
-      if (u.front < 0.2 * u.gross) add('bad', `${U.label}: Die Lenkachse trägt nur ${Math.round(100 * u.front / u.gross)} % (mindestens 20 %).`,
-        `Die Lenkachse der <b>${U.label}</b> trägt nur <b class="r">${Math.round(100 * u.front / u.gross)} %</b> des Gewichts. Unter 20 % lenkt sie schlecht.`);
-      if (u.gross > U.K.gvw + 1) add('bad', `${U.label}: ${fmtT(u.gross)} über dem zulässigen Gesamtgewicht von ${fmtT(U.K.gvw)}.`);
-    }
-    if (U.kind === 'trailer') {
-      if (u.stuetz < 0) add('bad', `${U.label}: hecklastig, die Deichsel wird angehoben (Stützlast ${Math.round(u.stuetz)} kg). Schwere Ware nach vorn.`,
-        `Der <b>${U.label}</b> ist hecklastig: Die Deichsel wird mit <b class="r">${Math.abs(Math.round(u.stuetz))} kg</b> angehoben. Schwere Ware nach vorn.`);
-      else if (u.stuetz > U.K.maxS) add('info', `${U.label}: Stützlast ca. ${fmt(u.stuetz, 0)} kg (Näherung), über dem üblichen Richtwert von ${fmt(U.K.maxS, 0)} kg. Den erlaubten Wert zeigt das Typenschild der Deichsel; schwere Ware eher über die Achsen.`);
-      if (u.axles > U.K.maxA + 1) add('bad', `${U.label}: Achsen ${fmtT(u.axles)} über ${fmtT(U.K.maxA)}.`);
-    }
-    if (U.kind === 'semi') {
-      if (u.axles > U.K.maxA + 1) add('bad', `${U.label}: Achsaggregat ${fmtT(u.axles)} über ${fmtT(U.K.maxA)}.`);
-      if (u.rear > U.K.max2 + 1) add('bad', `Zugmaschine: Antriebsachse ${fmtT(u.rear)} über ${fmtT(U.K.max2)}.`,
-        `Die Antriebsachse der Zugmaschine trägt <b class="r">${fmtT(u.rear)}</b>. Schwere Ware weiter nach hinten.`);
-      if (u.front > U.K.max1 + 1) add('bad', `Zugmaschine: Vorderachse ${fmtT(u.front)} über ${fmtT(U.K.max1)}.`);
-    }
-    if (Math.abs(u.cogZ) > 0.18) add('warn', `${U.label}: Schwerpunkt ${fmt(Math.abs(u.cogZ) * 100, 0)} cm ${u.cogZ > 0 ? 'rechts' : 'links'} der Mitte. Gewicht gleichmäßiger verteilen.`);
     const cold = u.its.filter(it => CT[it.t].need === 'kalt').length;
     if (u.temp > 7 && cold) add('bad', `${U.label}: ${cold} × Fleisch/Hygiene bei ${fmtTemp(u.temp)}. Frischfleisch darf höchstens +7 °C haben.`,
       `In der <b>${U.label}</b> fahren <b class="r">${cold} × Fleisch/Hygiene</b> bei ${fmtTemp(u.temp)}. Frischfleisch darf höchstens +7 °C haben.`);
@@ -901,7 +788,7 @@ function computeStats() {
     if (gaps) add('warn', `${U.label}: ${gaps} ${gaps === 1 ? 'Behälter steht' : 'Behälter stehen'} mit Lücke nach vorn (Reihe ${[...gapRows].sort((a, b) => a - b).slice(0, 6).join(', ')}). Nachrücken oder mit Sperrbalken sichern.`,
       `In der <b>${U.label}</b> ${gaps === 1 ? 'steht' : 'stehen'} <b class="a">${gaps} ${gaps === 1 ? 'Behälter' : 'Behälter'}</b> mit Lücke nach vorn. Rollbehälter rutschen: nachrücken oder Sperrbalken setzen.`);
   }
-  if (st.total.n && !W.some(w => w.lvl === 'bad' || w.lvl === 'warn')) W.unshift({ lvl:'ok', txt:'Gewicht, Achslasten, Kühlung und Ladungssicherung passen.', why:null });
+  if (st.total.n && !W.some(w => w.lvl === 'bad' || w.lvl === 'warn')) W.unshift({ lvl:'ok', txt:'Kühlung und Ladungssicherung passen.', why:null });
   if (!st.total.n && !st.ramp) add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.');
   for (const U of G.units) {
     const u = st.units[U.id];
@@ -915,7 +802,6 @@ function computeStats() {
    ===================================================================== */
 const nfCache = {};
 function fmt(n, d = 1) { const k = 'd' + d; nfCache[k] = nfCache[k] || new Intl.NumberFormat('de-DE', { minimumFractionDigits:d, maximumFractionDigits:d }); return nfCache[k].format(n); }
-const fmtT = kg => fmt(kg / 1000, 1) + ' t';
 const fmtM = m => fmt(m, 2) + ' m';
 const fmtTemp = t => (t > 0 ? '+' : t < 0 ? '−' : '±') + fmt(Math.abs(t), 1) + ' °C';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -934,7 +820,7 @@ function slotEq(c) { const e = (c.d * c.w) / (SLOT_D * 2.48 / 3); return e < 1.1
    ===================================================================== */
 const canvas = $('#gl');
 let renderer = null, scene, camera, controls, T = null, raycaster = null;
-const three = { unitGroups:{}, walls:[], floors:[], hit:[], meshes:new Map(), vehicle:null, head:null, ghost:null, cog:{}, bars:{}, fronts:{}, grids:{}, doors:[], flaps:[], leds:{}, explodeK:0, doorK:0 };
+const three = { unitGroups:{}, walls:[], floors:[], hit:[], meshes:new Map(), vehicle:null, head:null, ghost:null, bars:{}, fronts:{}, grids:{}, doors:[], flaps:[], leds:{}, explodeK:0, doorK:0 };
 const M = {}, GEO = {};
 let rafPending = false;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1046,7 +932,6 @@ function initThree() {
   M.frontLine = new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.85 });
   M.frontLineBad = new T.LineBasicMaterial({ color:0xffb454, transparent:true, opacity:0.9 });
   M.selLine = new T.LineBasicMaterial({ color:0x7fe3ff });
-  M.cog = new T.MeshBasicMaterial({ color:0x7fe3ff });
 
   // Texturen
   M.gate = new T.MeshStandardMaterial({ map:canvasTex(128, 256, (c, w, h) => {
@@ -1286,12 +1171,6 @@ function buildUnit(U) {
     addLed(ch, U, U.extFront + 0.25, uy, 0.99);
   }
   grp.add(ch);
-  // Schwerpunkt
-  const cog = new T.Group();
-  const ring = new T.Mesh(new T.RingGeometry(0.16, 0.24, 32), M.cog); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.012;
-  const pole = new T.Mesh(cyl(0.015, 1.9, 0, 0.95, 0, 'y', 8), M.cog);
-  const tip = new T.Mesh(new T.ConeGeometry(0.09, 0.2, 16), M.cog); tip.position.y = 2.0; tip.rotation.x = Math.PI;
-  cog.add(ring, pole, tip); cog.visible = false; grp.add(cog); three.cog[U.id] = cog;
   // Sperrbalken
   const bar = new T.Group();
   bar.add(mesh(bx(0.06, 0.08, W - 0.02, 0, 1.0, 0), M.bar));
@@ -1370,7 +1249,7 @@ function rebuildVehicle() {
   if (three.vehicle) { scene.remove(three.vehicle); disposeTree(three.vehicle); }
   if (three.unitGroups.r) { scene.remove(three.unitGroups.r); disposeTree(three.unitGroups.r); }
   three.walls = []; three.floors = []; three.doors = []; three.flaps = []; three.unitGroups = {};
-  three.cog = {}; three.bars = {}; three.leds = {}; three.fronts = {}; three.grids = {};
+  three.bars = {}; three.leds = {}; three.fronts = {}; three.grids = {};
   const veh = new T.Group();
   const head = new T.Group();
   if (G.cab || G.tractor) {
@@ -1519,15 +1398,14 @@ function syncItems(st) {
   }
   for (const U of G.units) {
     const u = st && st.units[U.id];
-    const cog = three.cog[U.id], bar = three.bars[U.id], fr = three.fronts[U.id];
-    if (!cog) continue;
-    if (u && u.kg) { cog.visible = true; cog.position.set(-u.cogX, 0, u.cogZ); } else cog.visible = false;
+    const bar = three.bars[U.id], fr = three.fronts[U.id];
+    if (!bar) continue;
     const room = u && u.n && U.L - u.end > 0.1;
     bar.visible = !!room; if (room) bar.position.x = -(u.end + 0.04);
     fr.visible = !!(u && u.n);
     if (fr.visible) {
       fr.position.x = -Math.min(U.L, u.end + 0.01);
-      const bad = u.kg > u.payload || st.warns.some(w => w.lvl === 'bad' && w.txt.startsWith(U.label));
+      const bad = st.warns.some(w => w.lvl === 'bad' && w.txt.startsWith(U.label));
       fr.userData.plane.material = bad ? M.frontBad : M.front;
       fr.userData.rect.material = bad ? M.frontLineBad : M.frontLine;
     }
@@ -1717,19 +1595,8 @@ function buildTags(st) {
   for (const U of G.units) {
     const u = st.units[U.id];
     const grp = three.unitGroups[U.id];
-    const toLocal = (x, y, z) => new T.Vector3(x - U.X0, y - U.floorY, z);
     const full = u.used >= U.cap;
-    defs.push({ key:'cap' + U.id, grp, local:new T.Vector3(-U.L / 2, U.H + 0.45, 0), prio:2, lvl:u.kg > u.payload ? 'bad' : '', html:`${U.label} <b>${u.used}/${U.cap}</b>${full ? ' · voll' : ''}` });
-    if (U.kind === 'motor') {
-      defs.push({ key:'va' + U.id, grp, local:toLocal(U.XF, 0.1, 1.55), prio:4, lvl:u.front > U.K.max1 || u.front < 0.2 * u.gross ? 'bad' : '', html:`VA <b>${fmtT(u.front)}</b>` });
-      defs.push({ key:'ha' + U.id, grp, local:toLocal(U.XR, 0.1, 1.55), prio:4, lvl:u.rear > U.K.max2 ? 'bad' : '', html:`HA <b>${fmtT(u.rear)}</b>` });
-    } else if (U.kind === 'trailer') {
-      defs.push({ key:'ax' + U.id, grp, local:toLocal(U.XA, 0.1, 1.55), prio:4, lvl:u.axles > U.K.maxA ? 'bad' : '', html:`Achsen <b>${fmtT(u.axles)}</b>` });
-      if (u.n) defs.push({ key:'sl' + U.id, grp, local:toLocal(U.XC, 0.55, 0.9), prio:5, lvl:u.stuetz < 0 ? 'bad' : '', html:`Stützlast <b>${Math.round(u.stuetz)} kg</b>` });
-    } else {
-      defs.push({ key:'ax' + U.id, grp, local:toLocal(U.XA, 0.1, 1.55), prio:4, lvl:u.axles > U.K.maxA ? 'bad' : '', html:`Achsen <b>${fmtT(u.axles)}</b>` });
-      defs.push({ key:'ta' + U.id, grp:three.head, local:new T.Vector3(U.TD, 0.1, 1.55), prio:5, lvl:u.rear > U.K.max2 ? 'bad' : '', html:`AA <b>${fmtT(u.rear)}</b>` });
-    }
+    defs.push({ key:'cap' + U.id, grp, local:new T.Vector3(-U.L / 2, U.H + 0.45, 0), prio:2, lvl:'', html:`${U.label} <b>${u.used}/${U.cap}</b>${full ? ' · voll' : ` · ${U.cap - u.used} frei`}` });
     if (u.n) defs.push({ key:'fr' + U.id, grp, local:new T.Vector3(-Math.min(U.L, u.end), U.H * 0.92 + 0.12, U.W / 2), prio:3, lvl:'', html:`Ladungsfront <b>${fmtM(u.end)}</b>` });
   }
   if (st.ramp) defs.push({ key:'ramp', grp:three.unitGroups.r, local:new T.Vector3(-1.4, 2.3, 0), prio:1, lvl:'warn', html:`Rampe · <b>${st.ramp}</b> nicht geladen` });
@@ -1960,11 +1827,7 @@ function setVariant(type, key) {
   const b = CARRIER_BASE.find(x => x.id === type); if (!b) return;
   const v = b.variants.find(x => x.key === key); if (!v || state.variant[type] === key) return;
   pushUndo();
-  const oldKg = state.kg[type];
-  const oldDefault = CT[type].kg;
   state.variant[type] = key;
-  if (oldKg === oldDefault) state.kg[type] = v.kg;
-  for (const it of state.items) if (it.t === type && it.kg === oldKg) it.kg = state.kg[type];
   rebuildCT();
   resetCarrierMeshes();
   bulk = true; autoLoad(true, true); bulk = false;       // Maße haben sich geändert: neu verteilen
@@ -2022,25 +1885,15 @@ function renderDock() {
     tiles.querySelector(`[data-sub="${c.id}"]`).textContent = `${Math.floor(c.d * 100 + 0.01)}×${Math.floor(c.w * 100 + 0.01)} · ${slotEq(c)}`;
   }
 }
-function meter(v, max, warnAt) {
-  const pct = Math.max(0, Math.min(1, v / max));
-  const cls = v > max + 1 ? 'bad' : v > (warnAt || 0.92) * max ? 'warn' : '';
-  return `<div class="meter"><i class="${cls}" style="width:${(pct * 100).toFixed(1)}%"></i></div>`;
-}
 function renderStats(st) {
   const html = G.units.map(U => {
     const u = st.units[U.id];
     const cells = u.cells.map(on => `<span class="${on ? 'on' : ''}"></span>`).join('');
-    let axles = '';
-    if (U.kind === 'motor') axles = `<dt>Vorderachse</dt><dd>${fmtT(u.front)} / ${fmt(U.K.max1 / 1000, 1)}</dd>${meter(u.front, U.K.max1)}<dt>Hinterachsen</dt><dd>${fmtT(u.rear)} / ${fmt(U.K.max2 / 1000, 1)}</dd>${meter(u.rear, U.K.max2)}`;
-    if (U.kind === 'trailer') axles = `<dt>Achsen (Tandem)</dt><dd>${fmtT(u.axles)} / ${fmt(U.K.maxA / 1000, 1)}</dd>${meter(u.axles, U.K.maxA)}<dt>Stützlast</dt><dd>${Math.round(u.stuetz)} kg</dd>`;
-    if (U.kind === 'semi') axles = `<dt>Aufliegerachsen</dt><dd>${fmtT(u.axles)} / ${fmt(U.K.maxA / 1000, 1)}</dd>${meter(u.axles, U.K.maxA)}<dt>Antriebsachse SZM</dt><dd>${fmtT(u.rear)} / ${fmt(U.K.max2 / 1000, 1)}</dd>${meter(u.rear, U.K.max2)}`;
     return `<div class="unit" data-unit="${U.id}">
       <div class="unit-h"><b>${U.label}<small>${U.long} · ${fmt(U.L, 2)} × ${fmt(U.W, 2)} m</small></b><span class="big">${u.used}<span> / ${U.cap}</span></span></div>
       <div class="cells" style="grid-template-columns:repeat(${U.rows},1fr);grid-auto-flow:column;grid-template-rows:repeat(3,7px)" role="img" aria-label="${u.used} von ${U.cap} Stellplätzen belegt">${cells}</div>
       <dl class="kv">
-        <dt>Ladung</dt><dd>${fmtT(u.kg)} / ${fmtT(u.payload)}</dd>${meter(u.kg, u.payload)}
-        ${axles}
+        <dt>Behälter</dt><dd>${u.n}</dd>
         <dt>Belegt bis</dt><dd>${fmtM(u.end)} von ${fmtM(U.L)}</dd>
         <dt>Passt noch</dt><dd>${u.fitRbh} RBH oder ${u.fitEp} EP</dd>
       </dl>
@@ -2069,10 +1922,9 @@ function planSvg(U, st) {
     const k = dims(it), c = CT[it.t];
     const x = X(it.x + k.d), y = Y(it.y), w = k.d * sc, h = k.w * sc;
     const isSel = view.selected === it.id, light = c.id === 'iso' || c.id === 'hyg' || c.id === 'ep';
-    s += `<g data-item="${it.id}"><title>${esc(c.name)} · ${fmt(it.kg, 0)} kg</title><rect x="${(x + 0.8).toFixed(1)}" y="${(y + 0.8).toFixed(1)}" width="${(w - 1.6).toFixed(1)}" height="${(h - 1.6).toFixed(1)}" rx="2" fill="${c.color}" stroke="${isSel ? '#7fe3ff' : 'rgba(0,0,0,.45)'}" stroke-width="${isSel ? 2.4 : 0.8}"/>`;
+    s += `<g data-item="${it.id}"><title>${esc(c.name)}</title><rect x="${(x + 0.8).toFixed(1)}" y="${(y + 0.8).toFixed(1)}" width="${(w - 1.6).toFixed(1)}" height="${(h - 1.6).toFixed(1)}" rx="2" fill="${c.color}" stroke="${isSel ? '#7fe3ff' : 'rgba(0,0,0,.45)'}" stroke-width="${isSel ? 2.4 : 0.8}"/>`;
     s += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + h / 2 + 2.6).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="600" fill="${light ? '#0b0f1a' : '#fff'}">${c.short}</text></g>`;
   }
-  if (u.cogX != null) { const cx = X(u.cogX), cy = Y(U.W / 2 + u.cogZ); s += `<g aria-hidden="true"><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="none" stroke="#7fe3ff" stroke-width="2"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.6" fill="#7fe3ff"/></g>`; }
   if (u.n && U.L - u.end > 0.05) s += `<line x1="${X(u.end).toFixed(1)}" y1="${(pad - 3).toFixed(1)}" x2="${X(u.end).toFixed(1)}" y2="${(pad + W + 3).toFixed(1)}" stroke="#7fe3ff" stroke-width="1.6"/>`;
   return s + `</svg>`;
 }
@@ -2085,7 +1937,6 @@ function renderSelbar() {
   bar.innerHTML = `
     <div class="sel-h"><div><b>${esc(c.name)}</b><small>${esc(c.vlabel)} · ${esc(posText(it))}</small></div><button class="btn small" type="button" data-selclose aria-label="Auswahl schließen">✕</button></div>
     <div class="sel-row">
-      <label for="selKg">Gewicht brutto <input id="selKg" type="number" inputmode="numeric" min="0" max="${c.max}" step="5" value="${it.kg}"> kg</label>
       <button class="btn small" type="button" data-rotate>Drehen <kbd>T</kbd></button>
       <button class="btn small" type="button" data-delete>Löschen <kbd>Entf</kbd></button>
     </div>`;
@@ -2097,7 +1948,7 @@ function renderArmed() {
   b.hidden = false;
   b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${esc(c.name)}: auf den Ladeboden tippen</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
 }
-// Ladeliste je Einheit: Anzahl je Ladungsträger, Gewicht, belegte Stellplätze
+// Ladeliste je Einheit: Anzahl je Ladungsträger und belegte Stellplätze
 function renderList() {
   const st = lastStats;
   const units = G.units.map(U => ({ U, its:itemsIn(U.id), u:st.units[U.id] }));
@@ -2105,8 +1956,7 @@ function renderList() {
   if (ramp.length) units.push({ U:G.ramp, its:ramp, u:null });
   $('#loadList').innerHTML = units.map(({ U, its, u }) => {
     const counts = CARRIERS().map(c => { const k = its.filter(it => it.t === c.id).length; return k ? `${k} ${c.name}` : ''; }).filter(Boolean).join(', ');
-    const kg = its.reduce((a, it) => a + it.kg, 0);
-    const head = u ? `${its.length} Behälter · ${u.used}/${U.cap} Stellplätze · ${fmtT(kg)}` : `${its.length} Behälter · nicht geladen`;
+    const head = u ? `${its.length} Behälter · ${u.used}/${U.cap} Stellplätze` : `${its.length} Behälter · nicht geladen`;
     return `<li><span><b class="${u ? '' : 'a'}">${U.label}</b> <span class="num" style="color:var(--mute)">${head}</span></span><small>${counts || 'leer'}</small></li>`;
   }).join('');
 }
@@ -2117,11 +1967,11 @@ function renderHeader(st) {
   if (!sel.options.length) sel.innerHTML = PRESETS.map(p => `<option value="${p.id}">${esc(p.name)} · ${esc(p.type)}</option>`).join('');
   sel.value = P.id;
   const t = st.total;
-  const left = t.limit - t.gross;
+  const free = t.cap - t.used;
   $('#chips').innerHTML = `
     <div class="stat"><small>Stellplätze</small><b class="c">${t.used}<span>/${t.cap}</span></b></div>
-    <div class="stat"><small>${G.units.length > 1 || G.tractor ? 'Zuggewicht' : 'Gesamt'}</small><b class="${t.gross > t.limit ? 'r' : ''}">${fmt(t.gross / 1000, 1)}<span> t</span></b></div>
-    <div class="stat"><small>Reserve</small><b class="${left < 0 ? 'r' : left < 1500 ? 'a' : ''}">${left < 0 ? '−' : ''}${fmt(Math.abs(left) / 1000, 1)}<span> t</span></b></div>`;
+    <div class="stat"><small>Frei</small><b class="${free <= 0 ? 'a' : ''}">${Math.max(0, free)}</b></div>
+    <div class="stat"><small>Behälter</small><b class="${lastStats.ramp ? 'a' : ''}">${t.n}${lastStats.ramp ? `<span> +${lastStats.ramp}</span>` : ''}</b></div>`;
   $('#why').innerHTML = whySentence(st);
 }
 // Der eine Satz, der erklärt, was gerade los ist (spezifischste Lage zuerst)
@@ -2132,8 +1982,8 @@ function whySentence(st) {
   const free = st.total.cap - st.total.used;
   const parts = G.units.map(U => { const u = st.units[U.id]; return `<b>${U.label}</b> <b class="c">${u.used}/${U.cap}</b>`; });
   let s = parts.join(', ') + ' Stellplätze belegt. ';
-  s += free > 0 ? `Noch <b>${free} ${free === 1 ? 'Platz' : 'Plätze'}</b> frei, ` : 'Alles voll, ';
-  s += `<b>${fmtT(Math.max(0, st.total.limit - st.total.gross))}</b> Luft bis ${fmt(st.total.limit / 1000, 0)} t.`;
+  const fit = G.units.reduce((a, U) => a + st.units[U.id].fitRbh, 0);
+  s += free > 0 ? `Noch <b>${free} ${free === 1 ? 'Platz' : 'Plätze'}</b> frei, dort passen noch <b class="c">${fit} Rollbehälter</b>.` : 'Alles voll.';
   return s;
 }
 function renderViewControls() {
@@ -2158,31 +2008,31 @@ function toast(msg) {
 const conf = c => `<span class="conf ${c}">${c}</span>`;
 function specsHtml() {
   const P = PRESET(state.preset);
-  const unitRows = G.units.map(U => `<tr><td><b>${U.label}</b><br><small>${U.long}</small></td><td class="n">${fmt(U.L, 2)} × ${fmt(U.W, 2)} × ${fmt(U.H, 2)} m</td><td class="n">${fmt(U.extL, 2)} m</td><td class="n">${U.rows} × 3 = ${U.cap}</td><td class="n">${fmtT(U.K.tare + (U.kind === 'semi' ? U.K.tractorTare : 0))}</td><td class="n">${U.kind === 'semi' ? fmtT(P.train - U.K.tare - U.K.tractorTare) : fmtT(U.K.gvw - U.K.tare)}</td></tr>`).join('');
+  const unitRows = G.units.map(U => `<tr><td><b>${U.label}</b><br><small>${U.long}</small></td><td class="n">${fmt(U.L, 2)} × ${fmt(U.W, 2)} × ${fmt(U.H, 2)} m</td><td class="n">${fmt(U.extL, 2)} m</td><td class="n">${U.rows} × 3 = ${U.cap}</td><td class="n">${countFit(U, [], 'ep')}</td></tr>`).join('');
   const lens = G.units.map(U => `<label for="len-${U.id}"><span>${U.label} · Innenlänge in m<small>${U.rows} Reihen à 72 cm · ${U.cap} Stellplätze</small></span><input id="len-${U.id}" data-len="${U.id}" type="number" min="3" max="13.6" step="0.01" value="${U.L.toFixed(2)}"></label>`).join('');
   const carrierRows = CARRIER_BASE.map(b => {
     const c = CT[b.id];
     const sel = b.variants.length > 1 ? `<select class="pick" data-variant="${b.id}" aria-label="Format ${esc(b.name)}">${b.variants.map(v => `<option value="${v.key}" ${v.key === c.vkey ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>` : `<small>${esc(c.vlabel)}</small>`;
-    return `<tr><td><b>${esc(b.name)}</b><br>${sel}</td><td class="n">${Math.round(c.d * 1000)} × ${Math.round(c.w * 1000)} × ${Math.round(c.h * 1000)} mm</td><td class="n">${slotEq(c)}</td><td class="n">${c.tare} kg</td><td class="n"><input class="kgin" type="number" inputmode="numeric" min="0" max="${c.max}" step="5" id="kg-${b.id}" data-kg="${b.id}" value="${state.kg[b.id]}" aria-label="Durchschnitt brutto ${esc(b.name)} in kg"></td><td class="n">${c.max} kg</td><td>${NOTES[b.id]}</td></tr>`;
+    return `<tr><td><b>${esc(b.name)}</b><br>${sel}</td><td class="n">${Math.round(c.d * 1000)} × ${Math.round(c.w * 1000)} × ${Math.round(c.h * 1000)} mm</td><td class="n">${slotEq(c)}</td><td>${NOTES[b.id]}</td></tr>`;
   }).join('');
   return `
     <p><b>${esc(P.name)} · ${esc(P.type)}.</b> Aufbau ${esc(P.body)}, Fahrgestell ${esc(P.chassis)}. Außenlänge ca. ${fmtM(G.length)}${G.units.length > 1 ? `, Summe der Kofferlängen ${fmtM(G.loadLength)} (erlaubt 15,65 m)` : ''}.</p>
     <h3>Einheiten</h3>
-    <div class="tbl-wrap"><table><thead><tr><th>Einheit</th><th>Innen L × B × H</th><th>Koffer außen</th><th>Stellplätze</th><th>Leer ca.</th><th>Nutzlast ca.</th></tr></thead><tbody>${unitRows}</tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Einheit</th><th>Innen L × B × H</th><th>Koffer außen</th><th>Stellplätze</th><th>Europaletten</th></tr></thead><tbody>${unitRows}</tbody></table></div>
     <h3>Eure Koffer sind anders lang?</h3>
     <p>Innenlänge eintragen. Der Planer rechnet Reihen und Stellplätze neu; was nicht mehr passt, stellt er auf die Rampe.</p>
     <div class="edit-units">${lens}</div>
     <h3>Ladungsträger</h3>
-    <p>Format und Durchschnittsgewicht gelten für alle Behälter dieses Typs, die kein eigenes Gewicht haben. Das Gewicht einzelner Behälter änderst du nach dem Antippen im 3D-Bild.</p>
-    <div class="tbl-wrap"><table><thead><tr><th>Behälter · Format</th><th>L × B × H</th><th>Belegt</th><th>Leer</th><th>Ø brutto</th><th>max.</th><th>Quelle, Sicherheit</th></tr></thead><tbody>${carrierRows}</tbody></table></div>
+    <p>Das Format gilt für alle Behälter dieses Typs. Nach einem Wechsel verteilt der Planer die Ladung neu. Gewichte rechnet er bewusst nicht, weil die Ware immer anders gepackt ist.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Behälter · Format</th><th>L × B × H</th><th>Belegt</th><th>Quelle, Sicherheit</th></tr></thead><tbody>${carrierRows}</tbody></table></div>
     ${FACTS}`;
 }
 const NOTES = {
-  rbh:`Enzianblau, 2 Gitter, 500 kg Nutzlast, Leergewicht ca. 20 kg ${conf('hoch')}`,
-  hyg:`Grundmaß wie RBH, geschlossene Rollplatte. Leergewicht geschätzt ${conf('mittel')}`,
+  rbh:`Enzianblau, 2 Gitter an den 81,5-cm-Seiten, Kunststoff-Rollplatte ${conf('hoch')}`,
+  hyg:`Grundmaß wie RBH, geschlossene Rollplatte. Welche Höhe ihr fahrt, bitte prüfen ${conf('mittel')}`,
   iso:`Edeka Nord fährt bis 1.900 Isotainer am Tag (Trockeneis/CO₂-Schnee). Welches Modell eure Region nutzt, ist offen ${conf('mittel')}`,
   i2:`Wahrscheinlich E2-Fleischkisten 60 × 40 × 20 cm („E2“ englisch ausgesprochen). Auf Palette oder Dolly: bitte prüfen ${conf('niedrig')}`,
-  ep:`EPAL 1: 1200 × 800 × 144 mm, 25 kg, 1.500 kg Traglast ${conf('hoch')}`,
+  ep:`EPAL 1: 1200 × 800 × 144 mm, längs geladen (80 cm quer) ${conf('hoch')}`,
   ch3:`Wahrscheinlich „CHEP“ (blaue Mietpalette; auf dem Handy wird aus „e“ leicht „3“). Vollpalette oder Halbpalette: bitte prüfen ${conf('niedrig')}`,
 };
 const FACTS = `
@@ -2199,13 +2049,12 @@ const FACTS = `
     <li>Motor Cursor 13 NG (Flüssigerdgas): 460 PS / 338 kW, 2.000 Nm, 12-Gang Hi-Tronix. Ein LNG-Tank mit 540 l links, bis ca. 800 km Reichweite. ${conf('hoch')}</li>
     <li>EDEKA Minden-Hannover stellt rund 700 Fahrzeuge auf S-Way LNG um, darunter 220 Kühlkoffer-Motorwagen und 55 Sattelzugmaschinen AS440S46TP. ${conf('hoch')}</li>
     <li>Kühlung von Frigoblock (Marke von Thermo King, elektrisch über Generator), am Anhänger unterflur; an der Maschine vermutlich ebenfalls unterflur, weil vor dem Koffer nur 2,35 m Platz sind. Ladebordwand am Anhänger (BÄR, 2–2,5 t). ${conf('mittel')}</li>
-    <li>Leergewichte im Planer: Maschine ca. 13,5 t (Nutzlast ca. 12,5 t), Anhänger ca. 6,6 t (Nutzlast ca. 11,4 t). Für den Zug bleiben bis 40 t rund 19,9 t Nutzlast; laut EDEKA bleiben die Fahrer meist bei 19–19,5 t. ${conf('mittel')}</li>
+    <li>Gewichte (nur zur Info, der Planer rechnet ohne kg): Maschine leer ca. 13,5 t, Anhänger leer ca. 6,6 t; für den Zug bleiben bis 40 t rund 20 t Nutzlast. ${conf('mittel')}</li>
   </ul>
   <h3>Grenzen nach StVZO</h3>
   <ul>
     <li>Hängerzug höchstens 18,75 m lang, Summe der Ladeflächen höchstens 15,65 m, vorderste Ladefläche bis Heck höchstens 16,40 m. Kühlaufbauten bis 2,60 m breit, 4,00 m hoch.</li>
     <li>Gewichte: Zug 40 t, dreiachsiger Motorwagen 26 t, Tandem-Anhänger 18 t. Antriebsachse 11,5 t, Doppelachse 18–19 t. Die Lenkachse soll mindestens 20 % des tatsächlichen Gewichts tragen.</li>
-    <li>Die Achslasten im Planer sind eine Hebel-Näherung (Radstand 5,10 m, Nachlaufachse 1,35 m dahinter, Tandem des Anhängers 20 cm hinter Koffermitte). Maßgeblich bleiben Fahrzeugschein und Waage.</li>
   </ul>
   <h3>Offene Annahmen: bitte prüfen</h3>
   <ul>
@@ -2265,17 +2114,8 @@ function bind() {
   });
   document.addEventListener('change', e => {
     const t = e.target, d = t.dataset;
-    if (d.kg) {
-      const c = CT[d.kg], v = Math.max(0, Math.min(c.max, Math.round(+t.value || 0)));
-      pushUndo();
-      const old = state.kg[d.kg]; state.kg[d.kg] = v;
-      for (const it of state.items) if (it.t === d.kg && it.kg === old) it.kg = v;
-      update(); toast(`${c.name}: Ø ${v} kg für alle ohne eigenes Gewicht`);
-    } else if (d.variant) { setVariant(d.variant, t.value); $('#specsBody').innerHTML = specsHtml(); }
-    else if (t.id === 'selKg') {
-      const it = state.items.find(i => i.id === view.selected); if (!it) return;
-      pushUndo(); it.kg = Math.max(0, Math.min(CT[it.t].max, Math.round(+t.value || 0))); update();
-    } else if (t.id === 'presetSel') switchPreset(t.value);
+    if (d.variant) { setVariant(d.variant, t.value); $('#specsBody').innerHTML = specsHtml(); }
+    else if (t.id === 'presetSel') switchPreset(t.value);
     else if (d.len) { setUnitLength(d.len, +t.value); $('#specsBody').innerHTML = specsHtml(); }
   });
   $('#btnAuto').addEventListener('click', () => { state.sample = false; autoLoad(); });
@@ -2372,10 +2212,7 @@ function loadSample() {
   const p = PRESET(state.preset);
   state.items = []; state.nextId = 1;
   for (const [t, n] of SAMPLE[p.id] || SAMPLE['221']) for (let i = 0; i < n; i++) {
-    const id = state.nextId++;
-    const j = ((id * 37) % 11 - 5) / 5;            // feste Streuung um den Durchschnitt
-    const kg = Math.max(CT[t].tare, Math.round((state.kg[t] + j * state.kg[t] * 0.18) / 5) * 5);
-    state.items.push({ id, t, kg, u:'r', x:0, y:0, r:0 });
+    state.items.push({ id:state.nextId++, t, u:'r', x:0, y:0, r:0 });
   }
   state.sample = true;
   bulk = true; autoLoad(true, true); bulk = false;
@@ -2397,7 +2234,7 @@ function copyList() {
   const lines = [`LADEPLAN ${P.name} · ${P.type} · ${new Date().toLocaleDateString('de-DE')}`, ''];
   for (const U of G.units) {
     const u = st.units[U.id];
-    lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${fmtT(u.kg)}, Soll ${fmtTemp(u.temp)}`);
+    lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${u.n} Behälter, Kühlung Soll ${fmtTemp(u.temp)}`);
     for (let r = 0; r < U.rows + 2; r++) {
       const row = u.its.filter(it => Math.floor((it.x + dims(it).d / 2) / SLOT_D) === r).sort((a, b) => a.y - b.y);
       if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}: ${row.map(it => CT[it.t].short).join(', ')}`);
@@ -2408,7 +2245,7 @@ function copyList() {
   }
   const ramp = itemsIn('r');
   if (ramp.length) lines.push(`RAMPE (nicht geladen): ${ramp.length} Behälter`, '');
-  lines.push(`Gesamt: ${st.total.used} von ${st.total.cap} Stellplätzen, ${fmtT(st.total.gross)} von ${fmtT(st.total.limit)}`);
+  lines.push(`Gesamt: ${st.total.used} von ${st.total.cap} Stellplätzen belegt, ${st.total.n} Behälter`);
   lines.push('RBH Rollbehälter · HYG Hygiene-RBH · ISO TK-Isotainer · I2 Fleisch · EP Euro-Palette · CH3 CHEP-Palette');
   const warn = st.warns.filter(w => w.lvl === 'bad' || w.lvl === 'warn');
   if (warn.length) { lines.push('', 'HINWEISE'); for (const w of warn) lines.push('  - ' + w.txt); }

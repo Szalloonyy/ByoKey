@@ -58,13 +58,13 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
   - Behälter werden per Tippen gesetzt. Die Vorschau rastet in Spuren und Reihen ein.
   - Behälter lassen sich ziehen, auch von der Maschine in den Anhänger oder auf die Rampe.
   - Drehen geht mit T, Löschen mit Entf, Rückgängig mit Strg+Z.
-- **Automatisch verteilen:** stellt alle Behälter neu. Paletten stehen vorn an der Stirnwand. Das Gewicht wird im Verhältnis zur Nutzlast auf Maschine und Anhänger verteilt. Im Zentralachs-Anhänger kommen schwere Paletten über die Achsen, damit die Stützlast im Rahmen bleibt. **Nachrücken** schiebt alles bündig nach vorn.
+- **Automatisch verteilen:** stellt alle Behälter neu. Paletten kommen nach vorn an die Stirnwand, dahinter die Rollware. Gefüllt wird erst die Maschine, dann der Anhänger. **Nachrücken** schiebt alles bündig nach vorn.
 - **Auswertung**
-  - belegte Stellplätze sowie „passt noch“ für Rollbehälter und Europaletten
-  - Gewicht und Nutzlast
-  - Achslasten als Hebel-Näherung: Vorderachse, Hinterachsen, Stützlast, Sattellast
-  - Schwerpunkt, Ladungsfront und Sperrbalken
+  - belegte und freie Stellplätze
+  - „passt noch“ für Rollbehälter und Europaletten
+  - Ladungsfront und Sperrbalken
   - Kühlung je Einheit
+  - Gewichte rechnet der Planer bewusst nicht, weil die Ware immer anders gepackt ist.
 - **Ansichten**
   - Tasten 1, 2 und 3 wählen Maschine, Anhänger oder den ganzen Zug.
   - X klappt den Aufbau auf: Dach und Wände heben sich, die Maschine fährt vor, die Stirnklappe wird zur Brücke.
@@ -76,7 +76,7 @@ Der Plan wird nur im eigenen Browser gespeichert (`localStorage`). Es gibt keine
 
 ## Datengrundlage
 
-Die Maße, Gewichte und Hersteller stehen im Datenblatt der App, mit Quellen und Einstufung der Sicherheit. Kurz:
+Die Maße und Hersteller stehen im Datenblatt der App, mit Quellen und Einstufung der Sicherheit. Kurz:
 
 - „Wülhordt“ ist Wüllhorst Fahrzeugbau aus Selm-Bork, „Rohraufbau“ ist ROHR Spezialfahrzeuge aus Straubing.
 - ROHR nennt für den Durchladezug DLE31 bei EDEKA 20 + 18 Europaletten oder 33 + 30 Rollcontainer.
@@ -85,6 +85,6 @@ Die Maße, Gewichte und Hersteller stehen im Datenblatt der App, mit Quellen und
   - LKW 219 als Sattelzug
   - CH3 als CHEP-Palette
   - I2 als E2-Kisten
-  - Leergewichte und Achsgeometrie
+  - Innenmaße eurer Koffer
 
 Inoffizielles Planungswerkzeug, nicht von EDEKA, IVECO, ROHR oder Wüllhorst. Alle Werte ohne Gewähr. Maßgeblich sind Fahrzeugpapiere, Waage und die Vorgaben der Niederlassung.
