@@ -878,11 +878,13 @@ function autoLoad(silent, noUndo) {
   for (const it of state.items) markZone(it);
   view.selected = null;
   update();
-  if (!silent) toast(rest.length ? `Verteilt. ${rest.length} ${rest.length === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : (G.units.length > 1 ? 'Verteilt: Paletten vorn, erst die Maschine, dann der Anhänger' : 'Verteilt: Paletten vorn, Rollware dahinter'));
+  const restN = rest.filter(it => !isEquip(it)).length, restHw = rest.length - restN;
+  if (!silent) toast(rest.length ? `Verteilt. ${restN ? `${restN} ${restN === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr` : ''}${restN && restHw ? ', ' : ''}${restHw ? `${restHw === 1 ? 'der Hubwagen passt' : `${restHw} Hubwagen passen`} an keine Tür` : ''} und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : (G.units.length > 1 ? 'Verteilt: Paletten vorn, erst die Maschine, dann der Anhänger' : 'Verteilt: Paletten vorn, Rollware dahinter'));
 }
 // TK-Kennzeichen folgt dem Platz: Wer in der TK-Kammer steht, ist TK-Ware. Überall sonst (Anhänger,
 // hochgeklappte Wand, Rampe, anderes Fahrzeug) bleibt es, damit die Ware später wieder in die Kammer kommt.
 function markZone(it) {
+  if (isEquip(it)) { it.tk = false; return; }                  // der Hubwagen ist nie TK-Ware
   const U = unitG(it.u);
   if (U && U.wall) it.tk = zoneAt(U, it.x, dims(it).d) === 'tk';
 }
@@ -899,33 +901,54 @@ function toRamp(list) {
 // Nachrücken: jede Spur bündig nach vorn. Beim Kammer-Auto rückt jede Zone für sich, nichts wandert durch die Trennwand.
 function compact(uid) {
   const U = unitG(uid);
-  const list = itemsIn(uid).filter(it => !isEquip(it)).sort((a, b) => a.x - b.x || a.y - b.y);   // Hubwagen bleibt an der Tür
+  const list = itemsIn(uid).filter(it => !isEquip(it)).sort((a, b) => a.x - b.x || a.y - b.y);   // Hubwagen bleibt stehen
+  const eq = itemsIn(uid).filter(isEquip).map(box);
   const done = [];
   for (const it of list) {
     const k = dims(it);
     let x = U && U.wall && zoneAt(U, it.x, k.d) === 'fr' ? U.wall.end : 0;
     for (const b of done) if (it.y < b.y + b.w - EPS && it.y + k.w > b.y + EPS) x = Math.max(x, b.x + b.d);
+    // ein Hubwagen davor stoppt den Behälter dahinter
+    for (const b of eq) if (b.x + b.d <= it.x + EPS && it.y < b.y + b.w - EPS && it.y + k.w > b.y + EPS) x = Math.max(x, b.x + b.d);
     it.x = Math.min(x, it.x);
     done.push({ x:it.x, y:it.y, d:k.d, w:k.w });
   }
 }
 function hasChamber() { return G.units.some(U => U.wall); }
-// Freier Querschnitt für den Sperrbalken hinter der Ladung: ohne den Bereich, in dem an dieser Stelle ein Hubwagen steht
-function barSpan(U, u) {
-  const x = u.end + 0.04; let y0 = 0, y1 = U.W;
+// Freie Abschnitte für den Sperrbalken hinter der Ladung: ohne den Bereich, in dem an dieser Stelle ein Hubwagen steht.
+// Liste von [y0, y1], jeder Abschnitt mindestens 30 cm breit; leer = kein Platz für einen Balken.
+function barSpans(U, u) {
+  const x = u.end + 0.04; let spans = [[0, U.W]];
   for (const it of u.its.filter(isEquip)) {
     const b = box(it);
     if (x < b.x - EPS || x > b.x + b.d + EPS) continue;
-    if (b.y + b.w / 2 > U.W / 2) y1 = Math.min(y1, b.y); else y0 = Math.max(y0, b.y + b.w);
+    spans = spans.flatMap(([a, c]) => [[a, Math.min(c, b.y)], [Math.max(a, b.y + b.w), c]]).filter(([a, c]) => c - a > 0.3);
   }
-  return y1 - y0 > 0.3 ? [y0, y1] : null;
+  return spans;
 }
 // Hubwagen: steht an der Tür (zuletzt geladen, zuerst gebraucht), längs an der rechten Wand, ein zweiter links
 const isEquip = it => !!(CT[it.t] && CT[it.t].equip);
 function doorSpot(U, boxes, it) {
-  const c = CT[it.t], d = it.r ? c.w : c.d, w = it.r ? c.d : c.w, x = U.L - d;
-  for (const y of [U.W - w, 0, (U.W - w) / 2]) if (fitsAt(U, boxes, x, y, d, w)) return { x, y, r:it.r || 0 };
+  const c = CT[it.t], r0 = it.r || 0;
+  for (const r of [r0, 1 - r0]) {                       // erst wie er steht, sonst gedreht (quer an der Tür)
+    const d = r ? c.w : c.d, w = r ? c.d : c.w, x = U.L - d;
+    if (x < 0) continue;
+    for (const y of [U.W - w, 0, (U.W - w) / 2]) if (fitsAt(U, boxes, x, y, d, w)) return { x, y, r };
+  }
   return null;
+}
+const atDoor = (U, it) => it.x + dims(it).d >= U.L - 0.1;
+function wallSide(U, it) {
+  const k = dims(it), cz = it.y + k.w / 2;
+  if (it.y + k.w >= U.W - 0.05) return 'rechts'; if (it.y <= 0.05) return 'links';
+  return cz < U.W / 3 ? 'links' : cz > 2 * U.W / 3 ? 'rechts' : 'in der Mitte';
+}
+// Wo der Hubwagen steht, in Worten: „an der Tür rechts, längs“ oder „Reihe 4–6 links, längs“
+function equipWhere(U, it) {
+  const k = dims(it), how = k.d >= k.w ? 'längs' : 'quer';
+  if (atDoor(U, it)) return `an der Tür ${wallSide(U, it)}, ${how}`;
+  const a = rowOf(U, it.x) + 1, b = rowOf(U, it.x + k.d - 0.01) + 1;
+  return `${a === b ? `Reihe ${a}` : `Reihe ${a}–${b}`} ${wallSide(U, it)}, ${how}`;
 }
 function placeNew(type, preferUnit) {
   if (CT[type].equip) {
@@ -936,6 +959,9 @@ function placeNew(type, preferUnit) {
       const s = doorSpot(U, itemsIn(U.id).map(box).concat(zoneBlockers(U, U.wall ? 'fr' : null)), { t:type, r:0 });
       if (s) return { u:U.id, x:s.x, y:s.y, r:s.r };
     }
+    // keine Tür frei: auf die Rampe, nicht irgendwohin in den Laderaum (schon gar nicht in die TK-Kammer)
+    const s = bestSpot(G.ramp, itemsIn('r').map(box), type);
+    return s ? { u:'r', x:s.x, y:s.y, r:s.r } : { u:'r', x:0, y:0, r:0 };
   }
   const zone = hasChamber() && !CT[type].equip ? state.newZone : null;
   // Ziel TK-Kammer, aber der Blick liegt auf dem Anhänger: dann in die Einheit mit Kammer
@@ -952,7 +978,7 @@ function placeNew(type, preferUnit) {
 }
 function newItem(type, pos) {
   const it = { id:state.nextId++, t:type, u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0, tk:false };
-  if (it.u === 'r') it.tk = hasChamber() && state.newZone === 'tk';
+  if (it.u === 'r') it.tk = hasChamber() && state.newZone === 'tk' && !CT[type].equip;
   markZone(it);
   state.items.push(it);
   return it;
@@ -995,7 +1021,8 @@ function coveredCells(U, boxes) {
   return { n, cells };
 }
 function computeStats() {
-  const st = { units:{}, warns:[], total:{ n:0 }, ramp:itemsIn('r').length };
+  const rampAll = itemsIn('r');
+  const st = { units:{}, warns:[], total:{ n:0 }, ramp:rampAll.filter(it => !isEquip(it)).length, rampEq:rampAll.filter(isEquip).length };
   for (const U of G.units) {
     const its = itemsIn(U.id), boxes = its.map(box), cargo = its.filter(it => !isEquip(it));
     let end = 0;
@@ -1022,6 +1049,9 @@ function computeStats() {
   const add = (lvl, txt, why) => W.push({ lvl, txt, why:why || null });
   if (st.ramp) add('bad', `${st.ramp} ${st.ramp === 1 ? 'Behälter steht' : 'Behälter stehen'} noch auf der Rampe. Platz schaffen oder auf eine Einheit ziehen.`,
     `<b class="a">${st.ramp} ${st.ramp === 1 ? 'Behälter passt' : 'Behälter passen'}</b> nicht mehr rein und ${st.ramp === 1 ? 'steht' : 'stehen'} auf der Rampe.`);
+  if (st.rampEq) add('warn', `Hubwagen steht noch auf der Rampe. An der Tür Platz schaffen und „Automatisch verteilen“ drücken.`,
+    `Der <b class="a">Hubwagen</b> steht noch auf der Rampe: an der Tür ist kein Platz frei.`);
+  if (st.rampEq) W[W.length - 1].ui = true;      // Bedienhinweis; auf dem Druckblatt steht er unter „Nicht geladen“
   for (const U of G.units) {
     const u = st.units[U.id];
     if (!u.n) continue;
@@ -1038,7 +1068,7 @@ function computeStats() {
     if (u.temp < 0 && fresh) add('bad', `${where}: Sollwert ${fmtTemp(u.temp)} liegt unter 0 °C. ${fresh} Behälter mit Frischware würden anfrieren.`,
       `Die <b>${where}</b> kühlt auf <b class="r">${fmtTemp(u.temp)}</b>. Frischware friert an, TK fährt ohnehin im Isotainer.`);
     // TK-Ware außerhalb einer TK-Kammer (nur bei Fahrzeugen mit Kammer, sonst gibt es keine TK-Kennzeichen)
-    const loose = !U.wall && state.units.some(x => x.chamber) ? u.its.filter(it => it.tk && CT[it.t].need !== 'tk').length : 0;
+    const loose = !U.wall && state.units.some(x => x.chamber) ? u.cargo.filter(it => it.tk && CT[it.t].need !== 'tk').length : 0;
     if (loose && u.temp > -18) {
       const folded = (state.units.find(x => x.id === U.id) || {}).chamber;
       add('warn', folded ? `${U.label}: Trennwand hochgeklappt, ${loose} × TK-Ware fährt bei ${fmtTemp(u.temp)} mit der Frische. Trennwand setzen oder TK im Isotainer.`
@@ -1059,7 +1089,7 @@ function computeStats() {
     for (const it of u.cargo) {
       const a = box(it);
       let front = U.wall && a.x >= U.wall.end - EPS ? U.wall.end : 0;
-      for (const b of u.cargo) {
+      for (const b of u.its) {                             // auch ein Hubwagen davor ist kein Abstand
         if (b === it) continue;
         const bb = box(b);
         if (bb.x + bb.d <= a.x + EPS && a.y < bb.y + bb.w - 0.1 && a.y + a.w > bb.y + 0.1) front = Math.max(front, bb.x + bb.d);
@@ -1073,8 +1103,11 @@ function computeStats() {
   if (!st.total.n && !st.ramp) { add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.'); W[W.length - 1].ui = true; }
   for (const U of G.units) {
     const u = st.units[U.id];
-    if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Sperrbalken hinter Reihe ${rowOf(U, u.end - 0.05) + 1} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür).`);
-    if (u.eq) { add('info', `${U.label}: Hubwagen an der Tür mit Spanngurt sichern (555 kg).`); W[W.length - 1].hw = true; }
+    // Sperrbalken nur, wo neben einem Hubwagen noch Platz für einen Balken ist
+    u.bar = u.n && U.L - u.end > 0.1 ? barSpans(U, u) : [];
+    if (u.bar.length) add('info', `${U.label}: Sperrbalken hinter Reihe ${rowOf(U, u.end - 0.05) + 1} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür${u.bar.length > 1 || u.bar[0][1] - u.bar[0][0] < U.W - 0.05 ? ', neben dem Hubwagen' : ''}).`);
+    else if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Hinter der Ladung steht der Hubwagen, kein Platz für einen Sperrbalken. Ladung und Hubwagen mit Spanngurten sichern.`);
+    if (u.eq) { add('info', `${U.label}: Hubwagen mit Spanngurt sichern (555 kg).`); W[W.length - 1].hw = true; }
   }
   if (st.total.n && !G.units.some(U => st.units[U.id].eq)) { add('info', 'Kein Hubwagen an Bord. Unten bei „Hubwagen“ auf + tippen, er kommt an die Tür.'); W[W.length - 1].ui = true; }
   return st;
@@ -2331,9 +2364,10 @@ function buildUnit(U) {
   for (const [mat, gs] of parts) ch.add(mesh(merge(gs), mat, !mat.isMeshBasicMaterial && mat !== M.grille));
   grp.add(ch);
   // Sperrbalken
-  const bar = new T.Group();
-  bar.add(mesh(bx(0.06, 0.08, W - 0.02, 0, 1.0, 0), M.bar));
-  for (const z of [-1, 1]) bar.add(mesh(bx(0.1, 0.12, 0.05, 0, 1.0, z * (W / 2 - 0.03)), M.steel));
+  const bar = new T.Group(), seg = new T.Group();       // zwei Abschnitte: links und rechts eines Hubwagens in der Mitte
+  seg.add(mesh(bx(0.06, 0.08, W - 0.02, 0, 1.0, 0), M.bar));
+  for (const z of [-1, 1]) seg.add(mesh(bx(0.1, 0.12, 0.05, 0, 1.0, z * (W / 2 - 0.03)), M.steel));
+  bar.add(seg, seg.clone());
   bar.visible = false; grp.add(bar); three.bars[U.id] = bar;
   // Ladungsfront: die leuchtende Ebene hinter der letzten Reihe
   const fr = new T.Group();
@@ -2624,7 +2658,7 @@ function carrierParts(c) {
     steel.push(bx(0.06, 0.07, 0.5, xb - 0.05, 1.03, 0));
     dark.push(bx(0.04, 0.5, 0.56, xb + 0.01, 0.33, 0));
     // Deichsel aufrecht (Fahrstellung für die Fahrt im LKW), Kopf mit Griffen und Not-Aus
-    const top = Math.min(h - 0.06, 1.24), px = x0 + 0.2;
+    const top = Math.min(h - 0.06, 1.24), px = x0 + 0.27;     // Griffe enden genau an der Stellfläche
     const arm = new T.CylinderGeometry(0.03, 0.03, top - 0.86, 10);
     arm.rotateZ(0.2); arm.translate(px - 0.09, (0.86 + top) / 2, 0); dark.push(arm);
     grip.push(bx(0.13, 0.08, 0.44, px - 0.17, top, 0));
@@ -2705,7 +2739,7 @@ function syncItems(st) {
     if (!g) { g = makeItemMesh(it); three.meshes.set(it.id, g); }
     if (!drag || drag.id !== it.id) placeMesh(g, it);
     const tgt = g.userData.core || g.userData.goods;
-    if (tgt) tgt.material = it.tk && hasChamber() ? M.goodsTk : M.goods;
+    if (tgt) tgt.material = it.tk && hasChamber() && !isEquip(it) ? M.goodsTk : M.goods;
     let sel = g.userData.sel;
     const want = view.selected === it.id ? M.selLine : null;
     if (want && !sel) { const c = CT[it.t]; sel = new T.LineSegments(GEO.unitBoxEdges, want); sel.scale.set(c.d + 0.04, c.h + 0.04, c.w + 0.04); sel.position.y = c.h / 2; g.userData.inner.add(sel); g.userData.sel = sel; }
@@ -2725,12 +2759,17 @@ function syncItems(st) {
     const u = st && st.units[U.id];
     const bar = three.bars[U.id], fr = three.fronts[U.id];
     if (!bar) continue;
-    const span = u && u.n && U.L - u.end > 0.1 ? barSpan(U, u) : null;
-    bar.visible = !!span;
-    if (span) { bar.position.x = -(u.end + 0.04); bar.scale.z = (span[1] - span[0]) / U.W; bar.position.z = (span[0] + span[1]) / 2 - U.W / 2; }
+    const spans = u ? u.bar : [];
+    bar.visible = spans.length > 0; bar.position.x = -((u ? u.end : 0) + 0.04);
+    bar.children.forEach((g, i) => {
+      const sp = spans[i]; g.visible = !!sp;
+      if (sp) { g.scale.z = (sp[1] - sp[0]) / U.W; g.position.z = (sp[0] + sp[1]) / 2 - U.W / 2; }
+    });
     fr.visible = !!(u && u.n);
     if (fr.visible) {
       fr.position.x = -Math.min(U.L, u.end + 0.01);
+      const fs = spans.length ? spans.reduce((a, b) => (b[1] - b[0] > a[1] - a[0] ? b : a)) : [0, U.W];   // nicht durch den Hubwagen
+      fr.scale.z = (fs[1] - fs[0]) / U.W; fr.position.z = (fs[0] + fs[1]) / 2 - U.W / 2;
       const bad = st.warns.some(w => w.lvl === 'bad' && w.txt.startsWith(U.label));
       fr.userData.plane.material = bad ? M.frontBad : M.front;
       fr.userData.rect.material = bad ? M.frontLineBad : M.frontLine;
@@ -3007,7 +3046,7 @@ function buildTags(st) {
     if (U.wall) defs.push({ key:'tk' + U.id, grp, local:new T.Vector3(-U.wall.x / 2, U.H + 0.45, 0), prio:2, lvl:U.wall.temp > -18 ? 'warn' : '', html:`TK-Kammer <b>${u.tkUsed}/${u.tkCap}</b> · ${fmtTemp(U.wall.temp)}` });
     if (u.n) defs.push({ key:'fr' + U.id, grp, local:new T.Vector3(-Math.min(U.L, u.end), U.H * 0.92 + 0.12, U.W / 2), prio:3, lvl:'', html:`Ladungsfront <b>${fmtM(u.end)}</b>` });
   }
-  if (st.ramp) defs.push({ key:'ramp', grp:three.unitGroups.r, local:new T.Vector3(-1.4, 2.3, 0), prio:1, lvl:'warn', html:`Rampe · <b>${st.ramp}</b> nicht geladen` });
+  if (st.ramp + st.rampEq) defs.push({ key:'ramp', grp:three.unitGroups.r, local:new T.Vector3(-1.4, 2.3, 0), prio:1, lvl:'warn', html:`Rampe · <b>${st.ramp + st.rampEq}</b> nicht geladen` });
   tagDefs = defs;
   const layer = $('#tags');
   const keep = new Set(defs.map(d => d.key));
@@ -3269,11 +3308,13 @@ function setChamber(uid, change) {
 function setUnitLength(uid, L) {
   const u = state.units.find(x => x.id === uid); if (!u) return;
   const wallBefore = unitG(uid).wall ? unitG(uid).wall.x : null;
+  const hadEquip = itemsIn(uid).some(isEquip);                 // vor dem Umbau merken: validateItems kann ihn auf die Rampe stellen
   pushUndo(); u.L = Math.round(Math.max(3, Math.min(13.6, L)) * 100) / 100;
   rebuildVehicle();
   const U = unitG(uid);
   if (u.chamber && U.wall) u.chamber.rows = U.wall.rows;              // Kammer passt nicht mehr ganz: gemerkte Größe angleichen
-  if ((U.wall ? U.wall.x : null) !== wallBefore) { bulk = true; autoLoad(true, true); bulk = false; }   // Trennwand steht woanders: Zonen neu belegen
+  // Trennwand steht woanders oder ein Hubwagen muss an die neue Tür: neu verteilen
+  if ((U.wall ? U.wall.x : null) !== wallBefore || hadEquip) { bulk = true; autoLoad(true, true); bulk = false; }
   update(); moveCamera(true);
 }
 
@@ -3343,7 +3384,7 @@ function renderStats(st) {
       <div class="unit-h"><b>${U.label}<small>${U.long} · ${fmt(U.L, 2)} × ${fmt(U.W, 2)} m</small></b><span class="big">${u.used}<span> / ${U.cap}</span></span></div>
       <div class="cells" style="grid-template-columns:repeat(${U.rows},1fr);grid-auto-flow:column;grid-template-rows:repeat(3,7px)" role="img" aria-label="${u.used} von ${U.cap} Stellplätzen belegt">${cells}</div>
       <dl class="kv">
-        <dt>Behälter</dt><dd>${u.n}</dd>${u.eq ? `<dt>Hubwagen</dt><dd>${u.eq} an der Tür</dd>` : ''}
+        <dt>Behälter</dt><dd>${u.n}</dd>${u.eq ? `<dt>Hubwagen</dt><dd>${u.its.filter(isEquip).map(it => equipWhere(U, it).replace(/, (längs|quer)$/, '')).join(' · ')}</dd>` : ''}
         <dt>Belegt bis</dt><dd>${fmtM(u.end)} von ${fmtM(U.L)}</dd>
         <dt>Passt noch</dt><dd>${u.fitRbh} RBH oder ${u.fitEp} EP</dd>
       </dl>
@@ -3428,7 +3469,7 @@ function renderList() {
   $('#loadList').innerHTML = units.map(({ U, its, u }) => {
     const counts = CARRIERS().map(c => { const k = its.filter(it => it.t === c.id).length; return k ? `${k} ${c.name}` : ''; }).filter(Boolean).join(', ');
     const n = its.filter(it => !isEquip(it)).length;          // Hubwagen zählt nicht als Behälter
-    const head = u ? `${n} Behälter · ${u.used}/${U.cap} Stellplätze` : `${its.length} Behälter · nicht geladen`;
+    const head = u ? `${n} Behälter · ${u.used}/${U.cap} Stellplätze` : `${n} Behälter${its.length > n ? ` + ${its.length - n} Hubwagen` : ''} · nicht geladen`;
     return `<li><span><b class="${u ? '' : 'a'}">${U.label}</b> <span class="num" style="color:var(--mute)">${head}</span></span><small>${counts || 'leer'}</small></li>`;
   }).join('');
 }
@@ -3802,15 +3843,15 @@ function printTopSvg(st) {
     for (const it of u.its) {
       const c = CT[it.t], p = itemWorld(U, it), x = S.X(p.x0), y = Y(it.y), ww = p.k.d * 100, hh = p.k.w * 100;
       const ink = inkOn(c.color);
-      s += `<rect x="${(x + 2).toFixed(1)}" y="${(y + 2).toFixed(1)}" width="${(ww - 4).toFixed(1)}" height="${(hh - 4).toFixed(1)}" rx="5" fill="${c.color}" class="p-it${it.tk && U.wall ? ' tk' : ''}"/>`;
-      s += `<text x="${(x + ww / 2).toFixed(1)}" y="${(y + hh / 2 + (it.tk && U.wall ? 0 : 6)).toFixed(1)}" text-anchor="middle" class="p-lbl" fill="${ink}">${c.short}</text>`;
-      if (it.tk && U.wall) s += `<text x="${(x + ww / 2).toFixed(1)}" y="${(y + hh / 2 + 20).toFixed(1)}" text-anchor="middle" class="p-tkl" fill="${ink}">TK</text>`;
+      const tkIt = it.tk && U.wall && !c.equip;
+      s += `<rect x="${(x + 2).toFixed(1)}" y="${(y + 2).toFixed(1)}" width="${(ww - 4).toFixed(1)}" height="${(hh - 4).toFixed(1)}" rx="5" fill="${c.color}" class="p-it${tkIt ? ' tk' : ''}"/>`;
+      s += `<text x="${(x + ww / 2).toFixed(1)}" y="${(y + hh / 2 + (tkIt ? 0 : 6)).toFixed(1)}" text-anchor="middle" class="p-lbl" fill="${ink}">${c.short}</text>`;
+      if (tkIt) s += `<text x="${(x + ww / 2).toFixed(1)}" y="${(y + hh / 2 + 20).toFixed(1)}" text-anchor="middle" class="p-tkl" fill="${ink}">TK</text>`;
     }
     // Sperrbalken hinter der letzten Reihe
-    const span = u.n && U.L - u.end > 0.1 ? barSpan(U, u) : null;   // wie im Hinweis: erst ab 10 cm Luft bis zur Tür
-    if (span) {
+    if (u.bar.length) {                                          // wie im Hinweis: nur wo neben einem Hubwagen Platz ist
       const bx = S.X(U.X0 - u.end - 0.04);
-      s += `<line x1="${bx}" y1="${Y(span[0] ? span[0] : -0.12)}" x2="${bx}" y2="${Y(span[1] < U.W ? span[1] : U.W + 0.12)}" class="p-sperr"/>`;
+      for (const sp of u.bar) s += `<line x1="${bx}" y1="${Y(sp[0] > 0.01 ? sp[0] : -0.12)}" x2="${bx}" y2="${Y(sp[1] < U.W - 0.01 ? sp[1] : U.W + 0.12)}" class="p-sperr"/>`;
       s += `<text x="${bx}" y="${Y(U.W) + 72}" text-anchor="middle" class="p-small p-or">Sperrbalken</text>`;
     }
     s += `<text x="${xr}" y="${Y(U.W) + 44}" class="p-small">Tür</text><text x="${xf}" y="${Y(U.W) + 44}" text-anchor="end" class="p-small">Stirnwand</text>`;
@@ -3848,15 +3889,16 @@ function printSideSvg(st) {
       s += `<rect x="${S.X(U.X0 - U.wall.x)}" y="${Z(fy + U.H)}" width="${U.wall.x * 100}" height="${U.H * 100}" class="p-tk"/>`;
       s += `<rect x="${S.X(U.X0 - U.wall.end)}" y="${Z(fy + U.H)}" width="${U.wall.d * 100}" height="${U.H * 100}" class="p-wall"/>`;
     }
-    // hinten die linke Spur (blass), vorn die rechte: so sieht man von rechts in den offenen Koffer
+    // hinten die linke Spur (blass), vorn die rechte: so sieht man von rechts in den offenen Koffer.
+    // Der Sperrbalken kommt vor der rechten Spur dran, damit ein Hubwagen dort ihn verdeckt.
     for (const lane of [0, 1, 2]) {
+      if (lane === 2 && u.bar.length) { const bx = S.X(U.X0 - u.end - 0.04); s += `<line x1="${bx}" y1="${Z(fy) - 4}" x2="${bx}" y2="${Z(fy + U.H) + 4}" class="p-sperr"/>`; }
       for (const it of u.its.filter(i => laneOf(U, i) === lane)) {
         const c = CT[it.t], p = itemWorld(U, it), x = S.X(p.x0), ww = p.k.d * 100, hh = c.h * 100;
         s += `<rect x="${(x + 2).toFixed(1)}" y="${Z(fy) - hh}" width="${(ww - 4).toFixed(1)}" height="${hh}" rx="4" fill="${c.color}" class="p-it p-l${lane}${it.tk && U.wall ? ' tk' : ''}"/>`;
         if (lane === 2) s += `<text x="${(x + ww / 2).toFixed(1)}" y="${Z(fy) - hh / 2 + 6}" text-anchor="middle" class="p-lbl" fill="${inkOn(c.color)}">${c.short}</text>`;
       }
     }
-    if (u.n && U.L - u.end > 0.1) { const bx = S.X(U.X0 - u.end - 0.04); s += `<line x1="${bx}" y1="${Z(fy) - 4}" x2="${bx}" y2="${Z(fy + U.H) + 4}" class="p-sperr"/>`; }
     s += `<line x1="${xr}" y1="${Z(fy + U.H)}" x2="${xf}" y2="${Z(fy + U.H)}" class="p-hline"/><text x="${xr + 8}" y="${Z(fy + U.H) + 20}" class="p-small">innen ${fmt(U.H, 2)} m hoch · ${fmt(U.L, 2)} m lang</text>`;
   });
   s += `<text x="8" y="${base + 38}" class="p-small">Von rechts gesehen. Vorn die rechte Spur, dahinter blass Mitte und links.</text>`;
@@ -3867,7 +3909,7 @@ function printRowsHtml(U, u) {
   const rows = [], lane = U.W / 3, lastEnd = U.rows ? U.rowX[U.rows - 1] + SLOT_D : 0;
   for (let r = 0; r <= U.rows; r++) rows.push([[], [], []]);     // letzte Zeile: Rest hinter der letzten vollen Reihe
   for (const it of u.its) {
-    const k = dims(it), c = CT[it.t], name = c.short + (it.tk && U.wall ? ' (TK)' : '');
+    const k = dims(it), c = CT[it.t], name = c.short + (it.tk && U.wall && !c.equip ? ' (TK)' : '');
     const r0 = it.x + k.d / 2 > lastEnd ? U.rows : rowOf(U, it.x + k.d / 2), l0 = laneOf(U, it);
     rows[r0][l0].push(name);
     // Stellplätze, die der Behälter außerdem belegt (gleiche 12-%-Regel wie die Zählung): „(EP)“
@@ -3904,8 +3946,7 @@ function printNotes(st) {
   }
   if (!st.total.n) out.push('Fahrzeug leer, keine Ladung geplant.');
   for (const U of G.units) for (const it of st.units[U.id].its.filter(isEquip)) {
-    const k = dims(it), cz = it.y + k.w / 2, side = cz < U.W / 3 ? 'links' : cz > 2 * U.W / 3 ? 'rechts' : 'in der Mitte';
-    out.push(`<b>Hubwagen ${esc(CT[it.t].vlabel)}:</b> ${esc(U.label)}, an der Tür ${side}, ${k.d >= k.w ? 'längs' : 'quer'}. Beim Entladen zuerst heraus, zuletzt wieder hinein; mit Spanngurt sichern.`);
+    out.push(`<b>Hubwagen ${esc(CT[it.t].vlabel)}:</b> ${esc(U.label)}, ${equipWhere(U, it)}. ${atDoor(U, it) ? 'Beim Entladen zuerst heraus, zuletzt wieder hinein; mit' : 'Mit'} Spanngurt sichern.`);
   }
   if (st.total.n && !G.units.some(U => st.units[U.id].eq)) out.push('Kein Hubwagen an Bord.');
   for (const w of st.warns) if (w.lvl !== 'ok' && !w.ui && !w.hw) out.push((w.lvl === 'bad' || w.lvl === 'warn' ? '<b class="p-warn">Achtung:</b> ' : '') + esc(w.txt));
@@ -3923,7 +3964,7 @@ function printSheetHtml() {
   const date = now.toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
   const time = now.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
   let body = `<header class="p-head"><div><div class="p-eyebrow">Ladeplan</div><h1>${esc(P.name)} <span>${esc(P.type)}</span></h1><div class="p-sub">${esc(date)}</div></div>
-    <div class="p-stats"><div><b>${st.total.used}/${st.total.cap}</b><small>Stellplätze</small></div><div><b>${st.total.cap - st.total.used}</b><small>frei</small></div><div><b>${st.total.n}</b><small>Behälter</small></div>${st.ramp ? `<div class="p-warnbox"><b>${st.ramp}</b><small>nicht geladen</small></div>` : ''}</div></header>`;
+    <div class="p-stats"><div><b>${st.total.used}/${st.total.cap}</b><small>Stellplätze</small></div><div><b>${st.total.cap - st.total.used}</b><small>frei</small></div><div><b>${st.total.n}</b><small>Behälter</small></div>${st.ramp + st.rampEq ? `<div class="p-warnbox"><b>${st.ramp + st.rampEq}</b><small>nicht geladen</small></div>` : ''}</div></header>`;
   if (printOpt.top) body += `<section class="p-fig"><h2>Draufsicht</h2>${printTopSvg(st)}</section>`;
   if (printOpt.side) body += `<section class="p-fig"><h2>Seitenansicht</h2>${printSideSvg(st)}</section>`;
   body += `<section class="p-legend">${printLegend(st)}</section>`;
@@ -3964,7 +4005,7 @@ function copyList() {
     lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${u.n} Behälter, ${U.wall ? 'Frische' : 'Kühlung'} Soll ${fmtTemp(u.temp)}`);
     if (U.wall) lines.push(`  TK-Kammer vorn: Reihe 1–${U.wall.rows} (${u.tkCap} Stellplätze, ${u.tkUsed} belegt), Soll ${fmtTemp(U.wall.temp)}; Trennwand dahinter`);
     for (let r = 0; r < U.rows; r++) {
-      const row = u.its.filter(it => rowOf(U, it.x) === r).sort((a, b) => a.y - b.y);
+      const row = u.its.filter(it => rowOf(U, it.x + dims(it).d / 2) === r).sort((a, b) => a.y - b.y);
       if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}${U.wall && r < U.wall.rows ? ' TK' : '   '}: ${row.map(it => CT[it.t].short).join(', ')}`);
     }
     const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} ${c.short}` : ''; }).filter(Boolean).join(', ');
@@ -3972,7 +4013,7 @@ function copyList() {
     lines.push('');
   }
   const ramp = itemsIn('r');
-  if (ramp.length) lines.push(`RAMPE (nicht geladen): ${ramp.length} Behälter`, '');
+  if (ramp.length) { const rn = ramp.filter(it => !isEquip(it)).length; lines.push(`RAMPE (nicht geladen): ${rn} Behälter${ramp.length > rn ? ` + ${ramp.length - rn} Hubwagen` : ''}`, ''); }
   lines.push(`Gesamt: ${st.total.used} von ${st.total.cap} Stellplätzen belegt, ${st.total.n} Behälter`);
   lines.push('RBH Rollbehälter · HYG Hygiene-RBH · ISO TK-Isotainer · I2 Fleisch · EP Euro-Palette · CH3 CHEP-Palette · HW Hubwagen');
   const warn = st.warns.filter(w => w.lvl === 'bad' || w.lvl === 'warn');
