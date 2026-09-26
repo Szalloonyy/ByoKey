@@ -2,7 +2,49 @@
 
 Interaktiver 3D-Ladeplan für einen Kühl-Hängerzug im Filialverkehr: Iveco S-Way LNG als Maschine (Motorwagen) mit Tandem-Anhänger und Durchlade-Kühlkoffer von ROHR bzw. Wüllhorst. Dazu kommen Sattelzug, Solo-LKW und Anhänger allein. Vorbild für die Bedienung war [„The Plane of Focus“](https://sael.net/plane-of-focus/): ein echtes Fahrzeug, aufgemacht, mit Live-Werten direkt im 3D-Bild.
 
-Alles steckt in einer Datei: `index.html`. Sie braucht keinen Build. Zum Starten die Datei im Browser öffnen; three.js (0.147, UMD) kommt von jsDelivr.
+Der Ordner ist eine fertige, statische Website. Es gibt keinen Build, keinen Server-Code und keine Datenbank. Zum Ausprobieren `index.html` im Browser öffnen.
+
+## Auf eine Website bringen
+
+**Variante 1: eigener Webspace (Strato, IONOS, all-inkl. …)**
+
+1. Den kompletten Ordner `LKW-Beladung` per FTP oder Dateimanager hochladen, zum Beispiel als `/ladeplan/`.
+2. Fertig. Der Planer läuft unter `https://eure-domain.de/ladeplan/`.
+
+**Variante 2: in eine bestehende Seite einbetten (z. B. WordPress, Block „Individuelles HTML“)**
+
+Den Ordner wie oben hochladen und dann einbetten:
+
+```html
+<iframe src="/ladeplan/" title="Ladeplan Hängerzug"
+        style="width:100%;height:85vh;min-height:620px;border:0;border-radius:12px"
+        allow="fullscreen" loading="lazy"></iframe>
+```
+
+Auf dem Handy schaltet der Planer automatisch auf die Handy-Ansicht um. Mit dem Vollbild-Knopf füllt er den ganzen Bildschirm.
+
+**Variante 3: kostenlos hosten**
+
+Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudflare Pages hochladen, oder GitHub Pages auf diesen Ordner zeigen lassen.
+
+### Was die Website braucht
+
+- **Nur statische Dateien.** HTTPS wird empfohlen. Über HTTPS funktioniert der Planer nach dem ersten Aufruf auch offline (`sw.js`), und man kann ihn auf dem Handy mit „Zum Home-Bildschirm“ wie eine App ablegen (`manifest.webmanifest`).
+- **Datenschutz**
+  - Die Seite lädt nichts von fremden Servern. Schriften (Barlow, JetBrains Mono) und three.js liegen in `fonts/` und `vendor/`.
+  - Es gibt keine Cookies, kein Tracking und keine Formulare.
+  - Der Ladeplan wird nur im Browser des Nutzers gespeichert (`localStorage`) und nie übertragen.
+- **Lizenzen:** three.js steht unter MIT (`vendor/LICENSE-three.txt`), die Schriften unter der SIL Open Font License (`fonts/LICENSE-*.txt`).
+
+### Dateien
+
+| Datei | Zweck |
+|---|---|
+| `index.html` | die App (HTML, CSS, JavaScript in einer Datei) |
+| `vendor/` | three.js 0.147 und OrbitControls |
+| `fonts/` | selbst gehostete Schriften mit `fonts.css` |
+| `sw.js` | Offline-Cache; bei Änderungen `VERSION` hochzählen |
+| `manifest.webmanifest`, `icon*.svg/png` | App-Symbol und Startbildschirm-Eintrag |
 
 ## Was er kann
 

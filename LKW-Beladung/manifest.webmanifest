@@ -1,0 +1,16 @@
+{
+  "name": "Ladeplan Hängerzug",
+  "short_name": "Ladeplan",
+  "description": "Interaktiver 3D-Ladeplan für Kühl-Hängerzug, Solo-LKW, Anhänger und Sattelzug.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0f1a",
+  "theme_color": "#0b0f1a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
