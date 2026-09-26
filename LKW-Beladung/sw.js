@@ -1,5 +1,5 @@
 // Offline-Cache für den Ladeplan. Bei Änderungen an den Dateien VERSION hochzählen.
-const VERSION = 'ladeplan-v1';
+const VERSION = 'ladeplan-v2';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png',
   './vendor/three.min.js', './vendor/OrbitControls.js', './fonts/fonts.css',

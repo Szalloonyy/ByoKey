@@ -1,6 +1,6 @@
 # Ladeplan Hängerzug
 
-Interaktiver 3D-Ladeplan für einen Kühl-Hängerzug im Filialverkehr: Iveco S-Way LNG als Maschine (Motorwagen) mit Tandem-Anhänger und Durchlade-Kühlkoffer von ROHR bzw. Wüllhorst. Dazu kommen Sattelzug, Solo-LKW und Anhänger allein. Vorbild für die Bedienung war [„The Plane of Focus“](https://sael.net/plane-of-focus/): ein echtes Fahrzeug, aufgemacht, mit Live-Werten direkt im 3D-Bild.
+Interaktiver 3D-Ladeplan für einen Kühl-Hängerzug im Filialverkehr: Iveco S-Way LNG als Maschine (Motorwagen) mit Tandem-Anhänger und Durchlade-Kühlkoffer von ROHR bzw. Wüllhorst. Dazu kommen das Kammer-Auto mit TK-Kammer, die Maschinen solo und die Anhänger allein. Vorbild für die Bedienung war [„The Plane of Focus“](https://sael.net/plane-of-focus/): ein echtes Fahrzeug, aufgemacht, mit Live-Werten direkt im 3D-Bild.
 
 Der Ordner ist eine fertige, statische Website. Es gibt keinen Build, keinen Server-Code und keine Datenbank. Zum Ausprobieren `index.html` im Browser öffnen.
 
@@ -49,10 +49,18 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
 ## Was er kann
 
 - **Fahrzeuge**
-  - LKW 221: Durchlade-Hängerzug mit 33 + 30 = 63 Stellplätzen
-  - LKW 219: Sattelzug mit 54 Stellplätzen, alternativ Hängerzug 24 + 30 oder 27 + 27
-  - Hängerzug 30 + 30, Solo-LKW mit 33 oder 30 Stellplätzen, Anhänger mit 30
+  - LKW 221: Durchlade-Hängerzug aus Maschine 219 und Anhänger, 33 + 30 = 63 Stellplätze
+  - LKW 219: die Maschine von 221 solo, 33 Stellplätze
+  - LKW 213: Hängerzug aus dem Kammer-Auto 211 und Anhänger, 30 + 24 = 54 Stellplätze
+  - LKW 211: die Maschine von 213 solo, Kammer-Auto mit 30 Stellplätzen
+  - Anhänger allein mit 30 oder 24 Stellplätzen
   - Die Innenlänge jeder Einheit lässt sich im Datenblatt ändern.
+- **Kammer-Auto (211, 213)**
+  - Vorn an der Stirnwand liegt eine TK-Kammer, dahinter eine isolierte Quertrennwand (im Planer 12 cm), dann die Frische.
+  - Die Wand kostet eine Reihe: 10 statt 11 Reihen, also 30 statt 33 Stellplätze.
+  - Die Kammer ist 3 Reihen lang (2,17 m, 9 Stellplätze) und steht auf −22 °C. Größe (1 bis 9 Reihen) und Temperatur lassen sich einstellen.
+  - „Hochklappen“ nimmt die Wand heraus, dann gibt es 33 Plätze in einem Raum. TK-Ware bleibt markiert und kommt beim Zurückklappen wieder in die Kammer.
+  - Unten wählt man „Frische“ oder „TK-Kammer“ für neue Behälter. „Automatisch verteilen“ stellt TK-Ware in die Kammer.
 - **Ladungsträger:** Rollbehälter blau, Hygiene-Rollbehälter, TK-Isotainer, I2 Fleisch (E2-Kisten), Euro-Palette und CH3-Palette (CHEP). Isotainer, I2, CH3 und Hygiene-RBH haben umschaltbare Formate.
 - **Setzen, Ziehen, Drehen**
   - Behälter werden per Tippen gesetzt. Die Vorschau rastet in Spuren und Reihen ein.
@@ -63,7 +71,7 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
   - belegte und freie Stellplätze
   - „passt noch“ für Rollbehälter und Europaletten
   - Ladungsfront und Sperrbalken
-  - Kühlung je Einheit
+  - Kühlung je Einheit, beim Kammer-Auto getrennt für TK-Kammer und Frische
   - Gewichte rechnet der Planer bewusst nicht, weil die Ware immer anders gepackt ist.
 - **Ansichten**
   - Tasten 1, 2 und 3 wählen Maschine, Anhänger oder den ganzen Zug.
@@ -80,9 +88,11 @@ Die Maße und Hersteller stehen im Datenblatt der App, mit Quellen und Einstufun
 
 - „Wülhordt“ ist Wüllhorst Fahrzeugbau aus Selm-Bork, „Rohraufbau“ ist ROHR Spezialfahrzeuge aus Straubing.
 - ROHR nennt für den Durchladezug DLE31 bei EDEKA 20 + 18 Europaletten oder 33 + 30 Rollcontainer.
-- Rollbehälter 724 × 815 mm, Gitterseite quer: 3 je Reihe, Reihe 724 mm tief. 8,08 m innen ergeben 33 Stellplätze, 7,30 m ergeben 30.
+- Rollbehälter 724 × 815 mm, Gitterseite quer: 3 je Reihe, Reihe 724 mm tief. 8,08 m innen ergeben 33 Stellplätze, 7,30 m ergeben 30, 6,10 m ergeben 24.
+- Kammer-Auto: 11 Reihen brauchen 7,96 m, im 8,08-m-Koffer bleiben 12 cm. Das reicht für keine Trennwand mit Dichtung, deshalb hat 211 nur 30 Plätze.
 - Offene Annahmen, die vor dem Einsatz zu prüfen sind:
-  - LKW 219 als Sattelzug
+  - Lage der Trennwand und Größe der TK-Kammer im Kammer-Auto 211
+  - Innenlänge des 24er-Anhängers von LKW 213 (im Planer 6,10 m)
   - CH3 als CHEP-Palette
   - I2 als E2-Kisten
   - Innenmaße eurer Koffer

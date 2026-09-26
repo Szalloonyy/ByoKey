@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ladeplan Hängerzug</title>
-<meta name="description" content="Interaktiver 3D-Ladeplan für Kühl-Hängerzug, Solo-LKW, Anhänger und Sattelzug: Rollbehälter, Paletten, TK-Isotainer und Fleisch auf Stellplätze verteilen.">
+<meta name="description" content="Interaktiver 3D-Ladeplan für Kühl-Hängerzug, Kammer-Auto, Solo-LKW und Anhänger: Rollbehälter, Paletten, TK-Isotainer und Fleisch auf Stellplätze verteilen.">
 <meta name="theme-color" content="#0b0f1a">
 <meta property="og:title" content="Ladeplan Hängerzug">
 <meta property="og:description" content="Interaktiver 3D-Ladeplan: Rollbehälter, Paletten und Isotainer auf Maschine und Anhänger verteilen.">
@@ -128,6 +128,12 @@ select.pick option{background:#111727;color:var(--ink)}
 .temp .step{display:flex;gap:4px;align-items:center}
 .temp .step button{width:28px;height:28px;border-radius:8px;border:1px solid var(--edge);background:var(--fill-2);font-weight:700;padding:0}
 .plan{width:100%;height:auto;display:block;cursor:pointer}
+.chamber{border:1px solid rgba(159,212,255,.35);background:rgba(120,190,255,.07);border-radius:10px;padding:8px 9px;display:grid;gap:6px}
+.chamber small{font:400 11px/1.35 var(--font-mono);color:var(--mute)}
+.ch-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ch-h b{font:700 13px/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;color:#9fd4ff}
+.temp .led.tk{color:#9fd4ff;border-color:rgba(159,212,255,.3);text-shadow:0 0 8px rgba(159,212,255,.6)}
+.temp .step button:disabled{opacity:.35;cursor:default}
 .plan text{font-family:var(--font-mono)}
 .warns{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .warns li{display:grid;grid-template-columns:7px 1fr;gap:9px;font-size:12.5px;line-height:1.4;padding:7px 9px;border-radius:9px;background:rgba(13,18,32,.6);border:1px solid var(--edge);color:var(--ink-2)}
@@ -147,6 +153,8 @@ select.pick option{background:#111727;color:var(--ink)}
 .dock-side{display:grid;gap:6px;align-content:center;flex:none}
 .dock-title{font:700 10.5px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
 .dock-hint{font-size:12px;line-height:1.4;color:var(--ink-2);max-width:190px}
+.zone-seg button{padding:5px 8px;font-size:12px}
+.zone-seg button[data-zone="tk"][aria-pressed="true"]{background:#9fd4ff}
 .tiles{display:flex;gap:8px;flex:1 0 auto;justify-content:center}
 .tile{position:relative;width:136px;flex:none;border:1px solid var(--edge);border-radius:12px;background:rgba(13,18,32,.7);display:grid;grid-template-rows:auto auto;overflow:hidden}
 .tile[data-armed="true"]{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset,0 0 18px -4px rgba(127,227,255,.6)}
@@ -221,7 +229,9 @@ tr:last-child td{border-bottom:0}
   #stage{order:3;position:sticky;top:0;height:46vh;min-height:250px;z-index:3;inset:auto}
   #dock{order:4;position:relative;left:auto;right:auto;bottom:auto;border-radius:0;border-left:0;border-right:0;flex-wrap:wrap;gap:8px;padding:10px 12px;backdrop-filter:none;-webkit-backdrop-filter:none;background:#0f1524}
   .tiles{order:1;width:100%;flex:1 1 100%;justify-content:flex-start;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-  .dock-side{display:none}
+  .dock-side{order:2;flex:1 1 100%;display:flex;gap:8px;align-items:center}
+  .dock-side .dock-title,.dock-side .dock-hint{display:none}
+  .dock-side .zone-seg{flex:1}
   .dock-hint{max-width:none}
   .dock-actions{order:3;flex:1 1 100%;grid-template-columns:repeat(3,1fr)}
   .dock-actions .primary{grid-column:1/-1}
@@ -320,6 +330,10 @@ tr:last-child td{border-bottom:0}
     <div class="dock-side">
       <span class="dock-title">Ladungsträger</span>
       <span class="dock-hint">Antippen, dann auf den Boden tippen.<br><b>+</b> stellt auf den nächsten freien Platz.</span>
+      <div class="seg zone-seg" id="zoneSeg" hidden aria-label="Ziel für neue Behälter">
+        <button type="button" data-zone="fr" aria-pressed="true">Frische</button>
+        <button type="button" data-zone="tk" aria-pressed="false">TK-Kammer</button>
+      </div>
     </div>
     <div class="tiles" id="tiles"></div>
     <div class="dock-actions">
@@ -339,6 +353,7 @@ tr:last-child td{border-bottom:0}
     <div class="modal-box">
       <div class="modal-head"><div><div class="eyebrow">So funktioniert's</div><h2 id="helpTitle">Ein Hängerzug, aufgemacht</h2></div><button class="btn" data-close type="button">Schließen <kbd>Esc</kbd></button></div>
       <p>Der Planer zeigt die Ladefläche so, wie ihr sie an der Rampe seht. Reihe 1 steht an der Stirnwand, die letzte Reihe an der Tür. Jede Reihe hat drei Stellplätze. Ein Rollbehälter (72,4 × 81,5 cm) steht mit der Gitterseite quer, drei passen nebeneinander, eine Reihe ist 72,4 cm tief. So kommen die 33 Plätze der Maschine (8,08 m innen) und die 30 Plätze des Anhängers (7,30 m innen) zusammen.</p>
+      <p><b>Eure Flotte:</b> LKW 221 ist der Hängerzug aus der Maschine 219 (33) und einem Anhänger (30), zusammen 63. LKW 213 ist der Hängerzug aus dem Kammer-Auto 211 (30) und einem kürzeren Anhänger (24), zusammen 54. Die Maschinen 219 und 211 gibt es auch einzeln im Fahrzeugmenü.</p>
       <h3>Laden</h3>
       <ul>
         <li>Unten einen Ladungsträger antippen, dann auf den Ladeboden tippen, im 3D-Bild oder im Stellplatzplan. Die Vorschau rastet an Wand, Reihe und Nachbarn ein. Mit <b>+</b> sucht der Planer selbst den nächsten freien Platz.</li>
@@ -352,7 +367,14 @@ tr:last-child td{border-bottom:0}
         <li><b>Stellplätze</b> sind die belegten Rasterfelder, eines je Rollbehälter. Eine Europalette längs belegt zwei Felder und ein Stück vom dritten: drei Paletten hintereinander brauchen so viel Platz wie fünf Rollbehälter.</li>
         <li><b>Passt noch</b> zählt, wie viele Rollbehälter oder Europaletten der Planer auf den freien Boden noch stellen kann.</li>
         <li>Die <b>Ladungsfront</b> ist die leuchtende Ebene hinter der letzten Reihe. Dort gehört der Sperrbalken hin.</li>
-        <li><b>Kühlung</b>: Fleisch und Hygiene-Ware brauchen höchstens +4 °C. Tiefkühlware fährt im vorgekühlten Isotainer mit.</li>
+        <li><b>Kühlung</b>: Fleisch und Hygiene-Ware brauchen höchstens +4 °C. Tiefkühlware fährt im vorgekühlten Isotainer mit, im Kammer-Auto in der TK-Kammer.</li>
+      </ul>
+      <h3>Kammer-Auto (211 und 213)</h3>
+      <ul>
+        <li>Die Maschine 211 hat vorn an der Stirnwand eine <b>TK-Kammer</b>. Eine isolierte Quertrennwand trennt sie von der Frische, jede Seite hat ihre eigene Temperatur.</li>
+        <li>Die Wand kostet eine Reihe: Im 8,08-m-Koffer bleiben neben 11 Reihen nur 12 cm übrig, das reicht für keine Trennwand mit Dichtung. Deshalb hat das Kammer-Auto 10 Reihen, also <b>30 statt 33 Stellplätze</b>.</li>
+        <li>Im Planer ist die Kammer <b>3 Reihen lang (2,17 m, 9 Stellplätze)</b> und steht auf −22 °C. Dahinter bleiben 7 Reihen mit 21 Plätzen für die Frische. Größe und Temperatur stellt ihr bei der Maschine ein. <b>Hochklappen</b> nimmt die Wand heraus, dann sind es wieder 33 Plätze in einem Raum.</li>
+        <li>Unten zwischen <b>Frische</b> und <b>TK-Kammer</b> wählen, wohin neue Behälter kommen. Was in der Kammer steht, gilt als TK-Ware. <b>Automatisch verteilen</b> stellt TK-Ware in die Kammer und alles andere hinter die Wand.</li>
       </ul>
       <h3>Tasten</h3>
       <div class="keys">
@@ -439,23 +461,20 @@ const KIND = {
   semi:    { label:'Auflieger', long:'Kühlauflieger', floorY:1.25, W:2.48, H:2.55, wallF:0.10, wallR:0.12 },
 };
 
+const WALL_T = 0.12;          // Quertrennwand im Kammer-Auto inkl. Dichtung und Spiel (Annahme): kostet eine Reihe, 33 -> 30
 const PRESETS = [
-  { id:'221', name:'LKW 221', type:'Durchlade-Hängerzug', noun:'Der Hängerzug,', body:'ROHR DLE31 bzw. Wüllhorst Durchladesystem', chassis:'Iveco S-Way AS260S46Y/FS-CM LNG · 6x2 · 460 PS',
-    units:[{ kind:'motor', L:8.08 }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true },
-  { id:'219s', name:'LKW 219', type:'Sattelzug 54 (Annahme)', noun:'Der Sattelzug,', body:'Kühlauflieger 13,6 m', chassis:'Iveco S-Way AS440S46TP LNG · 4x2',
-    units:[{ kind:'semi', L:13.30 }] },
-  { id:'219h', name:'LKW 219', type:'Hängerzug 24 + 30 (Alternative)', noun:'Der Hängerzug,', body:'Kühlkoffer 6,23 m + 7,43 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:6.10 }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true },
-  { id:'219k', name:'LKW 219', type:'Hängerzug 27 + 27 (Alternative)', noun:'Der Hängerzug,', body:'2 × Kühlkoffer 6,73 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:6.60 }, { kind:'trailer', L:6.60 }], gap:0.75, durchlade:true },
-  { id:'hz60', name:'Hängerzug', type:'Tandem 30 + 30', noun:'Der Hängerzug,', body:'2 × 7,825-m-Kühlkoffer', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:7.60 }, { kind:'trailer', L:7.60 }], gap:0.75, durchlade:false },
-  { id:'solo33', name:'Solo-LKW', type:'33 Stellplätze', noun:'Der Solo-LKW,', body:'Kühlkoffer 8,21 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:8.08 }] },
-  { id:'solo30', name:'Solo-LKW', type:'30 Stellplätze', noun:'Der Solo-LKW,', body:'Kühlkoffer 7,73 m', chassis:'Iveco S-Way AS260S46Y/FS LNG · 6x2',
-    units:[{ kind:'motor', L:7.60 }] },
-  { id:'anh30', name:'Anhänger', type:'30 Stellplätze', noun:'Der Anhänger,', body:'Durchlade-Kühlkoffer 7,43 m', chassis:'Tandem-Zentralachse · 18 t',
+  { id:'221', name:'LKW 221', type:'Hängerzug · 219 + Anhänger', noun:'Der Hängerzug,', body:'ROHR DLE31 bzw. Wüllhorst Durchladesystem', chassis:'Iveco S-Way AS260S46Y/FS-CM LNG · 6x2 · 460 PS',
+    units:[{ kind:'motor', L:8.08, no:'219' }, { kind:'trailer', L:7.30 }], gap:0.75, durchlade:true },
+  { id:'219', name:'LKW 219', type:'Solo-Maschine von 221', noun:'Die Maschine,', body:'Kühlkoffer 8,21 m', chassis:'Iveco S-Way AS260S46Y/FS-CM LNG · 6x2 · 460 PS',
+    units:[{ kind:'motor', L:8.08, no:'219' }] },
+  { id:'213', name:'LKW 213', type:'Hängerzug · 211 + Anhänger', noun:'Der Hängerzug,', body:'Kammer-Motorwagen 8,21 m + Anhänger 6,23 m', chassis:'Iveco S-Way AS260S46Y/FS-CM LNG · 6x2 · 460 PS',
+    units:[{ kind:'motor', L:8.08, no:'211', chamber:{ rows:3, temp:-22, on:true } }, { kind:'trailer', L:6.10 }], gap:0.75, durchlade:false },
+  { id:'211', name:'LKW 211', type:'Solo-Maschine von 213 · Kammer-Auto', noun:'Das Kammer-Auto,', body:'Kühlkoffer 8,21 m mit Quertrennwand', chassis:'Iveco S-Way AS260S46Y/FS-CM LNG · 6x2 · 460 PS',
+    units:[{ kind:'motor', L:8.08, no:'211', chamber:{ rows:3, temp:-22, on:true } }] },
+  { id:'anh30', name:'Anhänger', type:'30 Stellplätze (von 221)', noun:'Der Anhänger,', body:'Durchlade-Kühlkoffer 7,43 m', chassis:'Tandem-Zentralachse · 18 t',
     units:[{ kind:'trailer', L:7.30 }] },
+  { id:'anh24', name:'Anhänger', type:'24 Stellplätze (von 213)', noun:'Der Anhänger,', body:'Kühlkoffer 6,23 m', chassis:'Tandem-Zentralachse · 18 t',
+    units:[{ kind:'trailer', L:6.10 }] },
 ];
 const PRESET = id => PRESETS.find(p => p.id === id) || PRESETS[0];
 
@@ -463,21 +482,21 @@ const PRESET = id => PRESETS.find(p => p.id === id) || PRESETS[0];
 /* =====================================================================
    Zustand
    ===================================================================== */
-const STORE_KEY = 'ladeplan-haengerzug-v4';
+const STORE_KEY = 'ladeplan-haengerzug-v5';
 let state = null;
 const view = { focus:'zug', cam:0, exploded:false, armed:null, selected:null, uiOff:false, tour:false };
 let undoStack = [];
 
 function unitsFor(p) {
   const ids = p.units.length === 1 ? [p.units[0].kind === 'trailer' ? 'a' : p.units[0].kind === 'semi' ? 's' : 'm'] : ['m', 'a'];
-  return p.units.map((u, i) => ({ id:ids[i], kind:u.kind, L:u.L, temp:3 }));
+  return p.units.map((u, i) => ({ id:ids[i], kind:u.kind, L:u.L, temp:3, no:u.no || '', chamber:u.chamber ? Object.assign({}, u.chamber) : null }));
 }
 function freshState(presetId) {
   const p = PRESET(presetId || '221');
   return {
-    v:4, preset:p.id, units:unitsFor(p), items:[], nextId:1,
+    v:5, preset:p.id, units:unitsFor(p), items:[], nextId:1,
     variant:Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].key])),
-    sample:false,
+    sample:false, newZone:'fr',
   };
 }
 function loadSaved() {
@@ -485,7 +504,7 @@ function loadSaved() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s || s.v !== 4 || !Array.isArray(s.items) || !Array.isArray(s.units)) return null;
+    if (!s || s.v !== 5 || !Array.isArray(s.items) || !Array.isArray(s.units)) return null;
     const known = new Set(CARRIER_BASE.map(b => b.id));
     s.items = s.items.filter(it => known.has(it.t) && typeof it.x === 'number' && typeof it.y === 'number');
     if (!PRESETS.some(p => p.id === s.preset)) return null;
@@ -536,9 +555,25 @@ function computeGeometry() {
     const g = {
       id:u.id, kind:u.kind, K, label:K.label, long:K.long, L:u.L, W:K.W, H:K.H, floorY:K.floorY,
       X0:xFront - K.wallF, extFront:xFront, extRear:xFront - extL, extL,
-      rows:Math.floor((u.L - 0.01 + EPS) / SLOT_D),
+      no:u.no || '', blockers:[], wall:null,
     };
-    g.cap = g.rows * 3;
+    // Reihenraster. Beim Kammer-Auto steht nach der TK-Kammer die Quertrennwand, dahinter geht es mit Frische weiter.
+    const rowX = [];
+    const ch = u.chamber && u.chamber.on ? u.chamber : null;
+    if (ch && u.L > 2 * SLOT_D + WALL_T) {
+      const fr = Math.max(1, Math.min(ch.rows, Math.floor((u.L - WALL_T - SLOT_D - 0.01) / SLOT_D)));
+      for (let r = 0; r < fr; r++) rowX.push(r * SLOT_D);
+      const wx = fr * SLOT_D;
+      g.wall = { x:wx, d:WALL_T, end:wx + WALL_T, rows:fr, temp:ch.temp };
+      g.blockers = [{ x:wx, y:0, d:WALL_T, w:K.W }];
+      const rr = Math.floor((u.L - g.wall.end - 0.01 + EPS) / SLOT_D);
+      for (let r = 0; r < rr; r++) rowX.push(g.wall.end + r * SLOT_D);
+    } else {
+      const rr = Math.floor((u.L - 0.01 + EPS) / SLOT_D);
+      for (let r = 0; r < rr; r++) rowX.push(r * SLOT_D);
+    }
+    g.rowX = rowX; g.rows = rowX.length; g.cap = g.rows * 3;
+    g.label = K.label + (u.no ? ' ' + u.no : '');
     if (u.kind === 'motor') {
       g.XF = -1.45;
       const wb = u.L >= 7.9 ? 5.10 : 4.80;
@@ -577,8 +612,22 @@ function overlaps(a, b) {
 function fitsAt(U, boxes, x, y, d, w) {
   if (x < -EPS || y < -EPS || x + d > U.L + EPS || y + w > U.W + EPS) return false;
   const c = { x, y, d, w };
+  if (U.blockers) for (const b of U.blockers) if (overlaps(c, b)) return false;
   for (const b of boxes) if (overlaps(c, b)) return false;
   return true;
+}
+// Reihe, in der die Stelle x liegt (0-basiert), nach dem Raster der Einheit
+function rowOf(U, x) {
+  let r = 0;
+  for (let i = 0; i < U.rowX.length; i++) if (U.rowX[i] <= x + 0.01) r = i;
+  return r;
+}
+// Kammer-Auto: Bereich TK-Kammer ('tk') oder Frische ('fr') an der Stelle x
+function zoneAt(U, x, d) { return U && U.wall ? (x + d / 2 < U.wall.x ? 'tk' : 'fr') : null; }
+// Sperrflächen, die eine Zone vom Rest trennen (für Verteilen und +)
+function zoneBlockers(U, zone) {
+  if (!U.wall || !zone) return [];
+  return zone === 'tk' ? [{ x:U.wall.x, y:0, d:U.L - U.wall.x + 1, w:U.W }] : [{ x:-1, y:0, d:U.wall.end + 1, w:U.W }];
 }
 function itemsIn(uid, exceptId) { return state.items.filter(it => it.u === uid && it.id !== exceptId); }
 
@@ -590,6 +639,7 @@ function bestSpot(U, boxes, type) {
     const d = r ? c.w : c.d, w = r ? c.d : c.w;
     if (d > U.L + EPS || w > U.W + EPS) continue;
     const xs = [0]; for (const b of boxes) xs.push(b.x + b.d);
+    for (const b of U.blockers || []) xs.push(b.x + b.d);
     const lanesY = U.rows && w <= U.W / 3 + EPS ? [0, 1, 2].map(l => l * U.W / 3 + (U.W / 3 - w) / 2) : [];
     const ys = [0, U.W - w]; for (const b of boxes) { ys.push(b.y + b.w); ys.push(b.y - w); }
     const xu = [...new Set(xs.map(v => +v.toFixed(4)))].filter(v => v + d <= U.L + EPS).sort((a, b) => a - b);
@@ -611,7 +661,8 @@ function snapSpot(U, boxes, d, w, px, py) {
   const cx = px - d / 2, cy = py - w / 2;
   const xs = [0, U.L - d];
   const ys = [0, U.W - w, (U.W - w) / 2];
-  if (U.rows) { for (let k = 0; k <= U.rows; k++) xs.push(k * SLOT_D); for (let l = 0; l < 3; l++) ys.push(l * U.W / 3 + (U.W / 3 - w) / 2); }
+  if (U.rows) { for (const rx of U.rowX) xs.push(rx, rx + SLOT_D); for (let l = 0; l < 3; l++) ys.push(l * U.W / 3 + (U.W / 3 - w) / 2); }
+  for (const b of U.blockers || []) xs.push(b.x + b.d, b.x - d);
   for (let k = 0; k * w <= U.W + EPS; k++) ys.push(k * w);
   for (const b of boxes) { xs.push(b.x + b.d, b.x - d); ys.push(b.y + b.w, b.y - w); }
   const nearest = (arr, v, rad) => { let bv = null, bd = rad; for (const a of arr) { const dd = Math.abs(a - v); if (dd <= bd) { bd = dd; bv = a; } } return bv; };
@@ -649,14 +700,28 @@ function packStep(P, it) {
 }
 // Automatisch verteilen: Paletten zuerst an die Stirnwand, dann die Rollware. Gefüllt wird in Ladereihenfolge:
 // erst die Maschine (beim Durchladezug wird sie durch den Anhänger beladen), dann der Anhänger.
+// Kammer-Auto: TK-Ware (it.tk) kommt in die TK-Kammer vorn, alles andere hinter die Trennwand.
+function makePacks() {
+  const packs = [];
+  for (const U of G.units) {
+    if (U.wall) {
+      packs.push({ U, zone:'tk', lanes:[0, 0, 0], boxes:zoneBlockers(U, 'tk') });
+      packs.push({ U, zone:'fr', lanes:[U.wall.end, U.wall.end, U.wall.end], boxes:zoneBlockers(U, 'fr') });
+    } else packs.push({ U, zone:null, lanes:[0, 0, 0], boxes:[] });
+  }
+  return packs;
+}
 function autoLoad(silent, noUndo) {
   if (!noUndo) pushUndo();
   const list = state.items.slice().sort((a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t) || a.id - b.id);
-  const packs = G.units.map(U => ({ U, lanes:[0, 0, 0], boxes:[] }));
+  const packs = makePacks();
+  const hasTk = packs.some(P => P.zone === 'tk');
   const rest = [];
   for (const it of list) {
     let placed = false;
+    const wantTk = hasTk && it.tk;
     for (const P of packs) {
+      if (wantTk ? P.zone !== 'tk' : P.zone === 'tk') continue;
       const s = packStep(P, it);
       if (!s) continue;
       it.u = P.U.id; it.x = s.x; it.y = s.y; it.r = s.r; placed = true; break;
@@ -664,9 +729,17 @@ function autoLoad(silent, noUndo) {
     if (!placed) rest.push(it);
   }
   toRamp(rest);
+  for (const it of state.items) markZone(it);
   view.selected = null;
   update();
   if (!silent) toast(rest.length ? `Verteilt. ${rest.length} ${rest.length === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : (G.units.length > 1 ? 'Verteilt: Paletten vorn, erst die Maschine, dann der Anhänger' : 'Verteilt: Paletten vorn, Rollware dahinter'));
+}
+// TK-Kennzeichen folgt dem Platz: Wer in der TK-Kammer steht, ist TK-Ware. Bei hochgeklappter
+// Trennwand bleibt das Kennzeichen, damit die Ware beim Zurückklappen wieder in die Kammer kommt.
+function markZone(it) {
+  const U = unitG(it.u);
+  if (U && U.wall) it.tk = zoneAt(U, it.x, dims(it).d) === 'tk';
+  else if (it.u !== 'r' && !(state.units.find(x => x.id === it.u) || {}).chamber) it.tk = false;
 }
 function toRamp(list) {
   const R = G.ramp;
@@ -689,17 +762,23 @@ function compact(uid) {
     done.push({ x:it.x, y:it.y, d:k.d, w:k.w });
   }
 }
+function hasChamber() { return G.units.some(U => U.wall); }
 function placeNew(type, preferUnit) {
   const order = preferUnit ? [preferUnit] : G.units.map(g => g.id);
+  const zone = hasChamber() ? state.newZone : null;
   for (const uid of order) {
-    const s = bestSpot(unitG(uid), itemsIn(uid).map(box), type);
+    const U = unitG(uid);
+    if (zone === 'tk' && !U.wall) continue;
+    const s = bestSpot(U, itemsIn(uid).map(box).concat(zoneBlockers(U, zone)), type);
     if (s) return { u:uid, x:s.x, y:s.y, r:s.r };
   }
   const s = bestSpot(G.ramp, itemsIn('r').map(box), type);
   return s ? { u:'r', x:s.x, y:s.y, r:s.r } : { u:'r', x:0, y:0, r:0 };
 }
 function newItem(type, pos) {
-  const it = { id:state.nextId++, t:type, u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0 };
+  const it = { id:state.nextId++, t:type, u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0, tk:false };
+  if (it.u === 'r') it.tk = hasChamber() && state.newZone === 'tk';
+  markZone(it);
   state.items.push(it);
   return it;
 }
@@ -728,7 +807,7 @@ function coveredCells(U, boxes) {
   const lane = U.W / 3, cells = [];
   let n = 0;
   for (let r = 0; r < U.rows; r++) for (let l = 0; l < 3; l++) {
-    const cell = { x:r * SLOT_D, y:l * lane, d:SLOT_D, w:lane };
+    const cell = { x:U.rowX[r], y:l * lane, d:SLOT_D, w:lane };
     let a = 0;
     for (const b of boxes) {
       const ox = Math.min(cell.x + cell.d, b.x + b.d) - Math.max(cell.x, b.x);
@@ -752,6 +831,12 @@ function computeStats() {
       fitRbh:countFit(U, boxes, 'rbh'), fitEp:countFit(U, boxes, 'ep'),
       temp:state.units.find(x => x.id === U.id).temp,
     };
+    if (U.wall) {
+      const tkCells = U.wall.rows * 3, uu = st.units[U.id];
+      uu.tkCap = tkCells; uu.tkUsed = cov.cells.slice(0, tkCells).filter(Boolean).length;
+      uu.frCap = U.cap - tkCells; uu.frUsed = uu.used - uu.tkUsed;
+      uu.tkIts = its.filter(it => zoneAt(U, it.x, dims(it).d) === 'tk');
+    }
     st.total.n += its.length;
   }
   st.total.cap = G.units.reduce((a, U) => a + U.cap, 0);
@@ -765,25 +850,40 @@ function computeStats() {
   for (const U of G.units) {
     const u = st.units[U.id];
     if (!u.n) continue;
-    const cold = u.its.filter(it => CT[it.t].need === 'kalt').length;
-    if (u.temp > 7 && cold) add('bad', `${U.label}: ${cold} × Fleisch/Hygiene bei ${fmtTemp(u.temp)}. Frischfleisch darf höchstens +7 °C haben.`,
-      `In der <b>${U.label}</b> fahren <b class="r">${cold} × Fleisch/Hygiene</b> bei ${fmtTemp(u.temp)}. Frischfleisch darf höchstens +7 °C haben.`);
-    else if (u.temp > 4 && cold) add('warn', `${U.label}: ${cold} × Fleisch/Hygiene bei ${fmtTemp(u.temp)}. Geflügel und Hackfleisch brauchen +4 °C oder kälter.`,
-      `In der <b>${U.label}</b> fahren <b class="a">${cold} × Fleisch/Hygiene</b> bei ${fmtTemp(u.temp)}. Für Geflügel und Hackfleisch sind +4 °C oder kälter nötig.`);
-    const fresh = u.its.filter(it => CT[it.t].need !== 'tk').length;
-    if (u.temp < 0 && fresh) add('bad', `${U.label}: Sollwert ${fmtTemp(u.temp)} liegt unter 0 °C. ${fresh} Behälter mit Frischware würden anfrieren.`,
-      `Die <b>${U.label}</b> kühlt auf <b class="r">${fmtTemp(u.temp)}</b>. Frischware friert an, TK fährt ohnehin im Isotainer.`);
+    // Kühlkette. Beim Kammer-Auto gilt vorn die Temperatur der TK-Kammer, hinter der Trennwand die der Frische.
+    const tkSet = new Set(u.tkIts || []);
+    const frIts = u.its.filter(it => !tkSet.has(it));
+    const where = U.wall ? `${U.label}, Frische` : U.label;
+    const cold = frIts.filter(it => CT[it.t].need === 'kalt').length;
+    if (u.temp > 7 && cold) add('bad', `${where}: ${cold} × Fleisch/Hygiene bei ${fmtTemp(u.temp)}. Frischfleisch darf höchstens +7 °C haben.`,
+      `In der <b>${where}</b> fahren <b class="r">${cold} × Fleisch/Hygiene</b> bei ${fmtTemp(u.temp)}. Frischfleisch darf höchstens +7 °C haben.`);
+    else if (u.temp > 4 && cold) add('warn', `${where}: ${cold} × Fleisch/Hygiene bei ${fmtTemp(u.temp)}. Geflügel und Hackfleisch brauchen +4 °C oder kälter.`,
+      `In der <b>${where}</b> fahren <b class="a">${cold} × Fleisch/Hygiene</b> bei ${fmtTemp(u.temp)}. Für Geflügel und Hackfleisch sind +4 °C oder kälter nötig.`);
+    const fresh = frIts.filter(it => CT[it.t].need !== 'tk').length;
+    if (u.temp < 0 && fresh) add('bad', `${where}: Sollwert ${fmtTemp(u.temp)} liegt unter 0 °C. ${fresh} Behälter mit Frischware würden anfrieren.`,
+      `Die <b>${where}</b> kühlt auf <b class="r">${fmtTemp(u.temp)}</b>. Frischware friert an, TK fährt ohnehin im Isotainer.`);
+    const folded = !U.wall && (state.units.find(x => x.id === U.id) || {}).chamber ? u.its.filter(it => it.tk && CT[it.t].need !== 'tk').length : 0;
+    if (folded && u.temp > -18) add('warn', `${U.label}: Trennwand hochgeklappt, ${folded} × TK-Ware fährt bei ${fmtTemp(u.temp)} mit der Frische. Trennwand setzen oder TK im Isotainer.`,
+      `Die Trennwand ist <b>hochgeklappt</b>. <b class="a">${folded} × TK-Ware</b> fährt bei ${fmtTemp(u.temp)} mit der Frische.`);
+    if (U.wall) {
+      const kt = U.wall.temp;
+      const meat = u.tkIts.filter(it => CT[it.t].need === 'kalt').length;
+      if (kt < 0 && meat) add('warn', `${U.label}, TK-Kammer: ${meat} × Fleisch/Hygiene bei ${fmtTemp(kt)}. Frischfleisch gehört hinter die Trennwand.`,
+        `In der <b>TK-Kammer</b> stehen <b class="a">${meat} × Fleisch/Hygiene</b> bei ${fmtTemp(kt)}. Frischware gehört hinter die Trennwand.`);
+      if (kt > -18 && u.tkIts.length) add('warn', `${U.label}, TK-Kammer: Sollwert ${fmtTemp(kt)}. Tiefkühlware braucht −18 °C oder kälter.`,
+        `Die <b>TK-Kammer</b> steht auf <b class="a">${fmtTemp(kt)}</b>. Tiefkühlware braucht −18 °C oder kälter.`);
+    }
     // Lücken in Fahrtrichtung
     let gaps = 0; const gapRows = new Set();
     for (const it of u.its) {
       const a = box(it);
-      let front = 0;
+      let front = U.wall && a.x >= U.wall.end - EPS ? U.wall.end : 0;
       for (const b of u.its) {
         if (b === it) continue;
         const bb = box(b);
         if (bb.x + bb.d <= a.x + EPS && a.y < bb.y + bb.w - 0.1 && a.y + a.w > bb.y + 0.1) front = Math.max(front, bb.x + bb.d);
       }
-      if (a.x - front > 0.15) { gaps++; gapRows.add(Math.floor(a.x / SLOT_D) + 1); }
+      if (a.x - front > 0.15) { gaps++; gapRows.add(rowOf(U, a.x) + 1); }
     }
     if (gaps) add('warn', `${U.label}: ${gaps} ${gaps === 1 ? 'Behälter steht' : 'Behälter stehen'} mit Lücke nach vorn (Reihe ${[...gapRows].sort((a, b) => a - b).slice(0, 6).join(', ')}). Nachrücken oder mit Sperrbalken sichern.`,
       `In der <b>${U.label}</b> ${gaps === 1 ? 'steht' : 'stehen'} <b class="a">${gaps} ${gaps === 1 ? 'Behälter' : 'Behälter'}</b> mit Lücke nach vorn. Rollbehälter rutschen: nachrücken oder Sperrbalken setzen.`);
@@ -792,7 +892,7 @@ function computeStats() {
   if (!st.total.n && !st.ramp) add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.');
   for (const U of G.units) {
     const u = st.units[U.id];
-    if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Sperrbalken hinter Reihe ${Math.max(1, Math.ceil(u.end / SLOT_D - 0.05))} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür).`);
+    if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Sperrbalken hinter Reihe ${rowOf(U, u.end - 0.05) + 1} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür).`);
   }
   return st;
 }
@@ -809,9 +909,10 @@ const $ = (s, r = document) => r.querySelector(s);
 function posText(it) {
   if (it.u === 'r') return 'auf der Rampe';
   const U = unitG(it.u), k = dims(it);
-  const row = Math.floor((it.x + k.d / 2) / SLOT_D) + 1;
+  const row = rowOf(U, it.x + k.d / 2) + 1;
   const cz = it.y + k.w / 2; const lane = cz < U.W / 3 ? 'links' : cz > 2 * U.W / 3 ? 'rechts' : 'Mitte';
-  return `${U.label} · Reihe ${row} · ${lane}`;
+  const zone = U.wall ? (zoneAt(U, it.x, k.d) === 'tk' ? ' · TK-Kammer' : ' · Frische') : '';
+  return `${U.label}${zone} · Reihe ${row} · ${lane}`;
 }
 function slotEq(c) { const e = (c.d * c.w) / (SLOT_D * 2.48 / 3); return e < 1.1 ? '1 Stellpl.' : '≈ ' + fmt(e, 1) + ' Stellpl.'; }
 
@@ -932,6 +1033,9 @@ function initThree() {
   M.frontLine = new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.85 });
   M.frontLineBad = new T.LineBasicMaterial({ color:0xffb454, transparent:true, opacity:0.9 });
   M.selLine = new T.LineBasicMaterial({ color:0x7fe3ff });
+  M.goodsTk = M.goods.clone(); M.goodsTk.color.set('#a9d4ff');
+  M.partition = std('#dbe8f4', 0.5, 0.05, { transparent:true, opacity:0.42, depthWrite:false });
+  M.partitionEdge = new T.LineBasicMaterial({ color:0x9fd4ff, transparent:true, opacity:0.9 });
 
   // Texturen
   M.gate = new T.MeshStandardMaterial({ map:canvasTex(128, 256, (c, w, h) => {
@@ -1063,10 +1167,18 @@ function buildFloorTexture(U) {
     for (let y = 6; y < h; y += 11) for (let x = (y % 22 ? 0 : 5); x < w; x += 11) c.fillRect(x, y, 3, 3);
     c.fillStyle = 'rgba(30,38,46,.4)'; c.fillRect(0, 2, w, 5); c.fillRect(0, h - 7, w, 5);
     if (!U.rows) return;
+    if (U.wall) {
+      // TK-Kammer vorn eisblau, Trennwand dunkel
+      c.fillStyle = 'rgba(120,190,255,.35)'; c.fillRect(w - U.wall.x * ppm, 0, U.wall.x * ppm, h);
+      c.fillStyle = 'rgba(20,28,36,.6)'; c.fillRect(w - U.wall.end * ppm, 0, U.wall.d * ppm, h);
+      c.save(); c.translate(w - U.wall.x * ppm / 2, h / 2); c.rotate(-Math.PI / 2);
+      c.fillStyle = 'rgba(20,60,110,.35)'; c.font = `800 ${Math.round(ppm * 0.3)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('TK-KAMMER', 0, 0); c.restore();
+    }
     c.textAlign = 'center'; c.textBaseline = 'middle';
     for (let r = 0; r < U.rows; r++) for (let l = 0; l < 3; l++) {
       c.fillStyle = 'rgba(20,28,36,.34)'; c.font = `700 ${Math.round(ppm * 0.24)}px sans-serif`;
-      c.fillText(String(r * 3 + l + 1), w - (r + 0.5) * SLOT_D * ppm, (l + 0.5) * h / 3);
+      c.fillText(String(r * 3 + l + 1), w - (U.rowX[r] + SLOT_D / 2) * ppm, (l + 0.5) * h / 3);
     }
   });
 }
@@ -1082,8 +1194,12 @@ function ledTexture(temp) {
 function gridLines(U) {
   const pts = [];
   const y = 0.006;
-  for (let r = 0; r <= U.rows; r++) { const x = -r * SLOT_D; pts.push(x, y, -U.W / 2, x, y, U.W / 2); }
-  for (let l = 0; l <= 3; l++) { const z = -U.W / 2 + l * U.W / 3; pts.push(0, y, z, -U.rows * SLOT_D, y, z); }
+  const edges = new Set();
+  for (const rx of U.rowX) { edges.add(+rx.toFixed(4)); edges.add(+(rx + SLOT_D).toFixed(4)); }
+  for (const e of edges) pts.push(-e, y, -U.W / 2, -e, y, U.W / 2);
+  // Längslinien je Block (vor und hinter der Trennwand)
+  const blocks = U.wall ? [[0, U.wall.x], [U.wall.end, U.wall.end + (U.rows - U.wall.rows) * SLOT_D]] : [[0, U.rows * SLOT_D]];
+  for (const [a, b] of blocks) for (let l = 0; l <= 3; l++) { const z = -U.W / 2 + l * U.W / 3; pts.push(-a, y, z, -b, y, z); }
   const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pts, 3));
   return new T.LineSegments(g, new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.25 }));
 }
@@ -1125,6 +1241,15 @@ function buildUnit(U) {
   }
   const edges = new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(extL, H + 0.2, W + 0.12)), M.bodyEdge);
   edges.position.set(cx, H / 2 + 0.03, 0); grp.add(edges);
+  if (U.wall) {
+    // Quertrennwand des Kammer-Autos: isolierte Platte, halb durchsichtig, damit man in die TK-Kammer sieht
+    const pw = new T.Mesh(new T.BoxGeometry(U.wall.d * 0.7, H - 0.02, W - 0.02), M.partition);
+    pw.position.set(-(U.wall.x + U.wall.d / 2), H / 2, 0); grp.add(pw);
+    const pe = new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(U.wall.d * 0.7, H - 0.02, W - 0.02)), M.partitionEdge);
+    pe.position.copy(pw.position); grp.add(pe);
+    grp.add(mesh(bx(0.03, 0.03, W - 0.1, -U.wall.x + 0.02, H - 0.03, 0), M.steel));
+    grp.add(mesh(bx(0.03, 0.03, W - 0.1, -U.wall.x + 0.02, 0.015, 0), M.steel));
+  }
 
   // Unterbau in Weltkoordinaten
   const ch = new T.Group(); ch.position.set(-U.X0, -U.floorY, 0);
@@ -1145,6 +1270,7 @@ function buildUnit(U) {
     ch.add(mesh(bx(1.1, 0.56, 0.62, ux, U.floorY - 0.52, 0.86), M.unit));
     ch.add(mesh(bx(0.9, 0.36, 0.02, ux, U.floorY - 0.52, 1.175), M.grille, false));
     addLed(ch, U, ux + 0.3, U.floorY - 0.46, 1.18);
+    if (U.wall) addLed(ch, U, ux - 0.25, U.floorY - 0.46, 1.18, 'k');
   } else if (U.kind === 'trailer') {
     axle(ch, U.XA + 0.655, 0.5, 0.40, false, 1.04);
     axle(ch, U.XA - 0.655, 0.5, 0.40, false, 1.04);
@@ -1185,19 +1311,21 @@ function buildUnit(U) {
   grp.userData = { unit:U.id };
   return grp;
 }
-function addLed(parent, U, x, y, z) {
-  const temp = state.units.find(u => u.id === U.id).temp;
+// Temperaturanzeige am Kühlaggregat. key 'k' = zweite Anzeige für die TK-Kammer des Kammer-Autos.
+const ledTemp = (id, k) => { const u = state.units.find(x => x.id === id); return k ? (u.chamber ? u.chamber.temp : u.temp) : u.temp; };
+function addLed(parent, U, x, y, z, k) {
+  const temp = ledTemp(U.id, k);
   const m = new T.Mesh(new T.PlaneGeometry(0.46, 0.17), new T.MeshBasicMaterial({ map:ledTexture(temp), toneMapped:false }));
-  m.position.set(x, y, z + 0.005); m.userData.temp = temp;
-  parent.add(m); three.leds[U.id] = m;
+  m.position.set(x, y, z + 0.005); m.userData = { temp, uid:U.id, k:!!k };
+  parent.add(m); three.leds[U.id + (k ? 'k' : '')] = m;
 }
 function updateLeds() {
   if (!renderer) return;
-  for (const u of state.units) {
-    const m = three.leds[u.id];
-    if (!m || m.userData.temp === u.temp) continue;
-    m.userData.temp = u.temp;
-    const old = m.material.map; m.material.map = ledTexture(u.temp); m.material.needsUpdate = true; if (old) old.dispose();
+  for (const m of Object.values(three.leds)) {
+    const t = ledTemp(m.userData.uid, m.userData.k);
+    if (m.userData.temp === t) continue;
+    m.userData.temp = t;
+    const old = m.material.map; m.material.map = ledTexture(t); m.material.needsUpdate = true; if (old) old.dispose();
     requestRender();
   }
 }
@@ -1381,6 +1509,8 @@ function syncItems(st) {
     const isNew = !g;
     if (!g) { g = makeItemMesh(it); three.meshes.set(it.id, g); }
     if (!drag || drag.id !== it.id) placeMesh(g, it);
+    const tgt = g.userData.core || g.userData.goods;
+    if (tgt) tgt.material = it.tk && hasChamber() ? M.goodsTk : M.goods;
     let sel = g.userData.sel;
     const want = view.selected === it.id ? M.selLine : null;
     if (want && !sel) { const c = CT[it.t]; sel = new T.LineSegments(GEO.unitBoxEdges, want); sel.scale.set(c.d + 0.04, c.h + 0.04, c.w + 0.04); sel.position.y = c.h / 2; g.userData.inner.add(sel); g.userData.sel = sel; }
@@ -1596,7 +1726,8 @@ function buildTags(st) {
     const u = st.units[U.id];
     const grp = three.unitGroups[U.id];
     const full = u.used >= U.cap;
-    defs.push({ key:'cap' + U.id, grp, local:new T.Vector3(-U.L / 2, U.H + 0.45, 0), prio:2, lvl:'', html:`${U.label} <b>${u.used}/${U.cap}</b>${full ? ' · voll' : ` · ${U.cap - u.used} frei`}` });
+    defs.push({ key:'cap' + U.id, grp, local:new T.Vector3(-(U.wall ? (U.wall.end + U.L) / 2 : U.L / 2), U.H + 0.45, 0), prio:2, lvl:'', html:`${U.label} <b>${u.used}/${U.cap}</b>${full ? ' · voll' : ` · ${U.cap - u.used} frei`}` });
+    if (U.wall) defs.push({ key:'tk' + U.id, grp, local:new T.Vector3(-U.wall.x / 2, U.H + 0.45, 0), prio:2, lvl:U.wall.temp > -18 ? 'warn' : '', html:`TK-Kammer <b>${u.tkUsed}/${u.tkCap}</b> · ${fmtTemp(U.wall.temp)}` });
     if (u.n) defs.push({ key:'fr' + U.id, grp, local:new T.Vector3(-Math.min(U.L, u.end), U.H * 0.92 + 0.12, U.W / 2), prio:3, lvl:'', html:`Ladungsfront <b>${fmtM(u.end)}</b>` });
   }
   if (st.ramp) defs.push({ key:'ramp', grp:three.unitGroups.r, local:new T.Vector3(-1.4, 2.3, 0), prio:1, lvl:'warn', html:`Rampe · <b>${st.ramp}</b> nicht geladen` });
@@ -1743,6 +1874,7 @@ function placeAt(uid, x, y) {
   if (!s) { toast('Hier ist kein Platz. Die Vorschau leuchtet cyan, wo der Behälter passt.'); return; }
   pushUndo();
   const it = newItem(view.armed, { u:uid, x:s.x, y:s.y, r });
+  if (uid === 'r') it.tk = false;
   view.selected = null; state.sample = false;
   update(); hideGhost();
   toast(`${c.name} · ${posText(it)}`);
@@ -1770,7 +1902,7 @@ function dragMove(e) {
 function dragEnd() {
   const it = state.items.find(i => i.id === drag.id), t = drag.target;
   drag = null; hideGhost();
-  if (it && t) { pushUndo(); Object.assign(it, t); state.sample = false; update(); toast(`Versetzt · ${posText(it)}`); }
+  if (it && t) { pushUndo(); Object.assign(it, t); if (t.u !== 'r') markZone(it); state.sample = false; update(); toast(`Versetzt · ${posText(it)}`); }
   else if (it) { const g = three.meshes.get(it.id); if (g) placeMesh(g, it); requestRender(); }
 }
 function cancelDrag() {
@@ -1834,6 +1966,24 @@ function setVariant(type, key) {
   const ramp = itemsIn('r').length;
   toast(`${CT[type].name}: ${v.label} · neu verteilt${ramp ? `, ${ramp} auf der Rampe` : ''}`);
 }
+// Kammer-Auto umstellen: Kammer größer/kleiner oder Trennwand hochklappen. Danach wird neu verteilt,
+// TK-Ware bleibt TK-Ware und kommt wieder in die Kammer.
+function setChamber(uid, change) {
+  const u = state.units.find(x => x.id === uid); if (!u || !u.chamber) return;
+  const U = unitG(uid);
+  pushUndo();
+  if (change.rows) {
+    const cur = U.wall ? U.wall.rows : u.chamber.rows;
+    u.chamber.rows = Math.max(1, Math.min(U.rows - 1, cur + change.rows));
+  }
+  if (change.on != null) u.chamber.on = change.on;
+  bulk = true;
+  rebuildVehicle();
+  autoLoad(true, true);
+  bulk = false;
+  const G2 = unitG(uid);
+  toast(G2.wall ? `TK-Kammer: ${G2.wall.rows} ${G2.wall.rows === 1 ? 'Reihe' : 'Reihen'} (${G2.wall.rows * 3} Stellplätze), Frische ${G2.cap - G2.wall.rows * 3}` : `Trennwand hochgeklappt: ${G2.cap} Stellplätze in einem Raum`);
+}
 function setUnitLength(uid, L) {
   const u = state.units.find(x => x.id === uid); if (!u) return;
   pushUndo(); u.L = Math.round(Math.max(3, Math.min(13.6, L)) * 100) / 100;
@@ -1865,6 +2015,10 @@ const GLYPH = {
 const glyph = c => `<svg width="40" height="34" viewBox="0 0 40 34" aria-hidden="true">${GLYPH[c.id](c.color)}</svg>`;
 
 function renderDock() {
+  const zs = $('#zoneSeg'), ch = hasChamber();
+  zs.hidden = !ch;
+  if (!ch && state.newZone !== 'fr') state.newZone = 'fr';
+  for (const b of zs.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.zone === state.newZone));
   const tiles = $('#tiles');
   if (!tiles.dataset.built) {
     tiles.innerHTML = CARRIER_BASE.map(b => `
@@ -1897,13 +2051,28 @@ function renderStats(st) {
         <dt>Belegt bis</dt><dd>${fmtM(u.end)} von ${fmtM(U.L)}</dd>
         <dt>Passt noch</dt><dd>${u.fitRbh} RBH oder ${u.fitEp} EP</dd>
       </dl>
-      <div class="temp"><span>Kühlung Soll</span><span class="step"><button type="button" data-temp="${U.id}" data-dt="-1" aria-label="${U.label} kälter">−</button><span class="led">${fmtTemp(u.temp)}</span><button type="button" data-temp="${U.id}" data-dt="1" aria-label="${U.label} wärmer">+</button></span></div>
+      ${chamberHtml(U, u)}
+      <div class="temp"><span>${U.wall ? 'Frische Soll' : 'Kühlung Soll'}</span><span class="step"><button type="button" data-temp="${U.id}" data-dt="-1" aria-label="${U.label} kälter">−</button><span class="led">${fmtTemp(u.temp)}</span><button type="button" data-temp="${U.id}" data-dt="1" aria-label="${U.label} wärmer">+</button></span></div>
       ${planSvg(U, st)}
     </div>`;
   }).join('');
   $('#unitCards').innerHTML = html;
   $('#warnList').innerHTML = st.warns.map(w => `<li class="${w.lvl}"><span>${esc(w.txt)}</span></li>`).join('');
   $('#sampleTag').textContent = state.sample ? 'Beispieldaten' : '';
+}
+// Kammer-Auto: Größe der TK-Kammer (in Reihen), Temperatur, Trennwand gesetzt oder hochgeklappt
+function chamberHtml(U, u) {
+  const su = state.units.find(x => x.id === U.id);
+  if (!su.chamber) return '';
+  const ch = su.chamber;
+  if (!U.wall) return `<div class="chamber"><div class="ch-h"><b>Kammer-Auto</b><button class="btn small" type="button" data-wallon="${U.id}">Trennwand setzen</button></div><small>Trennwand hochgeklappt: ein Raum, ${U.cap} Stellplätze.</small></div>`;
+  const maxRows = U.rows - 1;
+  return `<div class="chamber">
+    <div class="ch-h"><b>TK-Kammer vorn</b><button class="btn small" type="button" data-walloff="${U.id}" title="Trennwand hochklappen: ein Raum">Hochklappen</button></div>
+    <div class="temp"><span>Größe</span><span class="step"><button type="button" data-chrows="${U.id}" data-dr="-1" aria-label="TK-Kammer kleiner" ${U.wall.rows <= 1 ? 'disabled' : ''}>−</button><span class="led tk">${U.wall.rows} ${U.wall.rows === 1 ? 'Reihe' : 'Reihen'}</span><button type="button" data-chrows="${U.id}" data-dr="1" aria-label="TK-Kammer größer" ${U.wall.rows >= maxRows ? 'disabled' : ''}>+</button></span></div>
+    <small>${fmtM(U.wall.x)} lang · ${u.tkUsed}/${u.tkCap} Stellplätze · Trennwand ${Math.round(WALL_T * 100)} cm · Frische dahinter ${u.frUsed}/${u.frCap}</small>
+    <div class="temp"><span>TK Soll</span><span class="step"><button type="button" data-chtemp="${U.id}" data-dt="-1" aria-label="TK-Kammer kälter">−</button><span class="led tk">${fmtTemp(ch.temp)}</span><button type="button" data-chtemp="${U.id}" data-dt="1" aria-label="TK-Kammer wärmer">+</button></span></div>
+  </div>`;
 }
 const PLAN_W = 300;
 function planSvg(U, st) {
@@ -1914,8 +2083,14 @@ function planSvg(U, st) {
   const u = st.units[U.id];
   let s = `<svg class="plan" viewBox="0 0 ${vw.toFixed(1)} ${vh.toFixed(1)}" data-plan="${U.id}" role="img" aria-label="Stellplatzplan ${U.label}, Tür links, Stirnwand rechts">`;
   s += `<rect x="${pad}" y="${pad}" width="${Lp.toFixed(1)}" height="${W.toFixed(1)}" rx="2" fill="rgba(255,255,255,.03)" stroke="rgba(127,227,255,.45)" stroke-width="1"/>`;
-  for (let r = 1; r <= U.rows; r++) if (r * SLOT_D < U.L - 0.01) s += `<line x1="${X(r * SLOT_D).toFixed(1)}" y1="${pad}" x2="${X(r * SLOT_D).toFixed(1)}" y2="${(pad + W).toFixed(1)}" stroke="rgba(127,227,255,.14)"/>`;
-  for (let l = 1; l < 3; l++) s += `<line x1="${X(U.rows * SLOT_D).toFixed(1)}" y1="${Y(l * U.W / 3).toFixed(1)}" x2="${X(0).toFixed(1)}" y2="${Y(l * U.W / 3).toFixed(1)}" stroke="rgba(127,227,255,.14)" stroke-dasharray="3 3"/>`;
+  if (U.wall) {
+    s += `<rect x="${X(U.wall.x).toFixed(1)}" y="${pad}" width="${(U.wall.x * sc).toFixed(1)}" height="${W.toFixed(1)}" fill="rgba(120,190,255,.16)"/>`;
+    s += `<rect x="${X(U.wall.end).toFixed(1)}" y="${(pad - 2).toFixed(1)}" width="${(U.wall.d * sc).toFixed(1)}" height="${(W + 4).toFixed(1)}" fill="#9fd4ff"/>`;
+    s += `<text x="${X(U.wall.x / 2).toFixed(1)}" y="${(pad - 3).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#9fd4ff">TK ${fmtTemp(U.wall.temp)}</text>`;
+  }
+  for (const rx of U.rowX.slice(1)) s += `<line x1="${X(rx).toFixed(1)}" y1="${pad}" x2="${X(rx).toFixed(1)}" y2="${(pad + W).toFixed(1)}" stroke="rgba(127,227,255,.14)"/>`;
+  const lastRow = U.rows ? U.rowX[U.rows - 1] + SLOT_D : 0;
+  for (let l = 1; l < 3; l++) s += `<line x1="${X(lastRow).toFixed(1)}" y1="${Y(l * U.W / 3).toFixed(1)}" x2="${X(0).toFixed(1)}" y2="${Y(l * U.W / 3).toFixed(1)}" stroke="rgba(127,227,255,.14)" stroke-dasharray="3 3"/>`;
   s += `<rect x="${(pad + Lp).toFixed(1)}" y="${pad}" width="3" height="${W.toFixed(1)}" fill="#9ea8c2"/>`;
   s += `<text x="${(pad + Lp).toFixed(1)}" y="${(vh - 2).toFixed(1)}" text-anchor="end" font-size="8.5" fill="#67718b">STIRNWAND</text><text x="${pad}" y="${(vh - 2).toFixed(1)}" font-size="8.5" fill="#67718b">TÜR</text>`;
   for (const it of u.its) {
@@ -1946,7 +2121,7 @@ function renderArmed() {
   if (!view.armed) { b.hidden = true; return; }
   const c = CT[view.armed];
   b.hidden = false;
-  b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${esc(c.name)}: auf den Ladeboden tippen</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
+  b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${esc(c.name)}: auf den Ladeboden tippen${hasChamber() ? ' (in der TK-Kammer = TK-Ware)' : ''}</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
 }
 // Ladeliste je Einheit: Anzahl je Ladungsträger und belegte Stellplätze
 function renderList() {
@@ -2008,8 +2183,8 @@ function toast(msg) {
 const conf = c => `<span class="conf ${c}">${c}</span>`;
 function specsHtml() {
   const P = PRESET(state.preset);
-  const unitRows = G.units.map(U => `<tr><td><b>${U.label}</b><br><small>${U.long}</small></td><td class="n">${fmt(U.L, 2)} × ${fmt(U.W, 2)} × ${fmt(U.H, 2)} m</td><td class="n">${fmt(U.extL, 2)} m</td><td class="n">${U.rows} × 3 = ${U.cap}</td><td class="n">${countFit(U, [], 'ep')}</td></tr>`).join('');
-  const lens = G.units.map(U => `<label for="len-${U.id}"><span>${U.label} · Innenlänge in m<small>${U.rows} Reihen à 72 cm · ${U.cap} Stellplätze</small></span><input id="len-${U.id}" data-len="${U.id}" type="number" min="3" max="13.6" step="0.01" value="${U.L.toFixed(2)}"></label>`).join('');
+  const unitRows = G.units.map(U => `<tr><td><b>${U.label}</b><br><small>${U.long}${U.wall ? ` · Kammer-Auto, Trennwand ${fmt(U.wall.d * 100, 0)} cm` : ''}</small></td><td class="n">${fmt(U.L, 2)} × ${fmt(U.W, 2)} × ${fmt(U.H, 2)} m</td><td class="n">${fmt(U.extL, 2)} m</td><td class="n">${U.wall ? `${U.wall.rows} × 3 TK + ${U.rows - U.wall.rows} × 3 = ${U.cap}` : `${U.rows} × 3 = ${U.cap}`}</td><td class="n">${countFit(U, [], 'ep')}</td></tr>`).join('');
+  const lens = G.units.map(U => `<label for="len-${U.id}"><span>${U.label} · Innenlänge in m<small>${U.rows} Reihen à 72 cm · ${U.cap} Stellplätze${U.wall ? `, davon ${U.wall.rows * 3} in der TK-Kammer` : ''}</small></span><input id="len-${U.id}" data-len="${U.id}" type="number" min="3" max="13.6" step="0.01" value="${U.L.toFixed(2)}"></label>`).join('');
   const carrierRows = CARRIER_BASE.map(b => {
     const c = CT[b.id];
     const sel = b.variants.length > 1 ? `<select class="pick" data-variant="${b.id}" aria-label="Format ${esc(b.name)}">${b.variants.map(v => `<option value="${v.key}" ${v.key === c.vkey ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>` : `<small>${esc(c.vlabel)}</small>`;
@@ -2043,6 +2218,18 @@ const FACTS = `
     <li>Innenmaße im Planer: Maschine <b>8.080 × 2.480 × 2.250 mm</b> (gebrauchter ROHR-Kühlzug), Anhänger <b>7.300 × 2.480 × 2.250 mm</b> (ROHR- und Wüllhorst-Tandems 7.275 bis 7.330 mm). Mit rund 6,5 cm Stirnwand und Türrahmen ergibt das 8,21 + 7,43 = 15,64 m Kofferlänge, knapp unter den erlaubten 15,65 m. ${conf('mittel')}</li>
     <li>Warum genau 33 und 30: Der Rollbehälter misst außen 724 × 815 mm. Drei stehen quer nebeneinander (2,45 m bei 2,48 m Innenbreite), jede Reihe ist 724 mm tief. 11 Reihen brauchen 7,96 m, 10 Reihen 7,24 m. ${conf('hoch')}</li>
   </ul>
+  <h3>Eure Flotte</h3>
+  <ul>
+    <li><b>LKW 221</b> = Hängerzug aus Maschine <b>219</b> (8,08 m innen, 33 Stellplätze) und Durchlade-Anhänger (7,30 m, 30), zusammen <b>63</b>.</li>
+    <li><b>LKW 213</b> = Hängerzug aus dem Kammer-Auto <b>211</b> (8,08 m, 30) und einem Anhänger mit 24 Stellplätzen, zusammen <b>54</b>. Für 24 Plätze braucht der Anhänger 8 Reihen, also mindestens 5,80 m innen; im Planer 6,10 m (Koffer außen ca. 6,23 m). Die genaue Länge bitte oben eintragen.</li>
+  </ul>
+  <h3>Kammer-Auto</h3>
+  <ul>
+    <li>Ein Kammer-Auto (Mehrkammer- oder Multitemperatur-Koffer) teilt den Kühlkoffer mit einer isolierten Trennwand. Jede Kammer hat einen eigenen Verdampfer und hält ihre eigene Temperatur, typisch TK −18 bis −24 °C und Frische 0 bis +4 °C. ${conf('hoch')}</li>
+    <li>Quertrennwände gibt es fest, verschiebbar an Decken- und Bodenschienen oder zur Decke hochklappbar (Kiesling Cool Slide/Cool Flap, KRESS FLEXWALL, Schmitz Cargobull). Eingerastet sichern sie zugleich die Ladung. ${conf('hoch')}</li>
+    <li>Warum 211 nur 30 Plätze hat: 11 Reihen brauchen 7,96 m, der Koffer hat 8,08 m. Die 12 cm Rest reichen nicht für Trennwand, Dichtung und Spiel. Mit Wand passen 10 Reihen. Der Planer rechnet die Wand mit <b>12 cm</b>. ${conf('mittel')}</li>
+    <li>TK-Kammer im Planer: vorn an der Stirnwand, <b>3 Reihen = 2,17 m = 9 Stellplätze</b>, dahinter 7 Reihen Frische mit 21 Plätzen. Einstellbar von 1 bis 9 Reihen, die Wand lässt sich hochklappen. Wie groß eure Kammer wirklich ist, bitte an der Bodenschiene nachmessen. ${conf('niedrig')}</li>
+  </ul>
   <h3>Fahrgestell</h3>
   <ul>
     <li><b>Iveco S-Way AS260S46Y/FS-CM LNG</b>: 6x2, 26 t, lenk- und liftbare Nachlaufachse, Active-Space-Kabine mit Flachdach, voll luftgefedert. ${conf('hoch')}</li>
@@ -2058,7 +2245,7 @@ const FACTS = `
   </ul>
   <h3>Offene Annahmen: bitte prüfen</h3>
   <ul>
-    <li>LKW 219 mit 54 Stellplätzen: Sattelzug mit 13,3-m-Kühlauflieger (18 Reihen, belegt bei EDEKA Südbayern) oder ein Hängerzug 24 + 30 bzw. 27 + 27? Alle drei sind im Fahrzeugmenü.</li>
+    <li>Kammer-Auto 211: Wo steht die Trennwand, wie viele Reihen hat die TK-Kammer, gibt es eine Seitentür? Innenlänge des 24er-Anhängers von LKW 213.</li>
     <li>CH3: CHEP-Vollpalette (120 × 80) oder Halbpalette (80 × 60)? I2: E2-Kisten auf Palette oder auf Dollies? Umschaltbar in der Tabelle oben.</li>
     <li>Innenhöhe eurer Koffer (2,25 m laut ROHR-Inserat, Wüllhorst-Anhänger 2,25–2,70 m) und Durchschnittsgewichte je Behälter.</li>
   </ul>
@@ -2074,6 +2261,7 @@ const FACTS = `
     <li><a href="https://www.alle-lkw.de/anhanger/kuhlkoffer-anhanger/wullhorst-tandem-kuhlkoffer-durchladesystem-a4319681.html" target="_blank" rel="noopener">Gebrauchtinserat Wüllhorst Tandem-Durchladeanhänger</a></li>
     <li><a href="https://www.ewers-online.de/produkte/verfuegbare-fahrzeuge/iveco-s-way-as260s46yfs-mit-tandem-anhaenger-18-t-auftr-van-11804696/" target="_blank" rel="noopener">Iveco S-Way AS260S46Y/FS mit Tandem-Anhänger (20 + 18 EP)</a></li>
     <li><a href="https://www.gesetze-im-internet.de/stvzo_2012/__32.html" target="_blank" rel="noopener">StVZO § 32: Abmessungen</a> · <a href="https://www.gesetze-im-internet.de/stvzo_2012/__34.html" target="_blank" rel="noopener">§ 34: Achslast und Gesamtgewicht</a></li>
+    <li><a href="https://www.kiesling.de/de/kuehlfahrzeuge/ausstattung/trennwandsysteme/" target="_blank" rel="noopener">Kiesling: Trennwandsysteme für Kühlaufbauten</a> · <a href="https://www.kress.eu/en/products/kress-innovations/flexwall-partition-system.html" target="_blank" rel="noopener">KRESS: FLEXWALL</a> · <a href="https://www.cargobull.com/de/einsatz/kuehltransport/m-ko-cool" target="_blank" rel="noopener">Schmitz Cargobull: M.KO COOL</a></li>
     <li><a href="https://www.hubwagen.de/Rollbehaelter-2-seitig-Rollplatte-aus-Kunststoff-724-x-815-x-1630-mm-500-kg-Nutzhoehe-1440-mm-Enzianblau" target="_blank" rel="noopener">Rollbehälter 724 × 815 × 1630 mm, 500 kg</a></li>
     <li><a href="https://www.allda.eu/product_info.php?info=p140_thermocontainer--c580--.html" target="_blank" rel="noopener">TKT-Thermocontainer C-580</a> · <a href="https://www.frischelogistik.com/kuehl-triple-fuer-edeka/" target="_blank" rel="noopener">Edeka Nord: 1.900 Isotainer am Tag</a></li>
     <li><a href="https://www.frigoblock.com/products/ek-dk-series/ek-25/" target="_blank" rel="noopener">Frigoblock EK 25</a> · <a href="https://www.haertle.de/Miniaturmodelle/LKW+Modelle/herpa+315746+Iveco+S+Way+LNG+Tandemkuehlkoffer+Haengerzug+Edeka+LKW+Modell+1+87.html" target="_blank" rel="noopener">Herpa 315746 (Vorbild 7,82-m-Koffer)</a></li>
@@ -2096,6 +2284,11 @@ function bind() {
     else if ('nextview' in d) { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); }
     else if ('tour' in d) view.tour ? stopTour() : startTour();
     else if (d.temp) { const u = state.units.find(x => x.id === d.temp); if (u) { u.temp = Math.max(-25, Math.min(15, u.temp + +d.dt)); update(); } }
+    else if (d.chtemp) { const u = state.units.find(x => x.id === d.chtemp); if (u && u.chamber) { u.chamber.temp = Math.max(-30, Math.min(15, u.chamber.temp + +d.dt)); update(); } }
+    else if (d.chrows) setChamber(d.chrows, { rows:+d.dr });
+    else if (d.walloff) setChamber(d.walloff, { on:false });
+    else if (d.wallon) setChamber(d.wallon, { on:true });
+    else if (d.zone) { state.newZone = d.zone; renderDock(); renderArmed(); save(); }
     else if ('selclose' in d) select(null);
     else if ('rotate' in d) rotateSelected();
     else if ('delete' in d) deleteSelected();
@@ -2211,33 +2404,32 @@ function switchPreset(id) {
 function loadSample() {
   const p = PRESET(state.preset);
   state.items = []; state.nextId = 1;
-  for (const [t, n] of SAMPLE[p.id] || SAMPLE['221']) for (let i = 0; i < n; i++) {
-    state.items.push({ id:state.nextId++, t, u:'r', x:0, y:0, r:0 });
+  for (const [t, n, zone] of SAMPLE[p.id] || SAMPLE['221']) for (let i = 0; i < n; i++) {
+    state.items.push({ id:state.nextId++, t, u:'r', x:0, y:0, r:0, tk:zone === 'tk' });
   }
   state.sample = true;
   bulk = true; autoLoad(true, true); bulk = false;
   toast('Beispielladung geladen und automatisch verteilt');
 }
-// Beispielladung je Fahrzeug: [Typ, Anzahl]
+// Beispielladung je Fahrzeug: [Typ, Anzahl, 'tk' = gehört in die TK-Kammer]
 const SAMPLE = {
-  '221':    [['rbh', 38], ['hyg', 6], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
-  '219s':   [['rbh', 32], ['hyg', 4], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
-  '219h':   [['rbh', 32], ['hyg', 4], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
-  '219k':   [['rbh', 32], ['hyg', 4], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
-  'hz60':   [['rbh', 37], ['hyg', 5], ['iso', 5], ['ep', 3], ['i2', 1]],
-  'solo33': [['rbh', 23], ['hyg', 2], ['iso', 2], ['ep', 1], ['i2', 1]],
-  'solo30': [['rbh', 22], ['hyg', 2], ['iso', 2], ['i2', 1]],
-  'anh30':  [['rbh', 23], ['hyg', 2], ['iso', 2]],
+  '221':   [['rbh', 38], ['hyg', 6], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
+  '219':   [['rbh', 23], ['hyg', 3], ['iso', 3], ['ep', 1], ['i2', 1]],
+  '213':   [['rbh', 7, 'tk'], ['rbh', 30], ['hyg', 4], ['ep', 2], ['i2', 1], ['ch3', 1]],
+  '211':   [['rbh', 7, 'tk'], ['rbh', 12], ['hyg', 3], ['ep', 1], ['i2', 1]],
+  'anh30': [['rbh', 23], ['hyg', 2], ['iso', 2]],
+  'anh24': [['rbh', 18], ['hyg', 2], ['iso', 1]],
 };
 function copyList() {
   const P = PRESET(state.preset), st = lastStats;
   const lines = [`LADEPLAN ${P.name} · ${P.type} · ${new Date().toLocaleDateString('de-DE')}`, ''];
   for (const U of G.units) {
     const u = st.units[U.id];
-    lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${u.n} Behälter, Kühlung Soll ${fmtTemp(u.temp)}`);
-    for (let r = 0; r < U.rows + 2; r++) {
-      const row = u.its.filter(it => Math.floor((it.x + dims(it).d / 2) / SLOT_D) === r).sort((a, b) => a.y - b.y);
-      if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}: ${row.map(it => CT[it.t].short).join(', ')}`);
+    lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${u.n} Behälter, ${U.wall ? 'Frische' : 'Kühlung'} Soll ${fmtTemp(u.temp)}`);
+    if (U.wall) lines.push(`  TK-Kammer vorn: Reihe 1–${U.wall.rows} (${u.tkCap} Stellplätze, ${u.tkUsed} belegt), Soll ${fmtTemp(U.wall.temp)}; Trennwand dahinter`);
+    for (let r = 0; r < U.rows; r++) {
+      const row = u.its.filter(it => rowOf(U, it.x + dims(it).d / 2) === r).sort((a, b) => a.y - b.y);
+      if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}${U.wall && r < U.wall.rows ? ' TK' : '   '}: ${row.map(it => CT[it.t].short).join(', ')}`);
     }
     const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} ${c.short}` : ''; }).filter(Boolean).join(', ');
     if (counts) lines.push(`  Summe: ${counts}`);
