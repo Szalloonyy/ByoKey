@@ -699,8 +699,8 @@ function computeGeometry() {
     if (u.kind === 'motor') {
       g.XF = -1.45;
       const wb = u.L >= 7.9 ? 5.10 : 4.80;
-      g.XD = g.XF - wb; g.XT = g.XD - 1.35;
-      g.XR = g.XD - 1.35 * 7.5 / 19;            // Mitte der Hinterachsgruppe, nach Traglast gewichtet
+      g.XD = g.XF - wb; g.XT = g.XD - 1.395;     // Nachlaufachse 1.395 mm hinter der Antriebsachse (6x2, liftbar)
+      g.XR = g.XD - 1.395 * 7.5 / 19;           // Mitte der Hinterachsgruppe, nach Traglast gewichtet
       g.XC = g.extRear + 0.30;                    // Anhängekupplung
     } else if (u.kind === 'trailer') {
       g.XA = g.extFront - extL * 0.5 - 0.20;     // Tandem knapp hinter Koffermitte: gleichmäßige Ladung drückt auf die Deichsel
@@ -1128,10 +1128,8 @@ function initThree() {
   // Materialien
   M.body = std('#cdd3da', 0.55, 0.08);
   M.bodyEdge = new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.32 });
-  M.cab = std('#e4e8ec', 0.38, 0.12);
   M.dark = std('#1b2127', 0.8);
   M.darker = std('#0d1114', 0.9);
-  M.glass = std('#1c2833', 0.12, 0.7);
   M.chrome = std('#c9d0d6', 0.3, 0.85);
   M.steel = std('#7f8a93', 0.45, 0.6);
   M.tire = std('#121518', 0.95);
@@ -1272,14 +1270,23 @@ function mesh(geo, mat, shadow = true) { const m = new T.Mesh(geo, mat); m.castS
 function ensureCabMaterials() {
   if (M.cabPaint) return;
   M.cabPaint = std('#eef1f4', 0.3, 0.16);                   // Perlweiß
-  M.cabBlack = std('#14191e', 0.5, 0.2);                    // Kunststoff seidenmatt
+  M.cabBlack = std('#101418', 0.55, 0);                     // Kunststoff seidenmatt (ohne Metallanteil, sonst bronzefarben im Rampenlicht)
   M.cabMatte = std('#0a0d10', 0.85);
-  M.cabSlat = std('#2c343b', 0.4, 0.55);
+  M.cabSlat = std('#2c343b', 0.45, 0);
   // Scheiben: oben hellere Spiegelung, unten dunkel (v = 0 unten, 1 oben)
   M.cabGlass = std('#ffffff', 0.1, 0.3, { map:canvasTex(4, 128, (c, w, h) => {
     const g = c.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, '#5f7182'); g.addColorStop(0.35, '#2a3642'); g.addColorStop(1, '#0f151b');
     c.fillStyle = g; c.fillRect(0, 0, w, h);
+  }) });
+  // Frontscheibe mit schräger Lichtspiegelung
+  M.cabWs = std('#ffffff', 0.1, 0.3, { map:canvasTex(128, 128, (c, w, h) => {
+    const g = c.createLinearGradient(0, h, 0, 0);
+    g.addColorStop(0, '#5f7182'); g.addColorStop(0.35, '#2a3642'); g.addColorStop(1, '#0f151b');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    const s = c.createLinearGradient(0, 0, w, 0);
+    s.addColorStop(0, 'rgba(255,255,255,0)'); s.addColorStop(0.5, 'rgba(200,220,240,.22)'); s.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = s; c.beginPath(); c.moveTo(w * 0.52, 0); c.lineTo(w * 0.68, 0); c.lineTo(w * 0.44, h); c.lineTo(w * 0.28, h); c.fill();
   }) });
   M.cabLens = std('#3a4652', 0.1, 0.6);
   M.cabMirror = std('#5d7082', 0.08, 0.7);
@@ -1362,18 +1369,19 @@ function cabNoMaterial(no) {
     c.fillText(no, w / 2, h / 2 + 4);
   };
   const tex = canvasTex(256, 96, draw);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { draw(tex.image.getContext('2d'), 256, 96); tex.needsUpdate = true; requestRender(); });
+  if (document.fonts && document.fonts.load) document.fonts.load("700 84px 'Barlow Condensed'").then(() => { draw(tex.image.getContext('2d'), 256, 96); tex.needsUpdate = true; requestRender(); }).catch(() => {});
   return (M.cabNo[no] = new T.MeshStandardMaterial({ map:tex, transparent:true, alphaTest:0.35, roughness:0.4, polygonOffset:true, polygonOffsetFactor:-2 }));
 }
 
 // Modernes Fernverkehrs-Fahrerhaus mit Windleitdach, ohne Marken: Stoßfänger bei X = 0, Rückwand bei X = -2,28, Vorderachse X = -1,45
 function buildCab(group, tall) {
   ensureCabMaterials();
-  const P = { paint:[], black:[], matte:[], grille:[], slat:[], glass:[], lens:[], mirror:[], mirrorBlack:[], drl:[], lamp:[], amber:[] };
+  const P = { paint:[], black:[], matte:[], grille:[], slat:[], glass:[], ws:[], lens:[], mirror:[], mirrorBlack:[], drl:[], lamp:[], amber:[] };
   const both = (list, g) => list.push(g, mirrorZ(g));        // Teil für +z bauen, -z gespiegelt
   const W2 = 1.245, R = 0.1;                                  // halbe Breite, Kantenradius
   const yB = 0.95, yR = 3.28, xR = -2.28;                     // Unterkante, Dach, Rückwand
-  const XF = tall && G.units[0].TF ? G.units[0].TF : -1.45, RA = 0.68;   // Vorderachse, Radlauf
+  const U0 = G && G.units[0];
+  const XF = U0 && U0.kind === 'semi' ? U0.TF : (U0 && U0.XF) || -1.45, RA = 0.68;   // Vorderachse aus der Geometrie, Radlauf
   const w0 = [-0.17, 2.08], w1 = [-0.49, 2.98];               // Windschutzscheibe unten/oben, rund 20° geneigt
   const wl = Math.hypot(w1[0] - w0[0], w1[1] - w0[1]);
   const rake = Math.atan2(w0[0] - w1[0], w1[1] - w0[1]), nx = Math.cos(rake), ny = Math.sin(rake);
@@ -1391,7 +1399,7 @@ function buildCab(group, tall) {
   // Windschutzscheibe mit schwarzem Rahmen, schwarze A-Säulen über der Kantenrundung
   const onWs = (g, s, off) => { g.rotateY(Math.PI / 2); g.rotateZ(rake); g.translate(w0[0] - ny * s + nx * off, w0[1] + nx * s + ny * off, 0); return g; };
   P.black.push(onWs(new T.PlaneGeometry(2 * (W2 - R), wl + 0.1), (wl - 0.06) / 2, 0.004));
-  P.glass.push(onWs(new T.PlaneGeometry(2 * (W2 - R) - 0.12, wl - 0.12), wl / 2 - 0.01, 0.008));
+  P.ws.push(onWs(new T.PlaneGeometry(2 * (W2 - R) - 0.12, wl - 0.12), wl / 2 - 0.01, 0.008));
   for (const s of [1, -1]) {
     const c = new T.CylinderGeometry(R + 0.006, R + 0.006, wl + 0.1, 5, 1, true, s > 0 ? 0 : Math.PI / 2, Math.PI / 2);
     c.rotateZ(rake);
@@ -1405,7 +1413,7 @@ function buildCab(group, tall) {
   const vs = new T.Shape();
   vs.moveTo(-0.25, 2.96); vs.lineTo(-0.33, 3.12); vs.lineTo(-0.71, 3.25); vs.lineTo(-0.58, 2.95);
   P.black.push(extrude(vs, 2.38, 0.03, 1).translate(0, 0, -1.19));
-  for (const z of [-0.92, 0.92]) P.lamp.push(bx(0.05, 0.02, 0.14, -0.34, 3.13, z));
+  for (const z of [-0.92, 0.92]) P.amber.push(bx(0.05, 0.02, 0.14, -0.34, 3.13, z));   // Positionsleuchten
 
   // Windleitdach: steigt aus der Dachrundung bis fast an die Kofferoberkante, vorn schwarzer Lufteinlass
   const top = tall ? 3.84 : 3.53;
@@ -1425,11 +1433,11 @@ function buildCab(group, tall) {
 
   // Kühlergrill: breiter Block, nach unten schmaler, mit waagerechten Lamellen
   const gs = new T.Shape();
-  gs.moveTo(-1.02, 1.80); gs.lineTo(1.02, 1.80); gs.lineTo(0.98, 1.66); gs.lineTo(0.68, 1.22); gs.lineTo(0.60, 0.46);
-  gs.lineTo(-0.60, 0.46); gs.lineTo(-0.68, 1.22); gs.lineTo(-0.98, 1.66);
+  gs.moveTo(-0.95, 1.66); gs.lineTo(0.95, 1.66); gs.lineTo(0.92, 1.54); gs.lineTo(0.68, 1.22); gs.lineTo(0.60, 0.46);
+  gs.lineTo(-0.60, 0.46); gs.lineTo(-0.68, 1.22); gs.lineTo(-0.92, 1.54);
   P.grille.push(new T.ExtrudeGeometry(gs, { depth:0.05, bevelEnabled:false }).rotateY(Math.PI / 2).translate(-0.125, 0, 0));
-  const hw = y => y < 1.22 ? 0.60 + (y - 0.46) / 0.76 * 0.08 : y < 1.66 ? 0.68 + (y - 1.22) / 0.44 * 0.30 : 0.98 + (y - 1.66) / 0.14 * 0.04;
-  for (let k = 0; k < 10; k++) { const y = 0.53 + k * 0.135; P.slat.push(new T.BoxGeometry(0.06, 0.028, 2 * hw(y) - 0.08).rotateZ(-0.4).translate(-0.07, y, 0)); }
+  const hw = y => y < 1.22 ? 0.60 + (y - 0.46) / 0.76 * 0.08 : y < 1.54 ? 0.68 + (y - 1.22) / 0.32 * 0.24 : 0.92 + (y - 1.54) / 0.12 * 0.03;
+  for (let k = 0; k < 9; k++) { const y = 0.53 + k * 0.135; P.slat.push(new T.BoxGeometry(0.06, 0.028, 2 * hw(y) - 0.08).rotateZ(-0.4).translate(-0.07, y, 0)); }
 
   // Stoßfänger: Ecken mit Aussparung für den bis unten durchgehenden Grill, darunter Lippe mit Trittstufe
   const bu = new T.Shape();
@@ -1503,7 +1511,7 @@ function buildCab(group, tall) {
     s.lineTo(w / 2, h / 2 - r); s.absarc(w / 2 - r, h / 2 - r, r, 0, Math.PI / 2, false);
     s.lineTo(-w / 2 + r, h / 2); s.absarc(-w / 2 + r, h / 2 - r, r, Math.PI / 2, Math.PI, false);
     s.lineTo(-w / 2, -h / 2 + r); s.absarc(-w / 2 + r, -h / 2 + r, r, Math.PI, Math.PI * 1.5, false);
-    both(P.mirrorBlack, extrude(s, 0.11, 0.02, 1, 1).translate(0, 0, -0.055).rotateY(Math.PI / 2).translate(-0.45, y, 1.53));
+    both(P.mirrorBlack, extrude(s, 0.11, 0.02, 1, 2).translate(0, 0, -0.055).rotateY(Math.PI / 2).translate(-0.45, y, 1.53));
     both(P.mirror, new T.PlaneGeometry(w - 0.05, h - 0.05).rotateY(-Math.PI / 2).translate(-0.507, y, 1.53));
   };
   head(0.24, 0.52, 2.66); head(0.22, 0.21, 2.25);
@@ -1527,22 +1535,21 @@ function buildCab(group, tall) {
   for (const y of [0.44, 0.74]) step(P.black, bx(0.26, 0.035, 0.15, -2.18, y, 1.165));
   for (const x of [-2.055, -2.305]) step(P.black, bx(0.02, 0.70, 0.15, x, 0.69, 1.165));
 
-  const MAT = { paint:M.cabPaint, black:M.cabBlack, matte:M.cabMatte, grille:M.cabGrille, slat:M.cabSlat, glass:M.cabGlass,
+  const MAT = { paint:M.cabPaint, black:M.cabBlack, matte:M.cabMatte, grille:M.cabGrille, slat:M.cabSlat, glass:M.cabGlass, ws:M.cabWs,
     lens:M.cabLens, mirror:M.cabMirror, mirrorBlack:M.cabBlack, drl:M.cabDrl, lamp:M.cabLamp, amber:M.amber };
   // Spiegel, Scheiben und Leuchten werfen keinen Schatten (sonst unruhige Flecken auf der Tür)
-  for (const k in P) if (P[k].length) group.add(mesh(merge(P[k]), MAT[k], !/glass|drl|lamp|amber|mirror|lens|grille|slat/i.test(k)));
+  for (const k in P) if (P[k].length) group.add(mesh(merge(P[k]), MAT[k], !/glass|ws|drl|lamp|amber|mirror|lens|grille|slat/i.test(k)));
 
   // Flottennummer oben hinten an der Seite (Nummer des Motorwagens)
   const no = G && G.units[0] ? G.units[0].no : '';
   if (no) {
-    const mat = cabNoMaterial(no);
-    for (const s of [1, -1]) {
+    const planes = [1, -1].map(s => {
       const g = new T.PlaneGeometry(0.40, 0.15);
       if (s < 0) g.rotateY(Math.PI);
       g.translate(-0.22, 3.06, s * 0.033);
-      g.applyMatrix4(new T.Matrix4().makeTranslation(-1.92, 0, s * W2).multiply(new T.Matrix4().makeRotationY(s * 0.07)));
-      group.add(mesh(g, mat, false));
-    }
+      return g.applyMatrix4(new T.Matrix4().makeTranslation(-1.92, 0, s * W2).multiply(new T.Matrix4().makeRotationY(s * 0.07)));
+    });
+    group.add(mesh(merge(planes), cabNoMaterial(no), false));
   }
 }
 
@@ -3426,6 +3433,7 @@ const FACTS = `
   <h3>Fahrgestell</h3>
   <ul>
     <li><b>Iveco S-Way AS260S46Y/FS-CM LNG</b>: 6x2, 26 t, lenk- und liftbare Nachlaufachse, Active-Space-Kabine mit Flachdach, voll luftgefedert. ${conf('hoch')}</li>
+    <li>Radstand 5,10 m, die lenk- und liftbare Nachlaufachse sitzt 1,395 m hinter der Antriebsachse; Überhang vorn 1,41 m. Ein vergleichbarer Zug mit Tandem-Anhänger hat 8,12 + 7,31 m Innenlänge. ${conf('mittel')}</li>
     <li>Motor Cursor 13 NG (Flüssigerdgas): 460 PS / 338 kW, 2.000 Nm, 12-Gang Hi-Tronix. Ein LNG-Tank mit 540 l links, bis ca. 800 km Reichweite. ${conf('hoch')}</li>
     <li>EDEKA Minden-Hannover stellt rund 700 Fahrzeuge auf S-Way LNG um, darunter 220 Kühlkoffer-Motorwagen und 55 Sattelzugmaschinen AS440S46TP. ${conf('hoch')}</li>
     <li>Kühlung von Frigoblock (Marke von Thermo King, elektrisch über Generator), am Anhänger unterflur; an der Maschine vermutlich ebenfalls unterflur, weil vor dem Koffer nur 2,35 m Platz sind. Ladebordwand am Anhänger (BÄR, 2–2,5 t). ${conf('mittel')}</li>
