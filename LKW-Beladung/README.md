@@ -8,7 +8,7 @@ Der Ordner ist eine fertige, statische Website. Es gibt keinen Build, keinen Ser
 
 **Variante 1: eigener Webspace (Strato, IONOS, all-inkl. …)**
 
-1. Den kompletten Ordner `LKW-Beladung` per FTP oder Dateimanager hochladen, zum Beispiel als `/ladeplan/`.
+1. Den Ordner `LKW-Beladung` per FTP oder Dateimanager hochladen, zum Beispiel als `/ladeplan/`. Den Unterordner `dispohub/` braucht die Website nicht.
 2. Fertig. Der Planer läuft unter `https://eure-domain.de/ladeplan/`.
 
 **Variante 2: in eine bestehende Seite einbetten (z. B. WordPress, Block „Individuelles HTML“)**
@@ -23,7 +23,11 @@ Den Ordner wie oben hochladen und dann einbetten:
 
 Auf dem Handy schaltet der Planer automatisch auf die Handy-Ansicht um. Mit dem Vollbild-Knopf füllt er den ganzen Bildschirm.
 
-**Variante 3: kostenlos hosten**
+**Variante 3: in DispoHub (Menüpunkt „LKW“)**
+
+Ab DispoHub Beta 9.7 ist der Planer als Modul „LKW“ eingebaut. Zum Neu-Einbauen nach Änderungen: `python3 dispohub/einbau.py /pfad/zu/dispohub`. Details in [`dispohub/README.md`](dispohub/README.md).
+
+**Variante 4: kostenlos hosten**
 
 Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudflare Pages hochladen, oder GitHub Pages auf diesen Ordner zeigen lassen.
 
@@ -45,6 +49,7 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
 | `fonts/` | selbst gehostete Schriften mit `fonts.css` |
 | `sw.js` | Offline-Cache; bei Änderungen `VERSION` hochzählen |
 | `manifest.webmanifest`, `icon*.svg/png` | App-Symbol und Startbildschirm-Eintrag |
+| `dispohub/` | Einbau als Modul „LKW“ in DispoHub (nicht für die Website) |
 
 ## Was er kann
 

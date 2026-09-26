@@ -149,14 +149,16 @@ select.pick option{background:#111727;color:var(--ink)}
 .list small{display:block;color:var(--mute);font-size:11.5px;line-height:1.35}
 
 /* Leiste mit Ladungsträgern */
-#dock{position:absolute;left:14px;right:14px;bottom:14px;z-index:5;display:flex;gap:12px;align-items:stretch;padding:10px 12px;overflow-x:auto;scrollbar-width:thin}
+#dock{position:absolute;left:14px;right:14px;bottom:14px;z-index:5;display:flex;gap:12px;align-items:stretch;padding:10px 12px}
 .dock-side{display:grid;gap:6px;align-content:center;flex:none}
 .dock-title{font:700 10.5px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
 .dock-hint{font-size:12px;line-height:1.4;color:var(--ink-2);max-width:190px}
 .zone-seg button{padding:5px 8px;font-size:12px}
 .zone-seg button[data-zone="tk"][aria-pressed="true"]{background:#9fd4ff}
-.tiles{display:flex;gap:8px;flex:1 0 auto;justify-content:center}
-.tile{position:relative;width:136px;flex:none;border:1px solid var(--edge);border-radius:12px;background:rgba(13,18,32,.7);display:grid;grid-template-rows:auto auto;overflow:hidden}
+/* Kacheln werden erst schmaler, dann scrollt nur ihre Reihe: Aktionen bleiben immer sichtbar */
+.tiles{display:flex;gap:8px;flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.tiles>.tile:first-child{margin-left:auto}.tiles>.tile:last-child{margin-right:auto}
+.tile{position:relative;width:136px;flex:0 1 136px;min-width:114px;border:1px solid var(--edge);border-radius:12px;background:rgba(13,18,32,.7);display:grid;grid-template-rows:auto auto;overflow:hidden}
 .tile[data-armed="true"]{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset,0 0 18px -4px rgba(127,227,255,.6)}
 .tile-main{border:0;background:transparent;padding:7px 8px 5px;display:grid;grid-template-columns:36px 1fr;gap:7px;align-items:center;text-align:left;min-width:0;height:100%}
 .tile-main svg{display:block;width:36px;height:31px}
@@ -219,6 +221,7 @@ tr:last-child td{border-bottom:0}
 .foot{font-size:12px;color:var(--faint);margin-top:18px}
 
 /* ---------- schmal (Handy) ---------- */
+@media (max-width:1320px) and (min-width:901px){.dock-hint{display:none}}
 @media (max-width:900px){
   html,body{height:auto}
   body{overflow:auto}
@@ -250,7 +253,7 @@ tr:last-child td{border-bottom:0}
   .veh select.pick{flex:1}
   .stat{padding:5px 8px 6px}
   .stat b{font-size:14px}
-  .tile{width:122px}
+  .tile{width:122px;flex:none;min-width:0}
   .stage-tools{display:flex;position:absolute;right:8px;top:8px;z-index:6;gap:6px;flex-direction:column;align-items:flex-end}
   .stage-tools .seg{background:rgba(9,13,22,.8);border:1px solid var(--edge)}
   .stage-tools .seg button{padding:6px 8px;font-size:12px}
