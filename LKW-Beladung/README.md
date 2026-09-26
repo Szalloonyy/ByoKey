@@ -77,7 +77,7 @@ Ein Bild, das jemand im Datenblatt selbst lädt, hat Vorrang.
   - „Hochklappen“ nimmt die Wand heraus, dann gibt es 33 Plätze in einem Raum. TK-Ware bleibt markiert und kommt beim Zurückklappen wieder in die Kammer.
   - Unten wählt man „Frische“ oder „TK-Kammer“ für neue Behälter. „Automatisch verteilen“ stellt TK-Ware in die Kammer.
 - **Ladungsträger:** Rollbehälter blau, Hygiene-Rollbehälter, TK-Isotainer (TKT-Thermobehälter, hellblau), I2 Fleisch (Isotainer silber), Euro-Palette und CH3-Palette (CHEP). Isotainer, I2, CH3 und Hygiene-RBH haben umschaltbare Formate.
-- **Hubwagen an Bord:** Der Elektro-Hubwagen Jungheinrich EJE C20 (173 × 72 cm, 555 kg) steht längs an der Tür, wird zuletzt geladen und zuerst gebraucht. Er belegt gut zwei Stellplätze, zählt aber nicht als Behälter. Die Beispielladungen haben je einen; weitere mit + (kommen an die Tür der nächsten Einheit).
+- **Hubwagen an Bord:** Der Elektro-Hubwagen Jungheinrich EJE C20 (173 × 72 cm, 555 kg) steht mit den Gabeln unter einem Rollbehälter, Isotainer oder einer Palette, Antrieb und Deichsel zur Tür. Er belegt keinen Stellplatz und zählt nicht als Behälter. Der Planer stellt ihn unter den hintersten Behälter, hinter dem noch Platz für den Antrieb ist (nie in der TK-Kammer). Zum Versetzen den gelben Antrieb auf einen anderen Behälter ziehen oder den Hubwagen wählen und einen Behälter antippen; er fährt mit seinem Behälter mit. Die Beispielladungen haben je einen; weitere mit +.
 - **Setzen, Ziehen, Drehen**
   - Behälter werden per Tippen gesetzt. Die Vorschau rastet in Spuren und Reihen ein.
   - Behälter lassen sich ziehen, auch von der Maschine in den Anhänger oder auf die Rampe.
