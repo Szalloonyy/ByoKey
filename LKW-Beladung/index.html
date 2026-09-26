@@ -185,7 +185,7 @@ select.pick option{background:#111727;color:var(--ink)}
 .sel-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sel-row label{font-size:12px;color:var(--mute);display:flex;gap:6px;align-items:center}
 .sel-row input{width:78px;border:1px solid var(--edge);border-radius:7px;background:var(--fill);padding:4px 7px;font:500 12.5px/1.3 var(--font-mono)}
-.toast{position:absolute;left:50%;top:60px;transform:translateX(-50%);z-index:20;background:rgba(9,13,22,.92);border:1px solid var(--edge);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:600;box-shadow:0 18px 50px -20px #000;max-width:calc(100% - 32px);text-align:center}
+.toast{position:fixed;left:50%;top:60px;transform:translateX(-50%);z-index:40;background:rgba(9,13,22,.92);border:1px solid var(--edge);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:600;box-shadow:0 18px 50px -20px #000;max-width:calc(100% - 32px);text-align:center}
 .stage-tools{display:none}
 #tabs{display:none}
 .ui-off .hud,.ui-off #dock,.ui-off #selbar,.ui-off #armedBanner,.ui-off #tags{display:none!important}
@@ -227,11 +227,11 @@ tr:last-child td{border-bottom:0}
 .print-preview .sheet{max-width:297mm;margin:0 auto;padding:9mm 10mm;box-shadow:0 10px 30px -10px #000;border-radius:3px}
 #printSheet{display:none}
 .sheet{background:#fff;color:#111;font:9pt/1.35 var(--font-body);-webkit-print-color-adjust:exact;print-color-adjust:exact;text-align:left}
-.sheet .p-page{width:100%;border-collapse:collapse}
+.sheet .p-page{width:100%;border-collapse:collapse;table-layout:fixed}
 .sheet .p-page>tbody>tr>td,.sheet .p-page>tfoot>tr>td{padding:0;vertical-align:top}
 .sheet h2{margin:7px 0 2px;font:700 7.5pt/1.2 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:#555}
 .sheet h3{margin:0 0 3px;font:700 11pt/1.1 var(--font-display);text-transform:uppercase;letter-spacing:.04em;color:#111}
-.p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid #111;padding-bottom:5px}
+.p-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid #111;padding-bottom:5px}
 .p-eyebrow{font:700 7.5pt/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:#666}
 .p-head h1{margin:2px 0 0;font:800 21pt/1 var(--font-display);text-transform:uppercase}
 .p-head h1 span{font-weight:600;font-size:12.5pt;color:#444;text-transform:none;margin-left:6px}
@@ -277,14 +277,15 @@ tr:last-child td{border-bottom:0}
 .p-notes ul{margin:0;padding-left:15px}
 .p-notes li{margin:1px 0;font-size:9pt}
 .p-warn{color:#c0392b}
-.p-own{margin-top:5px;padding:5px 8px;border:1.5px solid #111;border-radius:6px;font-size:10pt}
+.p-own{margin-top:5px;padding:5px 8px;border:1.5px solid #111;border-radius:6px;font-size:10pt;overflow-wrap:anywhere;word-break:break-word}
 .p-shot{break-inside:avoid}
 .p-shot img{display:block;max-width:100%;max-height:80mm;border-radius:6px}
 .p-hint{font-size:8pt;color:#555;margin:0 0 4px}
 .modal-box .sheet p,.modal-box .sheet li{color:#111;max-width:none}
 .modal-box .sheet .p-hint{color:#555}
 .p-newpage{break-before:page}
-.p-listgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88mm,1fr));gap:4mm 8mm}
+.p-list>h2,.p-list>.p-hint{break-after:avoid}
+.p-listgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(88mm,100%),1fr));gap:4mm 8mm}
 .p-unitlist{break-inside:avoid}
 .p-rows{border-collapse:collapse;width:100%;font-size:8.5pt;border-bottom:1px solid #bbb}
 .p-rows th,.p-rows td{border:1px solid #bbb;padding:1.5px 5px;text-align:left}
@@ -305,6 +306,7 @@ tr:last-child td{border-bottom:0}
 }
 .livery{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .livery img{height:46px;max-width:180px;object-fit:cover;border-radius:6px;border:1px solid var(--edge)}
+.livery label:focus-within{outline:2px solid var(--cyan);outline-offset:2px}
 .livery-none{font:400 12px/1.3 var(--font-mono);color:var(--mute)}
 .edit-units{display:grid;gap:8px}
 .edit-units label{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;font-size:13.5px;color:var(--ink-2)}
@@ -1020,7 +1022,7 @@ function computeStats() {
       `In der <b>${U.label}</b> ${gaps === 1 ? 'steht' : 'stehen'} <b class="a">${gaps} ${gaps === 1 ? 'Behälter' : 'Behälter'}</b> mit Lücke nach vorn. Rollbehälter rutschen: nachrücken oder Sperrbalken setzen.`);
   }
   if (st.total.n && !W.some(w => w.lvl === 'bad' || w.lvl === 'warn')) W.unshift({ lvl:'ok', txt:'Kühlung und Ladungssicherung passen.', why:null });
-  if (!st.total.n && !st.ramp) add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.');
+  if (!st.total.n && !st.ramp) { add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.'); W[W.length - 1].ui = true; }
   for (const U of G.units) {
     const u = st.units[U.id];
     if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Sperrbalken hinter Reihe ${rowOf(U, u.end - 0.05) + 1} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür).`);
@@ -1595,7 +1597,7 @@ function gridLines(U) {
   const blocks = U.wall ? [[0, U.wall.x], [U.wall.end, U.wall.end + (U.rows - U.wall.rows) * SLOT_D]] : [[0, U.rows * SLOT_D]];
   for (const [a, b] of blocks) for (let l = 0; l <= 3; l++) { const z = -U.W / 2 + l * U.W / 3; pts.push(-a, y, z, -b, y, z); }
   const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pts, 3));
-  return new T.LineSegments(g, new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.25 }));
+  return new T.LineSegments(g, own(new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.25 })));
 }
 
 // ---- Außenhaut des Koffers: Alu-Profile, Seitenbild, Heck, Unterbau ----
@@ -2069,16 +2071,19 @@ function setLivery(img) {
     const k = Math.min(1, 2048 / iw, 1024 / ih), cw = Math.max(1, Math.round(iw * k)), chh = Math.max(1, Math.round(ih * k));
     LIV.own = canvasTex(cw, chh, c => c.drawImage(img, 0, 0, cw, chh));
     LIV.aspect = iw / ih;
+    // Bild von fremdem Server ohne Freigabe (CORS): WebGL darf es nicht verwenden, dann das neutrale Motiv
+    try { LIV.own.image.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) { LIV.own.dispose(); LIV.own = null; for (const s of three.skins || []) applySkin(s); requestRender(); return false; }
   }
   for (const s of three.skins || []) applySkin(s);
   requestRender();
+  return true;
 }
 function buildUnit(U) {
   initBodyLook();
   const grp = new T.Group();
   grp.position.set(U.X0, U.floorY, 0);
   const L = U.L, W = U.W, H = U.H, K = U.K;
-  const floor = new T.Mesh(new T.PlaneGeometry(L, W), new T.MeshStandardMaterial({ map:buildFloorTexture(U), roughness:0.55, metalness:0.35 }));
+  const floor = new T.Mesh(new T.PlaneGeometry(L, W), own(new T.MeshStandardMaterial({ map:own(buildFloorTexture(U)), roughness:0.55, metalness:0.35 })));
   floor.rotation.x = -Math.PI / 2; floor.position.set(-L / 2, 0.002, 0); floor.receiveShadow = true;
   floor.userData.unit = U.id; grp.add(floor); three.floors.push(floor);
   const grid = gridLines(U); grp.add(grid); three.grids[U.id] = grid;
@@ -2233,7 +2238,7 @@ function buildUnit(U) {
     guard(1, -2.6, U.XD + 0.68, -3.75);
     mudguard(U.XD, 0.53, 0.62, 0.58, 1.26); mudguard(U.XT, 0.53, 0.62, 0.58, 1.26);
     flaps(U.XT - 0.68, 0.6, 1.24);
-    put(M.steel, bx(0.5, 0.45, 0.42, U.XD + 0.75, 0.85, 0.98));
+    put(M.steel, bx(0.5, 0.45, 0.42, U.XD + 0.9, 0.85, 0.93));
     put(M.dark, bx(0.3, 0.26, 0.34, U.XC + 0.08, 0.72, 0));                 // Anhängekupplung
     // Frigoblock-Aggregat unterflur, rechts zwischen den Achsen
     const ux = (U.XF + U.XD) / 2 - 0.5;
@@ -2293,7 +2298,7 @@ function buildUnit(U) {
 const ledTemp = (id, k) => { const u = state.units.find(x => x.id === id); return k ? (u.chamber ? u.chamber.temp : u.temp) : u.temp; };
 function addLed(parent, U, x, y, z, k) {
   const temp = ledTemp(U.id, k);
-  const m = new T.Mesh(new T.PlaneGeometry(0.46, 0.17), new T.MeshBasicMaterial({ map:ledTexture(temp), toneMapped:false }));
+  const m = new T.Mesh(new T.PlaneGeometry(0.46, 0.17), own(new T.MeshBasicMaterial({ map:own(ledTexture(temp)), toneMapped:false })));
   m.position.set(x, y, z + 0.005); m.userData = { temp, uid:U.id, k:!!k };
   parent.add(m); three.leds[U.id + (k ? 'k' : '')] = m;
 }
@@ -2303,7 +2308,7 @@ function updateLeds() {
     const t = ledTemp(m.userData.uid, m.userData.k);
     if (m.userData.temp === t) continue;
     m.userData.temp = t;
-    const old = m.material.map; m.material.map = ledTexture(t); m.material.needsUpdate = true; if (old) old.dispose();
+    const old = m.material.map; m.material.map = own(ledTexture(t)); m.material.needsUpdate = true; if (old) old.dispose();
     requestRender();
   }
 }
@@ -2311,39 +2316,44 @@ function updateLeds() {
 function buildRamp() {
   const R = G.ramp;
   const grp = new T.Group(); grp.position.set(R.X0, R.floorY, 0);
-  const stripe = canvasTex(256, 32, (c, w, h) => { c.fillStyle = '#161616'; c.fillRect(0, 0, w, h); c.fillStyle = '#F2B705'; for (let x = -h; x < w; x += 32) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 16, h); c.lineTo(x + 16 + h, 0); c.lineTo(x + h, 0); c.fill(); } }, true);
+  const stripe = own(canvasTex(256, 32, (c, w, h) => { c.fillStyle = '#161616'; c.fillRect(0, 0, w, h); c.fillStyle = '#F2B705'; for (let x = -h; x < w; x += 32) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 16, h); c.lineTo(x + 16 + h, 0); c.lineTo(x + h, 0); c.fill(); } }, true));
   stripe.repeat.set(7, 1);
-  const concrete = std('#5d646b', 0.95);
+  const concrete = own(std('#5d646b', 0.95));
   const depth = R.L + 5;
   grp.add(mesh(bx(depth, R.floorY, R.W + 6, -depth / 2, -R.floorY / 2, 0), concrete));
-  const edge = new T.Mesh(new T.PlaneGeometry(R.W + 6, 0.22), new T.MeshBasicMaterial({ map:stripe }));
+  const edge = new T.Mesh(new T.PlaneGeometry(R.W + 6, 0.22), own(new T.MeshBasicMaterial({ map:stripe })));
   edge.rotation.y = Math.PI / 2; edge.position.set(0.004, -0.14, 0); grp.add(edge);
   for (const z of [-1.5, 1.5]) grp.add(mesh(bx(0.14, 0.3, 0.3, 0.07, -0.35, z), M.darker));
-  const floor = new T.Mesh(new T.PlaneGeometry(R.L, R.W), new T.MeshStandardMaterial({ roughness:0.9, map:canvasTex(256, 256, (c, w, h) => {
+  const floor = new T.Mesh(new T.PlaneGeometry(R.L, R.W), own(new T.MeshStandardMaterial({ roughness:0.9, map:own(canvasTex(256, 256, (c, w, h) => {
     c.fillStyle = '#7b8288'; c.fillRect(0, 0, w, h);
     c.fillStyle = 'rgba(0,0,0,.07)'; for (let i = 0; i < 900; i++) c.fillRect(rnd() * w, rnd() * h, 2, 2);
     c.strokeStyle = 'rgba(242,183,5,.9)'; c.lineWidth = 5; c.setLineDash([18, 12]); c.strokeRect(6, 6, w - 12, h - 12);
-  }) }));
+  })) })));
   floor.rotation.x = -Math.PI / 2; floor.position.set(-R.L / 2, 0.004, 0); floor.receiveShadow = true;
   floor.userData.unit = 'r'; grp.add(floor); three.floors.push(floor);
   grp.add(mesh(bx(0.34, 0.03, 2.2, 0.17, 0.0, 0), M.steel));
   // Hallenwand mit beleuchtetem Rolltor
   const wallX = -depth - 0.1;
-  grp.add(mesh(bx(0.3, 6.5, R.W + 6, wallX, 2.1, 0), std('#161c24', 0.9)));
-  const door = new T.Mesh(new T.PlaneGeometry(3.2, 3.2), new T.MeshBasicMaterial({ color:0xffd9a0, toneMapped:false }));
+  grp.add(mesh(bx(0.3, 6.5, R.W + 6, wallX, 2.1, 0), own(std('#161c24', 0.9))));
+  const door = new T.Mesh(new T.PlaneGeometry(3.2, 3.2), own(new T.MeshBasicMaterial({ color:0xffd9a0, toneMapped:false })));
   door.rotation.y = Math.PI / 2; door.position.set(wallX + 0.16, 1.6, 0); grp.add(door);
   const glow = new T.PointLight(0xffc98a, 0.9, 14, 2); glow.position.set(wallX + 1.2, 2.2, 0); grp.add(glow);
-  for (const z of [-2.6, 2.6]) { const lamp = new T.Mesh(bx(0.3, 0.12, 0.6, wallX + 0.3, 4.2, z), new T.MeshBasicMaterial({ color:0xfff1cf, toneMapped:false })); grp.add(lamp); }
+  for (const z of [-2.6, 2.6]) { const lamp = new T.Mesh(bx(0.3, 0.12, 0.6, wallX + 0.3, 4.2, z), own(new T.MeshBasicMaterial({ color:0xfff1cf, toneMapped:false }))); grp.add(lamp); }
   scene.add(grp);
   three.unitGroups.r = grp;
 }
 
+// Nur was je Aufbau neu entsteht, ist als own markiert; gemeinsame Materialien und Texturen (M, Seitenbild) bleiben
+const own = x => { x.userData.own = true; return x; };
 function disposeTree(root) {
   const shared = new Set(Object.values(GEO));
   root.traverse(o => {
     if (o.userData && o.userData.isItem) return;
     if (o.geometry && !shared.has(o.geometry)) o.geometry.dispose();
-    if (o.material && o.material.userData && o.material.userData.own) o.material.dispose();
+    for (const m of [].concat(o.material || [])) if (m.userData && m.userData.own) {
+      if (m.map && m.map.userData && m.map.userData.own) m.map.dispose();
+      m.dispose();
+    }
   });
 }
 function rebuildVehicle() {
@@ -2384,6 +2394,7 @@ function rebuildVehicle() {
 // ---- Ladungsträger-Modelle ----
 let modelCache = {};
 function resetCarrierMeshes() {
+  for (const k in modelCache) for (const p of modelCache[k].parts) p.geo.dispose();
   modelCache = {};
   if (!renderer) return;
   three.meshes.forEach(m => m.parent && m.parent.remove(m));
@@ -2705,7 +2716,8 @@ function applyLivery(url, own) {
   if (typeof setLivery !== 'function' || !renderer) return;
   if (!url) { setLivery(null); return; }
   const img = new Image();
-  img.onload = () => { setLivery(img); requestRender(); };
+  if (!/^(data|blob):/.test(url)) img.crossOrigin = 'anonymous';
+  img.onload = () => { if (setLivery(img) === false) { livery.url = ''; if (own) toast('Das Seitenbild ließ sich nicht verwenden.'); } requestRender(); };
   img.onerror = () => { if (own) toast('Das Seitenbild ließ sich nicht laden.'); livery.url = ''; setLivery(null); };
   img.src = url;
 }
@@ -2723,7 +2735,8 @@ function loadLiveryFile(file) {
     // auf höchstens 2048 × 1024 verkleinern, damit es in den Browser-Speicher passt
     const k = Math.min(1, 2048 / img.width, 1024 / img.height);
     const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);   // transparente PNG/SVG: weißer Grund statt Schwarz im JPEG
+    x.drawImage(img, 0, 0, c.width, c.height);
     URL.revokeObjectURL(url);
     const data = c.toDataURL('image/jpeg', 0.86);
     let stored = true;
@@ -2747,6 +2760,10 @@ function resetLivery() {
 // Außenansicht: Koffer geschlossen, Seitenbild sichtbar (three.skin wertet updateWalls aus)
 function setOutside(on) {
   view.outside = !!on;
+  if (view.outside) {
+    if (view.armed) arm(null);
+    if (view.selected != null) { view.selected = null; update(); }
+  }
   if (renderer) three.skin = view.outside;
   if (view.outside && view.exploded) setExploded(false);
   renderViewControls();
@@ -2837,6 +2854,7 @@ function moveCamera(instant, dur) {
   $('#camName').textContent = VIEWS[view.cam].name;
   if (!renderer) return;
   const vid = VIEWS[view.cam].id;
+  if (vid === 'stirn' && view.outside) setOutside(false);
   if (vid === 'heck' && G.units.length > 1 && view.focus === G.units[0].id && !view.exploded) setExploded(true);
   three.doorK = vid === 'heck' ? 1 : 0;
   applyDoors();
@@ -2978,7 +2996,9 @@ function setRay(e) {
 }
 function pickItem(e) {
   setRay(e);
-  const hits = raycaster.intersectObjects(three.hit, false);
+  // verdeckte Ladung (Außenansicht, Koffer zu) lässt sich nicht greifen: dann dreht die Geste die Kamera
+  const shown = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  const hits = raycaster.intersectObjects(three.hit, false).filter(h => shown(h.object.parent));
   return hits.length ? hits[0].object.userData.itemId : null;
 }
 function pickFloor(e) {
@@ -3187,6 +3207,7 @@ function update() {
   buildTags(lastStats);
   renderDock(); renderStats(lastStats); renderSelbar(); renderArmed(); renderList(); renderHeader(lastStats);
   $('#btnUndo').disabled = !undoStack.length;
+  if (!$('#printModal').hidden) renderPrintPreview();
   save();
 }
 
@@ -3360,10 +3381,13 @@ function renderViewControls() {
   else if (view.focus !== 'zug' && view.focus !== G.units[0].id) view.focus = 'zug';
   const pressed = f => view.focus === f || (G.units.length === 1 && view.focus === 'zug' && f === G.units[0].id);
   const seg = items.map(x => `<button type="button" data-focus="${x.f}" aria-pressed="${pressed(x.f)}">${x.label} <kbd>${x.key}</kbd></button>`).join('');
+  // Knöpfe werden neu gezeichnet: den Tastaturfokus auf denselben Knopf zurücksetzen
+  const ae = document.activeElement, keep = ae && ae.closest && ae.closest('#focusSeg, #stageTools') ? [ae.closest('#focusSeg') ? '#focusSeg' : '#stageTools', ['focus', 'outside', 'explode', 'nextview', 'tour'].find(k => k in ae.dataset), ae.dataset.focus] : null;
   $('#focusSeg').innerHTML = seg;
   for (const b of document.querySelectorAll('#explodeSeg button')) b.setAttribute('aria-pressed', String(b.dataset.outside ? view.outside : !view.outside && (b.dataset.explode === '1') === view.exploded));
   $('#btnTour').setAttribute('aria-pressed', String(view.tour));
   $('#stageTools').innerHTML = `<div class="seg">${seg}</div><div class="seg"><button type="button" data-outside="${view.outside ? 0 : 1}" aria-pressed="${view.outside}">Außen</button><button type="button" data-explode="${view.exploded ? 0 : 1}" aria-pressed="${view.exploded}">Auf</button><button type="button" data-nextview aria-label="Ansicht wechseln">${esc(VIEWS[view.cam].name.split(' ')[0])}</button><button type="button" data-tour aria-pressed="${view.tour}" aria-label="Kamerafahrt">▶</button></div>`;
+  if (keep && keep[1]) { const b = $(`${keep[0]} [data-${keep[1]}${keep[1] === 'focus' ? `="${keep[2]}"` : ''}]`); if (b) b.focus(); }
 }
 
 let toastTimer = 0;
@@ -3394,7 +3418,7 @@ function specsHtml() {
     <p>Ohne eigenes Bild zeigt der Planer ein neutrales Obst-und-Gemüse-Motiv. Ihr könnt ein Foto oder die Grafik eurer Fahrzeugbeschriftung laden, am besten im Querformat (etwa 3 : 1). Das Bild bleibt nur in diesem Browser. Zu sehen ist es in der Ansicht <b>Außen</b> (Taste A).</p>
     <div class="livery">
       ${livery.url ? `<img src="${esc(livery.url)}" alt="Aktuelles Seitenbild">` : '<span class="livery-none">neutrales Motiv</span>'}
-      <label class="btn small">Bild wählen<input type="file" accept="image/*" data-livery hidden></label>
+      <label class="btn small">Bild wählen<input type="file" accept="image/*" data-livery class="sr"></label>
       ${livery.own ? '<button class="btn small" type="button" data-livery-reset>Eigenes Bild entfernen</button>' : ''}
     </div>
     <h3>Ladungsträger</h3>
@@ -3478,6 +3502,7 @@ function bind() {
     const t = e.target.closest('button, [data-item]');
     if (!t) return;
     const d = t.dataset;
+    if (!('tour' in d)) stopTour();
     if (d.arm) arm(d.arm);
     else if (d.add) addOne(d.add);
     else if (d.rm) removeOne(d.rm);
@@ -3527,7 +3552,7 @@ function bind() {
   $('#btnDoPrint').addEventListener('click', doPrint);
   $('#printNote').addEventListener('input', e => { printOpt.note = e.target.value; renderPrintPreview(); });
   // Auch Strg+P aus dem Browser-Menü druckt das Blatt, nicht die dunkle Oberfläche
-  window.addEventListener('beforeprint', () => { $('#printSheet').innerHTML = printSheetHtml(); });
+  window.addEventListener('beforeprint', () => { if (printOpt.shot) printShot = takeShot(); $('#printSheet').innerHTML = printSheetHtml(); });
   $('#btnView').addEventListener('click', () => { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); });
   $('#btnTour').addEventListener('click', () => (view.tour ? stopTour() : startTour()));
   $('#btnHelp').addEventListener('click', () => openModal('helpModal'));
@@ -3553,6 +3578,7 @@ function bind() {
   window.addEventListener('resize', resize);
 }
 function onKey(e) {
+  trapTab(e);
   const tag = (e.target.tagName || '').toLowerCase();
   const typing = tag === 'input' || tag === 'select' || tag === 'textarea';
   const modalOpen = !$('#helpModal').hidden || !$('#specsModal').hidden || !$('#printModal').hidden;
@@ -3565,6 +3591,8 @@ function onKey(e) {
   }
   if (typing || modalOpen) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+  // Strg+P: das Blatt dieses Dokuments drucken. Im DispoHub-Rahmen würde der Browser sonst die ganze Seite mit Menü drucken.
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'p') { e.preventDefault(); doPrint(); return; }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k !== 'c') stopTour();
@@ -3597,8 +3625,18 @@ function toggleUI() {
   resize();
 }
 let lastFocus = null;
-function openModal(id) { stopTour(); lastFocus = document.activeElement; const m = $('#' + id); m.hidden = false; const b = m.querySelector('[data-close]'); if (b) b.focus(); }
-function closeModals() { for (const m of document.querySelectorAll('.modal')) m.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+// Dialog: Hintergrund inaktiv (inert), Tab bleibt im Dialog
+function setInert(on) { for (const el of document.querySelectorAll('#app > :not(.modal):not(.toast)')) { if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); } }
+function openModal(id) { stopTour(); lastFocus = document.activeElement; const m = $('#' + id); m.hidden = false; setInert(true); const b = m.querySelector('[data-close]'); if (b) b.focus(); }
+function closeModals() { for (const m of document.querySelectorAll('.modal')) m.hidden = true; setInert(false); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+function trapTab(e) {
+  const m = [...document.querySelectorAll('.modal')].find(x => !x.hidden); if (!m || e.key !== 'Tab') return;
+  const f = [...m.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 function switchPreset(id) {
   pushUndo();
   const p = PRESET(id);
@@ -3693,7 +3731,7 @@ function printTopSvg(st) {
     s += `<text x="${xr}" y="${Y(U.W) + 44}" class="p-small">Tür</text><text x="${xf}" y="${Y(U.W) + 44}" text-anchor="end" class="p-small">Stirnwand</text>`;
     s += `<text x="${xr}" y="28" class="p-unit">${esc(U.label)}</text>`;
     s += `<text x="${xr}" y="52" class="p-small">${u.used}/${U.cap} Stellplätze · ${u.n} Behälter · ${U.wall ? `TK ${fmtTemp(U.wall.temp)}, Frische ` : ''}${fmtTemp(u.temp)}</text>`;
-    if (U.wall) s += `<text x="${S.X(U.X0 - U.wall.x / 2)}" y="${Y(U.W) + 44}" text-anchor="middle" class="p-small p-bl">TK-Kammer</text>`;
+    if (U.wall) s += `<text x="${S.X(U.X0 - U.wall.x / 2)}" y="${Y(U.W) + 24}" text-anchor="middle" class="p-small p-bl">TK-Kammer</text>`;
     s += `<text x="${xr - 14}" y="${Y(U.W / 6) + 5}" text-anchor="end" class="p-side">links</text><text x="${xr - 14}" y="${Y(U.W * 5 / 6) + 5}" text-anchor="end" class="p-side">rechts</text>`;
   });
   return s + `</svg>`;
@@ -3734,24 +3772,40 @@ function printSideSvg(st) {
       }
     }
     if (u.n && U.L - u.end > 0.1) { const bx = S.X(U.X0 - u.end - 0.04); s += `<line x1="${bx}" y1="${Z(fy) - 4}" x2="${bx}" y2="${Z(fy + U.H) + 4}" class="p-sperr"/>`; }
-    s += `<line x1="${xr}" y1="${Z(fy + U.H)}" x2="${xf}" y2="${Z(fy + U.H)}" class="p-hline"/><text x="${xr + 6}" y="${Z(fy + U.H) - 8}" class="p-small">innen ${fmt(U.H, 2)} m hoch · ${fmt(U.L, 2)} m lang</text>`;
+    s += `<line x1="${xr}" y1="${Z(fy + U.H)}" x2="${xf}" y2="${Z(fy + U.H)}" class="p-hline"/><text x="${xr + 8}" y="${Z(fy + U.H) + 20}" class="p-small">innen ${fmt(U.H, 2)} m hoch · ${fmt(U.L, 2)} m lang</text>`;
   });
   s += `<text x="8" y="${base + 38}" class="p-small">Von rechts gesehen. Vorn die rechte Spur, dahinter blass Mitte und links.</text>`;
   return s + `</svg>`;
 }
 // Ladeliste Reihe für Reihe: Spalten links, Mitte, rechts
 function printRowsHtml(U, u) {
-  const rows = [];
-  for (let r = 0; r < U.rows; r++) rows.push([[], [], []]);
+  const rows = [], lane = U.W / 3, lastEnd = U.rows ? U.rowX[U.rows - 1] + SLOT_D : 0;
+  for (let r = 0; r <= U.rows; r++) rows.push([[], [], []]);     // letzte Zeile: Rest hinter der letzten vollen Reihe
   for (const it of u.its) {
-    const r = rowOf(U, it.x), c = CT[it.t];
-    rows[r][laneOf(U, it)].push(c.short + (it.tk && U.wall ? ' (TK)' : ''));
+    const k = dims(it), c = CT[it.t], name = c.short + (it.tk && U.wall ? ' (TK)' : '');
+    const r0 = it.x + k.d / 2 > lastEnd ? U.rows : rowOf(U, it.x + k.d / 2), l0 = laneOf(U, it);
+    rows[r0][l0].push(name);
+    // Stellplätze, die der Behälter außerdem belegt (gleiche 12-%-Regel wie die Zählung): „(EP)“
+    for (let r = 0; r < U.rows; r++) for (let l = 0; l < 3; l++) {
+      if (r === r0 && l === l0) continue;
+      const ox = Math.min(U.rowX[r] + SLOT_D, it.x + k.d) - Math.max(U.rowX[r], it.x);
+      const oy = Math.min((l + 1) * lane, it.y + k.w) - Math.max(l * lane, it.y);
+      if (ox > 0 && oy > 0 && ox * oy > 0.12 * SLOT_D * lane) rows[r][l].push(`(${c.short})`);
+    }
   }
-  const cell = a => a.length ? esc(a.join(' + ')) : '<span class="p-free">frei</span>';
+  // Steht in einem Feld ein eigener Behälter, zählt nur der; „(EP)“ nur dort, wo sonst nichts steht
+  const cellHtml = (a, r, l) => {
+    const main = a.filter(x => x[0] !== '('), show = main.length ? main : a;
+    return show.length ? esc(show.join(' + ')) : u.cells[r * 3 + l] ? '<span class="p-free">belegt</span>' : '<span class="p-free">frei</span>';
+  };
   let h = `<table class="p-rows"><thead><tr><th>Reihe</th><th>links</th><th>Mitte</th><th>rechts</th></tr></thead><tbody>`;
   rows.forEach((row, r) => {
+    if (r === U.rows) {
+      if (row.some(a => a.some(x => x[0] !== '('))) h += `<tr><td>hinten</td>${row.map(a => `<td>${a.filter(x => x[0] !== '(').length ? esc(a.filter(x => x[0] !== '(').join(' + ')) : '–'}</td>`).join('')}</tr>`;
+      return;
+    }
     const tk = U.wall && r < U.wall.rows;
-    h += `<tr class="${tk ? 'tk' : ''}"><td>${r + 1}${tk ? ' <small>TK</small>' : ''}</td>${row.map(a => `<td>${cell(a)}</td>`).join('')}</tr>`;
+    h += `<tr class="${tk ? 'tk' : ''}"><td>${r + 1}${tk ? ' <small>TK</small>' : ''}</td>${row.map((a, l) => `<td>${cellHtml(a, r, l)}</td>`).join('')}</tr>`;
     if (U.wall && r === U.wall.rows - 1) h += `<tr class="p-wallrow"><td colspan="4">Trennwand · dahinter Frische ${fmtTemp(u.temp)}</td></tr>`;
   });
   return h + `</tbody></table>`;
@@ -3763,7 +3817,8 @@ function printNotes(st) {
     const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} × ${c.short}` : ''; }).filter(Boolean).join(', ');
     out.push(`<b>${esc(U.label)}:</b> ${u.n} Behälter${counts ? ` (${counts})` : ''} auf ${u.used} von ${U.cap} Stellplätzen. ${U.wall ? `TK-Kammer vorn Reihe 1–${U.wall.rows} bei ${fmtTemp(U.wall.temp)}, ${u.tkIts.length} Behälter; Frische dahinter bei ${fmtTemp(u.temp)}.` : `Kühlung ${fmtTemp(u.temp)}.`}`);
   }
-  for (const w of st.warns) if (w.lvl !== 'ok') out.push((w.lvl === 'bad' || w.lvl === 'warn' ? '<b class="p-warn">Achtung:</b> ' : '') + esc(w.txt));
+  if (!st.total.n) out.push('Fahrzeug leer, keine Ladung geplant.');
+  for (const w of st.warns) if (w.lvl !== 'ok' && !w.ui) out.push((w.lvl === 'bad' || w.lvl === 'warn' ? '<b class="p-warn">Achtung:</b> ' : '') + esc(w.txt));
   const ramp = itemsIn('r');
   if (ramp.length) out.push(`<b class="p-warn">Nicht geladen:</b> ${esc(CARRIERS().map(c => { const k = ramp.filter(it => it.t === c.id).length; return k ? `${k} × ${c.name}` : ''; }).filter(Boolean).join(', '))}.`);
   if (P.durchlade && G.units.length > 1) out.push('Durchladezug: Die Maschine wird über die Stirnklappe des Anhängers be- und entladen, der Anhänger bleibt dafür angekuppelt.');
@@ -3785,7 +3840,7 @@ function printSheetHtml() {
   const notes = printNotes(st);
   body += `<section class="p-notes"><h2>Hinweise für den Fahrer</h2><ul>${notes.map(n => `<li>${n}</li>`).join('')}</ul>${printOpt.note.trim() ? `<div class="p-own"><b>Hinweis der Disposition:</b> ${esc(printOpt.note.trim()).replace(/\n/g, '<br>')}</div>` : ''}</section>`;
   if (printOpt.shot && printShot) body += `<section class="p-fig p-shot"><h2>Ansicht wie am Bildschirm</h2><img src="${printShot}" alt="3D-Ansicht des Ladeplans"></section>`;
-  if (printOpt.list) body += `<section class="p-list${printOpt.top || printOpt.side ? ' p-newpage' : ''}"><h2>Ladeliste Reihe für Reihe</h2><p class="p-hint">Reihe 1 steht an der Stirnwand, die höchste Nummer an der Tür. Links und rechts in Fahrtrichtung gesehen.</p><div class="p-listgrid">${G.units.map(U => `<div class="p-unitlist"><h3>${esc(U.label)}</h3>${printRowsHtml(U, st.units[U.id])}</div>`).join('')}</div></section>`;
+  if (printOpt.list) body += `<section class="p-list${printOpt.top || printOpt.side || (printOpt.shot && printShot) ? ' p-newpage' : ''}"><h2>Ladeliste Reihe für Reihe</h2><p class="p-hint">Reihe 1 steht an der Stirnwand, die höchste Nummer an der Tür. Links und rechts in Fahrtrichtung gesehen. In Klammern: Behälter aus der Reihe davor oder daneben, der in dieses Feld hineinragt (z. B. die zweite Hälfte einer Europalette).</p><div class="p-listgrid">${G.units.map(U => `<div class="p-unitlist"><h3>${esc(U.label)}</h3>${printRowsHtml(U, st.units[U.id])}</div>`).join('')}</div></section>`;
   const foot = `<div class="p-foot"><span>Ladeplan ${esc(P.name)} · gedruckt am ${esc(now.toLocaleDateString('de-DE'))}, ${esc(time)} Uhr</span><span class="p-copy">© Maximilian Skibinski</span></div>`;
   // Die Fußzeile steht im tfoot: Browser wiederholen sie auf jeder gedruckten Seite
   return `<table class="p-page"><tbody><tr><td>${body}</td></tr></tbody><tfoot><tr><td>${foot}</td></tr></tfoot></table>`;
@@ -3807,6 +3862,7 @@ function openPrint() {
   renderPrintPreview();
 }
 function doPrint() {
+  if (printOpt.shot) printShot = takeShot();
   $('#printSheet').innerHTML = printSheetHtml();
   window.print();
 }
@@ -3869,7 +3925,8 @@ function start() {
     // Kamera für Tests und Bildschirmfotos: ladeplan.look([x, y, z], [zx, zy, zz])
     look:(pos, target) => { stopTour(); camera.position.set(...pos); controls.target.set(...target); controls.update(); requestRender(); },
     // Außenhaut und Seitenbild ohne Bedienung umschalten (Tests)
-    skin:(on) => { three.skin = !!on; requestRender(); }, setLivery };
+    skin:(on) => { three.skin = !!on; requestRender(); }, setLivery,
+    mem:() => renderer ? Object.assign({ calls:renderer.info.render.calls, triangles:renderer.info.render.triangles }, renderer.info.memory) : null };
 }
 start();
 // Offline-Cache, nur auf einer echten Website (http/https) und nicht in eingebetteten Vorschauen

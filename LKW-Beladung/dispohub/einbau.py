@@ -176,6 +176,7 @@ function menu_ordered(array $base, array $order): array
 CSS = """
 /* ============================================================
    BETA 9.7 · LKW – 3D-Ladeplaner: der Rahmen füllt das Fenster
+   (Block von LKW-Beladung/dispohub/einbau.py, LKW-Planer: Anfang)
    ============================================================ */
 body[class] .app-shell:has(.lkw-page){min-height:0}
 body[class] .main-wrap:has(.lkw-page){height:100vh;height:100dvh;min-height:0}
@@ -187,6 +188,13 @@ body[class] main.content:has(.lkw-page){display:flex;flex-direction:column;min-h
   body[class] main.content:has(.lkw-page){padding:0}
   .lkw-frame{border-radius:0;box-shadow:none}
 }
+/* Drucken über das Browser-Menü: statt Menü und abgeschnittenem Rahmen ein Hinweis.
+   Der Planer selbst druckt sein Blatt mit „Drucken“, Taste P oder Strg+P. */
+@media print{
+  body[class]:has(.lkw-page) .app-shell,body[class]:has(.lkw-page) .ticker-bar{display:none!important}
+  body[class]:has(.lkw-page)::before{content:"Den Ladeplan bitte im Planer mit „Drucken“ (Taste P) ausgeben.";display:block;padding:20mm;font:14pt/1.4 sans-serif;color:#111}
+}
+/* LKW-Planer: Ende */
 """
 
 
@@ -280,9 +288,12 @@ def kern(root, version):
         return t[:m.start(1)] + innen + t[m.end(1):]
     datei('assets/live.js', live)
 
-    # style.css: Rahmen
+    # style.css: Rahmen (Block zwischen den Markern wird bei jedem Lauf erneuert; ältere Fassung ohne Marker ersetzen)
     def style(t):
-        return t if '.lkw-page' in t else t.rstrip('\n') + '\n' + CSS
+        m = re.search(r'\n/\* =+\n   BETA 9\.7 · LKW.*?(/\* LKW-Planer: Ende \*/\n|\Z)', t, re.S)
+        if m:
+            return t[:m.start()] + CSS + t[m.end():]
+        return t.rstrip('\n') + '\n' + CSS
     datei('assets/style.css', style)
     return geaendert
 
