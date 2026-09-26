@@ -58,20 +58,19 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
   - Behälter werden per Tippen gesetzt. Die Vorschau rastet in Spuren und Reihen ein.
   - Behälter lassen sich ziehen, auch von der Maschine in den Anhänger oder auf die Rampe.
   - Drehen geht mit T, Löschen mit Entf, Rückgängig mit Strg+Z.
-- **Nach Tour laden:** Die Märkte werden in Anfahrtsreihenfolge verteilt. Der letzte Markt steht an der Stirnwand, der erste an der Tür. Beim Durchladezug gilt das über beide Einheiten: Die Ware für den ersten Markt kommt in den Anhänger.
+- **Automatisch verteilen:** stellt alle Behälter neu. Paletten stehen vorn an der Stirnwand. Das Gewicht wird im Verhältnis zur Nutzlast auf Maschine und Anhänger verteilt. Im Zentralachs-Anhänger kommen schwere Paletten über die Achsen, damit die Stützlast im Rahmen bleibt. **Nachrücken** schiebt alles bündig nach vorn.
 - **Auswertung**
   - belegte Stellplätze sowie „passt noch“ für Rollbehälter und Europaletten
   - Gewicht und Nutzlast
   - Achslasten als Hebel-Näherung: Vorderachse, Hinterachsen, Stützlast, Sattellast
   - Schwerpunkt, Ladungsfront und Sperrbalken
   - Kühlung je Einheit
-  - Entladereihenfolge: Welche Behälter sind zugestellt?
 - **Ansichten**
   - Tasten 1, 2 und 3 wählen Maschine, Anhänger oder den ganzen Zug.
   - X klappt den Aufbau auf: Dach und Wände heben sich, die Maschine fährt vor, die Stirnklappe wird zur Brücke.
   - V wechselt die Kamera: Übersicht, Seite, Draufsicht, Heck an der Rampe, über der Stirnwand.
   - C startet die Kamerafahrt.
-- **Ladeliste:** kann als Text kopiert werden, gegliedert nach Markt und nach Reihe.
+- **Ladeliste:** zeigt je Einheit, was geladen ist, und lässt sich als Text kopieren (Reihe für Reihe).
 
 Der Plan wird nur im eigenen Browser gespeichert (`localStorage`). Es gibt keinen Server und kein Konto.
 

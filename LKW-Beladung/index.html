@@ -5,9 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ladeplan Hängerzug</title>
 <meta name="description" content="Interaktiver 3D-Ladeplan für Kühl-Hängerzug, Solo-LKW, Anhänger und Sattelzug: Rollbehälter, Paletten, TK-Isotainer und Fleisch auf Stellplätze verteilen.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#0b0f1a">
+<meta property="og:title" content="Ladeplan Hängerzug">
+<meta property="og:description" content="Interaktiver 3D-Ladeplan: Rollbehälter, Paletten und Isotainer auf Maschine und Anhänger verteilen.">
+<!-- web:start -->
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="fonts/fonts.css">
+<!-- web:end -->
 <style>
 /* Eine Bildwelt: Rampe bei Nacht. Bewusst nur dunkel, wie die Vorlage. */
 :root{
@@ -135,26 +141,16 @@ select.pick option{background:#111727;color:var(--ink)}
 .warns li.ok::before{background:var(--green)}
 .warns li.info::before{background:var(--faint)}
 
-/* Tour */
-.stops{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.stop{display:grid;grid-template-columns:24px 1fr auto auto;gap:8px;align-items:center}
-.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 11.5px/1 var(--font-mono);text-shadow:0 1px 1px rgba(0,0,0,.4)}
-.stop input{width:100%;min-width:0;border:1px solid var(--edge);border-radius:8px;background:var(--fill);padding:6px 8px;font-weight:600;font-size:13.5px}
-.stop small{color:var(--mute);font:400 11px/1 var(--font-mono);white-space:nowrap}
-.stop button{border:0;background:transparent;color:var(--mute);font-size:18px;line-height:1;padding:2px 5px}
-.stop button:disabled{opacity:.25}
-.toggle{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.4;color:var(--ink-2);margin-top:10px;cursor:pointer}
-.toggle input{margin-top:2px;accent-color:#7fe3ff}
 .list{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:12.5px}
-.list li{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:start}
+.list li{display:grid;gap:2px}
 .list b{font-weight:700}
 .list small{display:block;color:var(--mute);font-size:11.5px;line-height:1.35}
 
 /* Leiste mit Ladungsträgern */
 #dock{position:absolute;left:14px;right:14px;bottom:14px;z-index:5;display:flex;gap:12px;align-items:stretch;padding:10px 12px;overflow-x:auto;scrollbar-width:thin}
 .dock-side{display:grid;gap:6px;align-content:center;flex:none}
-.dock-side label{font:700 10px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
-.dock-side select{max-width:190px}
+.dock-title{font:700 10.5px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.dock-hint{font-size:12px;line-height:1.4;color:var(--ink-2);max-width:190px}
 .tiles{display:flex;gap:8px;flex:1 0 auto;justify-content:center}
 .tile{position:relative;width:136px;flex:none;border:1px solid var(--edge);border-radius:12px;background:rgba(13,18,32,.7);display:grid;grid-template-rows:auto auto;overflow:hidden}
 .tile[data-armed="true"]{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset,0 0 18px -4px rgba(127,227,255,.6)}
@@ -179,10 +175,6 @@ select.pick option{background:#111727;color:var(--ink)}
 .sel-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .sel-h b{font:700 18px/1.1 var(--font-display);letter-spacing:.03em;text-transform:uppercase}
 .sel-h small{display:block;font:400 11.5px/1.3 var(--font-mono);color:var(--mute);margin-top:2px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{border:1px solid var(--edge);background:var(--fill);border-radius:999px;padding:3px 9px 3px 4px;font-size:12px;font-weight:600;display:inline-flex;gap:6px;align-items:center;color:var(--ink-2)}
-.chip .dot{width:17px;height:17px;font-size:9.5px}
-.chip[aria-pressed="true"]{border-color:var(--cyan);color:var(--ink);box-shadow:0 0 0 1px var(--cyan) inset}
 .sel-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sel-row label{font-size:12px;color:var(--mute);display:flex;gap:6px;align-items:center}
 .sel-row input,.kgin{width:78px;border:1px solid var(--edge);border-radius:7px;background:var(--fill);padding:4px 7px;font:500 12.5px/1.3 var(--font-mono)}
@@ -233,17 +225,18 @@ tr:last-child td{border-bottom:0}
   #stage{order:3;position:sticky;top:0;height:46vh;min-height:250px;z-index:3;inset:auto}
   #dock{order:4;position:relative;left:auto;right:auto;bottom:auto;border-radius:0;border-left:0;border-right:0;flex-wrap:wrap;gap:8px;padding:10px 12px;backdrop-filter:none;-webkit-backdrop-filter:none;background:#0f1524}
   .tiles{order:1;width:100%;flex:1 1 100%;justify-content:flex-start;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-  .dock-side{order:2;flex:1 1 auto}
-  .dock-side select{max-width:none;width:100%}
-  .dock-actions{order:3;flex:1 1 100%;grid-template-columns:repeat(4,auto);justify-content:start}
-  .dock-actions .primary,.dock-actions #btnClear{grid-column:auto}
+  .dock-side{display:none}
+  .dock-hint{max-width:none}
+  .dock-actions{order:3;flex:1 1 100%;grid-template-columns:repeat(3,1fr)}
+  .dock-actions .primary{grid-column:1/-1}
+  .dock-actions #btnClear{grid-column:auto}
   #tabs{order:5;display:flex;position:sticky;top:calc(max(46vh,250px));z-index:3;background:#0b0f1a;border-bottom:1px solid var(--edge)}
   #tabs button{flex:1;border:0;background:transparent;padding:11px 6px;font:700 12px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);border-bottom:2px solid transparent}
   #tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--cyan)}
-  #secWhy{order:6} #secUnits{order:7} #secView{display:none} #secTour{order:8}
-  #secWhy,#secUnits,#secTour{padding:12px 16px}
-  #app[data-tab="plan"] #secTour{display:none}
-  #app[data-tab="tour"] #secWhy,#app[data-tab="tour"] #secUnits{display:none}
+  #secWhy{order:6} #secUnits{order:7} #secView{display:none} #secList{order:8}
+  #secWhy,#secUnits,#secList{padding:12px 16px}
+  #app[data-tab="plan"] #secList{display:none}
+  #app[data-tab="list"] #secWhy,#app[data-tab="list"] #secUnits{display:none}
   .hud>section+section{border-top:0}
   .title{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
   .title .t1{display:inline;font-size:18px} .title .t2{display:inline;font-size:26px}
@@ -282,7 +275,7 @@ tr:last-child td{border-bottom:0}
   <aside class="hud glass" id="hudLeft" aria-label="Fahrzeug und Auslastung">
     <section id="secBrand">
       <h1 class="title"><span class="t1" id="titleT1">Der Hängerzug,</span><span class="t2">aufgemacht</span></h1>
-      <p class="lede">Jeder Fahrer merkt, wenn der Zug voll ist. Hier siehst du es vorher: wo jeder Behälter steht, was die Achsen tragen und welcher Markt zuerst rauskommt.</p>
+      <p class="lede">Jeder Fahrer merkt, wenn der Zug voll ist. Hier siehst du es vorher: wo jeder Behälter steht, wie viele Stellplätze frei sind und was die Achsen tragen.</p>
       <div class="veh">
         <label class="sr" for="presetSel">Fahrzeug wählen</label>
         <select class="pick" id="presetSel"></select>
@@ -295,12 +288,10 @@ tr:last-child td{border-bottom:0}
     <section id="secUnits">
       <div class="glabel"><span>Auslastung</span><span class="hint" id="sampleTag"></span></div>
       <div id="unitCards"></div>
-      <div class="glabel" style="margin-top:14px"><span>Hinweise</span></div>
-      <ul class="warns" id="warnList"></ul>
     </section>
   </aside>
 
-  <aside class="hud glass" id="hudRight" aria-label="Ansicht und Tour">
+  <aside class="hud glass" id="hudRight" aria-label="Ansicht, Hinweise und Ladeliste">
     <section id="secView">
       <div class="glabel"><span>Einheit</span><span class="hint">1 2 3</span></div>
       <div class="seg" id="focusSeg"></div>
@@ -312,37 +303,31 @@ tr:last-child td{border-bottom:0}
         </div>
         <button class="btn icon" id="btnView" type="button" aria-label="Ansicht wechseln" title="Ansicht wechseln (V)"><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><rect x="1" y="3" width="11" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 6l5-3v8l-5-3z" fill="currentColor"/></svg></button>
         <button class="btn icon" id="btnTour" type="button" aria-label="Kamerafahrt" title="Kamerafahrt (C)"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5l9 5.5-9 5.5z" fill="currentColor"/></svg></button>
+        <button class="btn icon" id="btnFull" type="button" aria-label="Vollbild" title="Vollbild (F)" hidden><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
         <button class="btn icon" id="btnHelp" type="button" aria-label="Hilfe und Tastenkürzel">?</button>
       </div>
       <p class="lede" style="margin:8px 0 0;font-size:12px;color:var(--mute)">Ansicht: <span id="camName" class="c">Übersicht</span></p>
     </section>
-    <section id="secTour">
-      <div class="glabel"><span>Tour</span><span class="hint">Reihenfolge = Anfahrt</span></div>
-      <ol class="stops" id="stopList"></ol>
-      <div class="row" style="margin-top:8px">
-        <button class="btn small" id="btnAddStop" type="button">+ Markt</button>
-        <button class="btn small" id="btnSample" type="button">Beispieltour</button>
-      </div>
-      <label class="toggle" id="unloadToggleWrap"><input type="checkbox" id="unloadRear" checked> <span></span></label>
-      <div class="glabel" style="margin-top:14px"><span>Ware einfärben</span></div>
-      <div class="seg" id="colorSeg">
-        <button type="button" data-color="type" aria-pressed="true">nach Behälter</button>
-        <button type="button" data-color="stop" aria-pressed="false">nach Markt</button>
-      </div>
-      <div class="glabel" style="margin-top:14px"><span>Ladeliste</span><span class="hint">je Markt</span></div>
+    <section id="secList">
+      <div class="glabel"><span>Hinweise</span></div>
+      <ul class="warns" id="warnList"></ul>
+      <div class="glabel" style="margin-top:16px"><span>Ladeliste</span><span class="hint">je Einheit</span></div>
       <ul class="list" id="loadList"></ul>
-      <div class="row" style="margin-top:10px"><button class="btn small" id="btnCopy" type="button">Ladeliste kopieren</button></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn small" id="btnCopy" type="button">Ladeliste kopieren</button>
+        <button class="btn small" id="btnSample" type="button">Beispielladung</button>
+      </div>
     </section>
   </aside>
 
   <div id="dock" class="glass" aria-label="Ladungsträger">
     <div class="dock-side">
-      <label for="newStop">Neue Behälter für</label>
-      <select class="pick" id="newStop"></select>
+      <span class="dock-title">Ladungsträger</span>
+      <span class="dock-hint">Antippen, dann auf den Boden tippen.<br><b>+</b> stellt auf den nächsten freien Platz.</span>
     </div>
     <div class="tiles" id="tiles"></div>
     <div class="dock-actions">
-      <button class="btn primary" id="btnAuto" type="button">Nach Tour laden</button>
+      <button class="btn primary" id="btnAuto" type="button">Automatisch verteilen</button>
       <button class="btn small" id="btnCompact" type="button">Nachrücken</button>
       <button class="btn small" id="btnUndo" type="button" disabled>Rückgängig</button>
       <button class="btn small" id="btnClear" type="button">Leeren</button>
@@ -351,7 +336,7 @@ tr:last-child td{border-bottom:0}
 
   <nav id="tabs" role="tablist" aria-label="Bereiche">
     <button type="button" role="tab" data-tab="plan" aria-selected="true">Auslastung</button>
-    <button type="button" role="tab" data-tab="tour" aria-selected="false">Tour</button>
+    <button type="button" role="tab" data-tab="list" aria-selected="false">Hinweise &amp; Liste</button>
   </nav>
 
   <div class="modal" id="helpModal" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle">
@@ -360,9 +345,10 @@ tr:last-child td{border-bottom:0}
       <p>Der Planer zeigt die Ladefläche so, wie ihr sie an der Rampe seht. Reihe 1 steht an der Stirnwand, die letzte Reihe an der Tür. Jede Reihe hat drei Stellplätze. Ein Rollbehälter (72,4 × 81,5 cm) steht mit der Gitterseite quer, drei passen nebeneinander, eine Reihe ist 72,4 cm tief. So kommen die 33 Plätze der Maschine (8,08 m innen) und die 30 Plätze des Anhängers (7,30 m innen) zusammen.</p>
       <h3>Laden</h3>
       <ul>
-        <li>Unten einen Ladungsträger antippen, dann auf den Ladeboden tippen. Die Vorschau rastet an Wand, Reihe und Nachbarn ein. Mit <b>+</b> sucht der Planer selbst den nächsten freien Platz.</li>
+        <li>Unten einen Ladungsträger antippen, dann auf den Ladeboden tippen, im 3D-Bild oder im Stellplatzplan. Die Vorschau rastet an Wand, Reihe und Nachbarn ein. Mit <b>+</b> sucht der Planer selbst den nächsten freien Platz.</li>
         <li>Einen Behälter ziehen, um ihn zu versetzen. Das geht auch von der Maschine in den Anhänger oder auf die Rampe.</li>
-        <li><b>Nach Tour laden</b> sortiert alles neu. Der letzte Markt steht vorn an der Stirnwand, der erste Markt an der Tür. Beim Durchladezug gilt das über beide Einheiten: Die Ware für den ersten Markt kommt in den Anhänger, die Maschine wird danach durch den Anhänger entladen.</li>
+        <li><b>Automatisch verteilen</b> stellt alles neu: Paletten und schwere Ware nach vorn an die Stirnwand, dann die Rollware. Das Gewicht verteilt der Planer im Verhältnis zur Nutzlast auf Maschine und Anhänger.</li>
+        <li><b>Nachrücken</b> schiebt alle Behälter bündig nach vorn, ohne sie umzusortieren.</li>
         <li>Was nicht passt, bleibt auf der Rampe hinter dem Fahrzeug stehen.</li>
       </ul>
       <h3>Was die Zahlen bedeuten</h3>
@@ -401,8 +387,10 @@ tr:last-child td{border-bottom:0}
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<!-- web:scripts:start -->
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<!-- web:scripts:end -->
 <script>
 (function () {
 'use strict';
@@ -439,7 +427,7 @@ const CARRIER_BASE = [
       { key:'halb', label:'CHEP-Halbpalette', sub:'60 × 80 × 150 cm · blau', d:0.60, w:0.80, h:1.50, tare:10, kg:260, max:510, model:'ch3' } ] },
 ];
 const CT = {};                                           // wirksame Daten je Typ (Grundwerte + gewählte Variante)
-const TYPE_ORDER = ['ep', 'ch3', 'i2', 'iso', 'hyg', 'rbh'];   // innerhalb eines Marktes: Paletten zuerst, dann Rollware
+const TYPE_ORDER = ['ep', 'ch3', 'i2', 'iso', 'hyg', 'rbh'];   // Ladefolge beim automatischen Verteilen: Paletten zuerst, dann Rollware
 function rebuildCT() {
   for (const b of CARRIER_BASE) {
     const key = (state && state.variant && state.variant[b.id]) || b.variants[0].key;
@@ -454,7 +442,7 @@ const KIND = {
   motor:   { label:'Maschine', long:'Motorwagen', floorY:1.20, W:2.48, H:2.25, wallF:0.065, wallR:0.065,
              tare:13500, tare1:6400, tare2:7100, gvw:26000, max1:8000, max2:19000 },
   trailer: { label:'Anhänger', long:'Tandem-Anhänger', floorY:1.20, W:2.48, H:2.25, wallF:0.065, wallR:0.065,
-             tare:6600, s0:400, gvw:18000, maxA:18000, maxS:1000 },
+             tare:6600, s0:250, gvw:18000, maxA:18000, maxS:1000 },
   semi:    { label:'Auflieger', long:'Kühlauflieger', floorY:1.25, W:2.48, H:2.55, wallF:0.10, wallR:0.12,
              tare:8800, k0:3300, maxA:24000, tractorTare:7800, t1:5300, t2:2500, max1:8000, max2:11500 },
 };
@@ -479,13 +467,11 @@ const PRESETS = [
 ];
 const PRESET = id => PRESETS.find(p => p.id === id) || PRESETS[0];
 
-const STOP_COLORS = ['#E4572E', '#2A9D8F', '#8E5CD9', '#D98E04', '#3A86FF', '#D6457F', '#5C9E31', '#8D6E63'];
-const stopColor = s => STOP_COLORS[(s.id - 1) % STOP_COLORS.length];
 
 /* =====================================================================
    Zustand
    ===================================================================== */
-const STORE_KEY = 'ladeplan-haengerzug-v2';
+const STORE_KEY = 'ladeplan-haengerzug-v3';
 let state = null;
 const view = { focus:'zug', cam:0, exploded:false, armed:null, selected:null, uiOff:false, tour:false };
 let undoStack = [];
@@ -497,9 +483,7 @@ function unitsFor(p) {
 function freshState(presetId) {
   const p = PRESET(presetId || '221');
   return {
-    v:2, preset:p.id, units:unitsFor(p), items:[], nextId:1,
-    stops:[{ id:1, name:'Markt Nordstadt' }, { id:2, name:'Markt Am Ring' }, { id:3, name:'Markt Südfeld' }],
-    nextStop:4, activeStop:1, unloadRear:true, colorBy:'type',
+    v:3, preset:p.id, units:unitsFor(p), items:[], nextId:1,
     variant:Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].key])),
     kg:Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].kg])), sample:false,
   };
@@ -509,7 +493,7 @@ function loadSaved() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s || s.v !== 2 || !Array.isArray(s.items) || !Array.isArray(s.units) || !Array.isArray(s.stops) || !s.stops.length) return null;
+    if (!s || s.v !== 3 || !Array.isArray(s.items) || !Array.isArray(s.units)) return null;
     const known = new Set(CARRIER_BASE.map(b => b.id));
     s.items = s.items.filter(it => known.has(it.t) && typeof it.x === 'number' && typeof it.y === 'number');
     if (!PRESETS.some(p => p.id === s.preset)) return null;
@@ -535,7 +519,7 @@ function undo() {
   state = JSON.parse(s);
   view.selected = null;
   rebuildCT();
-  if (before !== shapeKey(state)) { resetCarrierMeshes(); rebuildVehicle(); renderFocus(); }
+  if (before !== shapeKey(state)) { resetCarrierMeshes(); rebuildVehicle(); renderViewControls(); }
   update();
   toast('Rückgängig gemacht');
 }
@@ -654,63 +638,106 @@ function snapSpot(U, boxes, d, w, px, py) {
   return best;
 }
 
-const stopOrder = () => Object.fromEntries(state.stops.map((s, i) => [s.id, i]));
-// Anfahrtsreihenfolge. Wird ein Markt auf zwei Einheiten verteilt, geht die leichte Rollware in die zuerst
-// entladene Einheit (Anhänger) und die schweren Paletten in die Maschine: das schont die Stützlast.
-function deliverySort(list) {
-  const o = stopOrder();
-  return list.slice().sort((a, b) => (o[a.s] ?? 99) - (o[b.s] ?? 99) || TYPE_ORDER.indexOf(b.t) - TYPE_ORDER.indexOf(a.t) || a.id - b.id);
-}
 // Laden in drei Spuren, wie an der Rampe: jeder Behälter in die Spur, die am wenigsten gefüllt ist.
 // Passt es in keiner Spur mehr (z. B. Palette quer am Ende), sucht bestSpot frei.
-function packList(U, list) {
-  const lw = U.W / 3, lanes = [0, 0, 0], boxes = [], placed = [];
-  for (const it of list) {
-    const c = CT[it.t];
-    let s = null;
-    if (c.w <= lw + EPS) {
-      const order = [0, 1, 2].sort((a, b) => lanes[a] - lanes[b] || a - b);
-      for (const l of order) {
-        const x = lanes[l], y = l * lw + (lw - c.w) / 2;
-        if (fitsAt(U, boxes, x, y, c.d, c.w)) { s = { x, y, r:0, d:c.d, w:c.w }; break; }
-      }
+function packStep(P, it) {
+  const U = P.U, c = CT[it.t], lw = U.W / 3;
+  let s = null;
+  if (c.w <= lw + EPS) {
+    const order = [0, 1, 2].sort((a, b) => P.lanes[a] - P.lanes[b] || a - b);
+    for (const l of order) {
+      const x = P.lanes[l], y = l * lw + (lw - c.w) / 2;
+      if (fitsAt(U, P.boxes, x, y, c.d, c.w)) { s = { x, y, r:0, d:c.d, w:c.w }; break; }
     }
-    if (!s) s = bestSpot(U, boxes, it.t);
-    if (!s) return null;
-    boxes.push({ x:s.x, y:s.y, d:s.d, w:s.w });
-    placed.push({ it, x:s.x, y:s.y, r:s.r });
-    for (let l = 0; l < 3; l++) if (s.y < (l + 1) * lw - EPS && s.y + s.w > l * lw + EPS) lanes[l] = Math.max(lanes[l], s.x + s.d);
   }
-  return placed;
+  if (!s) s = bestSpot(U, P.boxes, it.t);
+  if (!s) return null;
+  P.boxes.push({ x:s.x, y:s.y, d:s.d, w:s.w });
+  for (let l = 0; l < 3; l++) if (s.y < (l + 1) * lw - EPS && s.y + s.w > l * lw + EPS) P.lanes[l] = Math.max(P.lanes[l], s.x + s.d);
+  return s;
 }
-// Ladefolge in einer Einheit: letzter Markt zuerst (an die Stirnwand), im Markt Paletten vor Rollware
-function packOrder(list) {
-  const o = stopOrder();
-  return list.slice().sort((a, b) => (o[b.s] ?? 99) - (o[a.s] ?? 99) || TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t) || a.id - b.id);
+// Achslasten einer Einheit nach dem Hebelgesetz. cogX = Schwerpunkt der Ladung ab Stirnwand, S = Stützlast eines Anhängers.
+function axleFor(U, kg, cogX, S) {
+  const xc = U.X0 - (cogX || 0);                                   // Schwerpunkt in Welt-X
+  if (U.kind === 'trailer') {
+    const share = kg ? (xc - U.XA) / (U.XC - U.XA) : 0;
+    return { stuetz:U.K.s0 + kg * share, axles:U.K.tare - U.K.s0 + kg * (1 - share), gross:U.K.tare + kg };
+  }
+  if (U.kind === 'semi') {
+    const share = kg ? (xc - U.XA) / (U.XK - U.XA) : 0;
+    const king = U.K.k0 + kg * share, kr = (U.TF - U.XK) / (U.TF - U.TD);
+    return { king, axles:U.K.tare - U.K.k0 + kg * (1 - share), front:U.K.t1 + king * (1 - kr), rear:U.K.t2 + king * kr, gross:U.K.tare + U.K.tractorTare + kg };
+  }
+  const lever = x => (U.XF - x) / (U.XF - U.XR);
+  let front = U.K.tare1, rear = U.K.tare2;
+  if (kg) { const r = lever(xc); rear += kg * r; front += kg * (1 - r); }
+  if (S) { const r = lever(U.XC); rear += S * r; front += S * (1 - r); }
+  return { front, rear, gross:front + rear };
 }
-function unloadUnits() {
-  const ids = G.units.map(g => g.id);
-  return state.unloadRear ? ids.slice().reverse() : ids;
+// Wie knapp sind die Achsen? 1 = an der Grenze. Verbotene Zustände kosten extra.
+function axleScore(U, a) {
+  if (U.kind === 'trailer') return Math.max(a.axles / U.K.maxA, a.stuetz / U.K.maxS) + (a.stuetz < 100 ? 10 : 0);
+  if (U.kind === 'semi') return Math.max(a.front / U.K.max1, a.rear / U.K.max2, a.axles / U.K.maxA);
+  return Math.max(a.front / U.K.max1, a.rear / U.K.max2) + (a.front < 0.22 * a.gross ? 10 : 0);
 }
-// Nach Tour laden: Einheiten in Entladereihenfolge füllen, in jeder Einheit den letzten Markt zuerst (vorn)
+function payloadOf(U) {
+  return U.kind === 'semi' ? PRESET(state.preset).train - U.K.tare - U.K.tractorTare : U.K.gvw - U.K.tare;
+}
+// Automatisch verteilen: Paletten zuerst, jeweils in die Einheit, die im Verhältnis zu ihrer Nutzlast
+// am wenigsten trägt. Danach rückt balanceUnit die schweren Paletten dorthin, wo die Achsen es vertragen.
 function autoLoad(silent, noUndo) {
   if (!noUndo) pushUndo();
-  let remaining = deliverySort(state.items);
-  for (const uid of unloadUnits()) {
-    const U = unitG(uid);
-    let lo = 0, hi = remaining.length, bestPack = [];
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      const pack = packList(U, packOrder(remaining.slice(0, mid)));
-      if (pack) { lo = mid; bestPack = pack; } else hi = mid - 1;
+  const list = state.items.slice().sort((a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t) || b.kg - a.kg || a.id - b.id);
+  const packs = G.units.map(U => ({ U, lanes:[0, 0, 0], boxes:[], kg:0, area:0, payload:payloadOf(U) }));
+  const rest = [];
+  for (const it of list) {
+    const order = packs.slice().sort((p, q) => p.kg / p.payload - q.kg / q.payload || p.area / (p.U.L * p.U.W) - q.area / (q.U.L * q.U.W));
+    let placed = false;
+    for (const P of order) {
+      const s = packStep(P, it);
+      if (!s) continue;
+      it.u = P.U.id; it.x = s.x; it.y = s.y; it.r = s.r;
+      P.kg += it.kg; P.area += s.d * s.w; placed = true; break;
     }
-    for (const p of bestPack) { p.it.u = uid; p.it.x = p.x; p.it.y = p.y; p.it.r = p.r; }
-    remaining = remaining.slice(lo);
+    if (!placed) rest.push(it);
   }
-  toRamp(remaining);
+  // Achslasten ausgleichen: zuerst den Anhänger, dann die Maschine mit dessen Stützlast
+  let S = 0;
+  for (const U of G.units.slice().sort((p, q) => (p.kind === 'motor') - (q.kind === 'motor'))) {
+    balanceUnit(U, U.kind === 'motor' ? S : 0);
+    if (U.kind === 'trailer') { const l = unitLoad(U); S = axleFor(U, l.kg, l.cogX).stuetz; }
+  }
+  toRamp(rest);
   view.selected = null;
   update();
-  if (!silent) toast(remaining.length ? `Geladen. ${remaining.length} ${remaining.length === 1 ? 'Behälter bleibt' : 'Behälter bleiben'} auf der Rampe` : 'Nach Tour geladen: letzter Markt vorn, erster Markt an der Tür');
+  if (!silent) toast(rest.length ? `Verteilt. ${rest.length} ${rest.length === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : 'Verteilt: Gewicht gleichmäßig auf die Einheiten, Paletten achsgerecht');
+}
+// Schwere Paletten dorthin, wo die Achsen es am besten vertragen: beim Anhänger über die Tandemachse, bei der
+// Maschine Richtung Hinterachsen, beim Auflieger vor das Achsaggregat. Probiert, wie viel Rollware vor die Paletten
+// kommt, und nimmt die Anordnung mit den ruhigsten Achslasten. Passt keine neue Anordnung, bleibt die alte.
+function balanceUnit(U, S) {
+  const its = itemsIn(U.id);
+  const heavy = its.filter(it => CT[it.t].d > 1 || it.kg >= 450), light = its.filter(it => !heavy.includes(it));
+  if (!heavy.length || !light.length) return;
+  let best = null;
+  for (let k = 0; k <= light.length; k++) {
+    const order = light.slice(0, k).concat(heavy, light.slice(k));
+    const P = { U, lanes:[0, 0, 0], boxes:[] }, spots = [];
+    let ok = true, kg = 0, mx = 0;
+    for (const it of order) {
+      const sp = packStep(P, it); if (!sp) { ok = false; break; }
+      spots.push(sp); kg += it.kg; mx += it.kg * (sp.x + sp.d / 2);
+    }
+    if (!ok) continue;
+    const score = axleScore(U, axleFor(U, kg, mx / kg, S)) + k * 1e-4;    // bei Gleichstand: Paletten weiter vorn
+    if (!best || score < best.score) best = { score, order, spots };
+  }
+  if (best) best.order.forEach((it, i) => { it.x = best.spots[i].x; it.y = best.spots[i].y; it.r = best.spots[i].r; });
+}
+function unitLoad(U) {
+  let kg = 0, mx = 0;
+  for (const it of itemsIn(U.id)) { const k = dims(it); kg += it.kg; mx += it.kg * (it.x + k.d / 2); }
+  return { kg, cogX:kg ? mx / kg : 0 };
 }
 function toRamp(list) {
   const R = G.ramp;
@@ -743,8 +770,7 @@ function placeNew(type, preferUnit) {
   return s ? { u:'r', x:s.x, y:s.y, r:s.r } : { u:'r', x:0, y:0, r:0 };
 }
 function newItem(type, pos) {
-  const it = { id:state.nextId++, t:type, s:state.activeStop, kg:state.kg[type], u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0 };
-  if (!state.stops.some(s => s.id === it.s)) it.s = state.stops[0].id;
+  const it = { id:state.nextId++, t:type, kg:state.kg[type], u:pos.u, x:pos.x, y:pos.y, r:pos.r || 0 };
   state.items.push(it);
   return it;
 }
@@ -786,9 +812,8 @@ function coveredCells(U, boxes) {
   return { n, cells };
 }
 function computeStats() {
-  const o = stopOrder();
   const P = PRESET(state.preset);
-  const st = { units:{}, warns:[], total:{ kg:0, n:0 }, ramp:itemsIn('r').length, blocked:new Set() };
+  const st = { units:{}, warns:[], total:{ kg:0, n:0 }, ramp:itemsIn('r').length };
   for (const U of G.units) {
     const its = itemsIn(U.id), boxes = its.map(box);
     let kg = 0, mx = 0, mz = 0, end = 0;
@@ -801,39 +826,16 @@ function computeStats() {
     st.units[U.id] = {
       U, its, n:its.length, kg, cogX:kg ? mx / kg : null, cogZ:kg ? mz / kg : 0, end,
       cells:cov.cells, used:cov.n, fitRbh:countFit(U, boxes, 'rbh'), fitEp:countFit(U, boxes, 'ep'),
-      payload:U.kind === 'semi' ? P.train - U.K.tare - U.K.tractorTare : U.K.gvw - U.K.tare,
+      payload:payloadOf(U),
       temp:state.units.find(x => x.id === U.id).temp,
     };
     st.total.kg += kg; st.total.n += its.length;
   }
-  // Achslasten per Hebelgesetz (Welt-X)
-  const wx = (U, u) => U.X0 - u.cogX;
-  for (const U of G.units) {
-    const u = st.units[U.id], m = u.kg, xc = u.cogX == null ? 0 : wx(U, u);
-    if (U.kind === 'trailer') {
-      const share = m ? (xc - U.XA) / (U.XC - U.XA) : 0;
-      u.stuetz = U.K.s0 + m * share;
-      u.axles = U.K.tare - U.K.s0 + m * (1 - share);
-      u.gross = U.K.tare + m;
-    } else if (U.kind === 'semi') {
-      const share = m ? (xc - U.XA) / (U.XK - U.XA) : 0;
-      u.king = U.K.k0 + m * share;
-      u.axles = U.K.tare - U.K.k0 + m * (1 - share);
-      const kr = (U.TF - U.XK) / (U.TF - U.TD);
-      u.front = U.K.t1 + u.king * (1 - kr);
-      u.rear = U.K.t2 + u.king * kr;
-      u.gross = U.K.tare + U.K.tractorTare + m;
-    }
-  }
-  for (const U of G.units) {
-    if (U.kind !== 'motor') continue;
+  // Achslasten per Hebelgesetz; erst Anhänger und Auflieger, dann die Maschine mit der Stützlast
+  const tr = G.units.find(g => g.kind === 'trailer');
+  for (const U of G.units.slice().sort((p, q) => (p.kind === 'motor') - (q.kind === 'motor'))) {
     const u = st.units[U.id];
-    const lever = x => (U.XF - x) / (U.XF - U.XR);
-    let front = U.K.tare1, rear = U.K.tare2;
-    if (u.kg) { const r = lever(wx(U, u)); rear += u.kg * r; front += u.kg * (1 - r); }
-    const tr = G.units.find(g => g.kind === 'trailer');
-    if (tr) { const S = st.units[tr.id].stuetz; const r = lever(U.XC); rear += S * r; front += S * (1 - r); }
-    u.front = front; u.rear = rear; u.gross = front + rear;
+    Object.assign(u, axleFor(U, u.kg, u.cogX, U.kind === 'motor' && tr ? st.units[tr.id].stuetz : 0));
   }
   const tareSum = G.units.reduce((a, U) => a + U.K.tare + (U.kind === 'semi' ? U.K.tractorTare : 0), 0);
   st.total.gross = tareSum + st.total.kg;
@@ -866,8 +868,7 @@ function computeStats() {
     if (U.kind === 'trailer') {
       if (u.stuetz < 0) add('bad', `${U.label}: hecklastig, die Deichsel wird angehoben (Stützlast ${Math.round(u.stuetz)} kg). Schwere Ware nach vorn.`,
         `Der <b>${U.label}</b> ist hecklastig: Die Deichsel wird mit <b class="r">${Math.abs(Math.round(u.stuetz))} kg</b> angehoben. Schwere Ware nach vorn.`);
-      else if (u.stuetz > U.K.maxS) add('warn', `${U.label}: Stützlast ca. ${Math.round(u.stuetz)} kg, üblich sind höchstens ${U.K.maxS} kg.`,
-        `Die Stützlast des <b>${U.label}s</b> liegt bei <b class="a">${Math.round(u.stuetz)} kg</b>. Üblich sind höchstens ${U.K.maxS} kg.`);
+      else if (u.stuetz > U.K.maxS) add('info', `${U.label}: Stützlast ca. ${fmt(u.stuetz, 0)} kg (Näherung), über dem üblichen Richtwert von ${fmt(U.K.maxS, 0)} kg. Den erlaubten Wert zeigt das Typenschild der Deichsel; schwere Ware eher über die Achsen.`);
       if (u.axles > U.K.maxA + 1) add('bad', `${U.label}: Achsen ${fmtT(u.axles)} über ${fmtT(U.K.maxA)}.`);
     }
     if (U.kind === 'semi') {
@@ -900,32 +901,8 @@ function computeStats() {
     if (gaps) add('warn', `${U.label}: ${gaps} ${gaps === 1 ? 'Behälter steht' : 'Behälter stehen'} mit Lücke nach vorn (Reihe ${[...gapRows].sort((a, b) => a - b).slice(0, 6).join(', ')}). Nachrücken oder mit Sperrbalken sichern.`,
       `In der <b>${U.label}</b> ${gaps === 1 ? 'steht' : 'stehen'} <b class="a">${gaps} ${gaps === 1 ? 'Behälter' : 'Behälter'}</b> mit Lücke nach vorn. Rollbehälter rutschen: nachrücken oder Sperrbalken setzen.`);
   }
-  // Entladereihenfolge: steht vor einem Behälter (Richtung Tür) Ware für einen späteren Markt?
-  for (const U of G.units) {
-    const its = st.units[U.id].its;
-    for (const a of its) {
-      const A = box(a);
-      for (const b of its) {
-        if (b === a) continue;
-        const B = box(b);
-        if (B.x >= A.x + A.d - 0.05 && A.y < B.y + B.w - 0.1 && A.y + A.w > B.y + 0.1 && (o[b.s] ?? 0) > (o[a.s] ?? 0)) { st.blocked.add(a.id); break; }
-      }
-    }
-  }
-  if (P.durchlade && G.units.length === 2 && state.unloadRear) {
-    const [firstId, secondId] = unloadUnits();
-    const latest = Math.max(-1, ...st.units[firstId].its.map(it => o[it.s] ?? 0));
-    for (const it of st.units[secondId].its) if ((o[it.s] ?? 0) < latest) st.blocked.add(it.id);
-  }
-  if (st.blocked.size) {
-    const bySt = {};
-    for (const id of st.blocked) { const it = state.items.find(i => i.id === id); if (it) bySt[it.s] = (bySt[it.s] || 0) + 1; }
-    const parts = Object.entries(bySt).map(([sid, n]) => { const s = state.stops.find(x => x.id === +sid); return { n, name:s ? s.name : 'Markt' }; });
-    add('warn', `Zugestellt: ${parts.map(p => `${p.n} für ${p.name}`).join(', ')} ${st.blocked.size === 1 ? 'steht' : 'stehen'} hinter Ware späterer Märkte. „Nach Tour laden“ sortiert neu.`,
-      `<b class="a">${parts.map(p => `${p.n} × ${esc(p.name)}`).join(', ')}</b> ${st.blocked.size === 1 ? 'ist' : 'sind'} zugestellt: Davor steht Ware für spätere Märkte. <b>Nach Tour laden</b> sortiert neu.`);
-  }
-  if (!W.length && st.total.n) add('ok', 'Gewicht, Achslasten, Kühlung und Entladereihenfolge passen.');
-  if (!st.total.n && !st.ramp) add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispieltour laden.');
+  if (st.total.n && !W.some(w => w.lvl === 'bad' || w.lvl === 'warn')) W.unshift({ lvl:'ok', txt:'Gewicht, Achslasten, Kühlung und Ladungssicherung passen.', why:null });
+  if (!st.total.n && !st.ramp) add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.');
   for (const U of G.units) {
     const u = st.units[U.id];
     if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Sperrbalken hinter Reihe ${Math.max(1, Math.ceil(u.end / SLOT_D - 0.05))} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür).`);
@@ -1069,7 +1046,6 @@ function initThree() {
   M.frontLine = new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.85 });
   M.frontLineBad = new T.LineBasicMaterial({ color:0xffb454, transparent:true, opacity:0.9 });
   M.selLine = new T.LineBasicMaterial({ color:0x7fe3ff });
-  M.blockLine = new T.LineBasicMaterial({ color:0xffb454 });
   M.cog = new T.MeshBasicMaterial({ color:0x7fe3ff });
 
   // Texturen
@@ -1493,20 +1469,6 @@ function carrierParts(c) {
   modelCache[key] = { parts, goods, top };
   return modelCache[key];
 }
-const stopMats = {};
-function stopMaterial(s) {
-  if (!stopMats[s.id]) { const m = M.goods.clone(); m.color.set(stopColor(s)); stopMats[s.id] = m; }
-  return stopMats[s.id];
-}
-const labelTex = {};
-function labelTexture(s, n) {
-  const k = s.id + ':' + n;
-  if (!labelTex[k]) labelTex[k] = canvasTex(64, 64, (c, w, h) => {
-    c.fillStyle = stopColor(s); c.fillRect(0, 0, w, h);
-    c.fillStyle = '#fff'; c.font = '700 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(n), w / 2, h / 2 + 2);
-  });
-  return labelTex[k];
-}
 function makeItemMesh(it) {
   const c = CT[it.t], P = carrierParts(c);
   const g = new T.Group(); g.userData.isItem = true;
@@ -1518,9 +1480,6 @@ function makeItemMesh(it) {
     inner.add(gm); g.userData.goods = gm;
     if (P.goods.wrap) { const core = new T.Mesh(GEO.unitBox, M.goods); core.scale.set(P.goods.d - 0.04, P.goods.h - 0.03, P.goods.w - 0.04); core.position.copy(gm.position); inner.add(core); g.userData.core = core; }
   }
-  const lbl = new T.Mesh(GEO.plane, new T.MeshBasicMaterial({ toneMapped:false }));
-  lbl.rotation.x = -Math.PI / 2; lbl.scale.set(0.26, 0.26, 1); lbl.position.y = P.top + 0.006;
-  inner.add(lbl); g.userData.label = lbl;
   const hit = new T.Mesh(GEO.unitBox, new T.MeshBasicMaterial({ visible:false }));
   hit.scale.set(c.d, c.h, c.w); hit.position.y = c.h / 2; hit.userData.itemId = it.id; inner.add(hit);
   g.userData.hit = hit; g.userData.inner = inner; g.userData.vkey = c.vkey;
@@ -1536,20 +1495,15 @@ function placeMesh(g, it) {
 }
 function syncItems(st) {
   if (!renderer) return;
-  const alive = new Set(), o = stopOrder();
+  const alive = new Set();
   for (const it of state.items) {
     alive.add(it.id);
     let g = three.meshes.get(it.id);
     const isNew = !g;
     if (!g) { g = makeItemMesh(it); three.meshes.set(it.id, g); }
     if (!drag || drag.id !== it.id) placeMesh(g, it);
-    const s = state.stops.find(x => x.id === it.s) || state.stops[0];
-    const lbl = g.userData.label, tex = labelTexture(s, (o[s.id] ?? 0) + 1);
-    if (lbl.material.map !== tex) { lbl.material.map = tex; lbl.material.needsUpdate = true; }
-    const target = g.userData.core || g.userData.goods;
-    if (target) target.material = state.colorBy === 'stop' ? stopMaterial(s) : M.goods;
     let sel = g.userData.sel;
-    const want = view.selected === it.id ? M.selLine : (st && st.blocked.has(it.id)) ? M.blockLine : null;
+    const want = view.selected === it.id ? M.selLine : null;
     if (want && !sel) { const c = CT[it.t]; sel = new T.LineSegments(GEO.unitBoxEdges, want); sel.scale.set(c.d + 0.04, c.h + 0.04, c.w + 0.04); sel.position.y = c.h / 2; g.userData.inner.add(sel); g.userData.sel = sel; }
     if (sel) { sel.visible = !!want; if (want) sel.material = want; }
     if (isNew && !reduced && !bulk) {
@@ -1771,7 +1725,7 @@ function buildTags(st) {
       defs.push({ key:'ha' + U.id, grp, local:toLocal(U.XR, 0.1, 1.55), prio:4, lvl:u.rear > U.K.max2 ? 'bad' : '', html:`HA <b>${fmtT(u.rear)}</b>` });
     } else if (U.kind === 'trailer') {
       defs.push({ key:'ax' + U.id, grp, local:toLocal(U.XA, 0.1, 1.55), prio:4, lvl:u.axles > U.K.maxA ? 'bad' : '', html:`Achsen <b>${fmtT(u.axles)}</b>` });
-      if (u.n) defs.push({ key:'sl' + U.id, grp, local:toLocal(U.XC, 0.55, 0.9), prio:5, lvl:u.stuetz < 0 ? 'bad' : u.stuetz > U.K.maxS ? 'warn' : '', html:`Stützlast <b>${Math.round(u.stuetz)} kg</b>` });
+      if (u.n) defs.push({ key:'sl' + U.id, grp, local:toLocal(U.XC, 0.55, 0.9), prio:5, lvl:u.stuetz < 0 ? 'bad' : '', html:`Stützlast <b>${Math.round(u.stuetz)} kg</b>` });
     } else {
       defs.push({ key:'ax' + U.id, grp, local:toLocal(U.XA, 0.1, 1.55), prio:4, lvl:u.axles > U.K.maxA ? 'bad' : '', html:`Achsen <b>${fmtT(u.axles)}</b>` });
       defs.push({ key:'ta' + U.id, grp:three.head, local:new T.Vector3(U.TD, 0.1, 1.55), prio:5, lvl:u.rear > U.K.max2 ? 'bad' : '', html:`AA <b>${fmtT(u.rear)}</b>` });
@@ -2013,7 +1967,7 @@ function setVariant(type, key) {
   for (const it of state.items) if (it.t === type && it.kg === oldKg) it.kg = state.kg[type];
   rebuildCT();
   resetCarrierMeshes();
-  bulk = true; autoLoad(true, true); bulk = false;       // Maße haben sich geändert: nach Tour neu verteilen
+  bulk = true; autoLoad(true, true); bulk = false;       // Maße haben sich geändert: neu verteilen
   const ramp = itemsIn('r').length;
   toast(`${CT[type].name}: ${v.label} · neu verteilt${ramp ? `, ${ramp} auf der Rampe` : ''}`);
 }
@@ -2032,7 +1986,7 @@ function update() {
   syncItems(lastStats);
   updateLeds();
   buildTags(lastStats);
-  renderDock(); renderStops(); renderStats(lastStats); renderSelbar(); renderArmed(); renderList(); renderHeader(lastStats);
+  renderDock(); renderStats(lastStats); renderSelbar(); renderArmed(); renderList(); renderHeader(lastStats);
   $('#btnUndo').disabled = !undoStack.length;
   save();
 }
@@ -2065,30 +2019,8 @@ function renderDock() {
     tiles.querySelector(`[data-arm="${c.id}"]`).setAttribute('aria-pressed', String(armed));
     tiles.querySelector(`[data-arm="${c.id}"]`).title = `${c.name} (${c.vlabel}) setzen: antippen, dann auf den Ladeboden tippen`;
     const g = tiles.querySelector(`[data-glyph="${c.id}"]`); if (!g.innerHTML) g.innerHTML = glyph(c);
-    tiles.querySelector(`[data-sub="${c.id}"]`).textContent = `${Math.round(c.d * 100)}×${Math.round(c.w * 100)} · ${slotEq(c)}`;
+    tiles.querySelector(`[data-sub="${c.id}"]`).textContent = `${Math.floor(c.d * 100 + 0.01)}×${Math.floor(c.w * 100 + 0.01)} · ${slotEq(c)}`;
   }
-  const ns = $('#newStop');
-  const opts = state.stops.map((s, i) => `<option value="${s.id}">${i + 1} · ${esc(s.name)}</option>`).join('');
-  if (ns.dataset.opts !== opts) { ns.innerHTML = opts; ns.dataset.opts = opts; }
-  ns.value = String(state.activeStop);
-}
-function renderStops() {
-  const list = $('#stopList');
-  const active = document.activeElement;
-  const editing = active && active.dataset && active.dataset.stopname;
-  const sig = state.stops.map(s => s.id).join(',');
-  if (!editing || list.dataset.sig !== sig) {
-    list.innerHTML = state.stops.map((s, i) => `<li class="stop"><span class="dot" style="background:${stopColor(s)}">${i + 1}</span><input id="stop-${s.id}" data-stopname="${s.id}" value="${esc(s.name)}" aria-label="Name Markt ${i + 1}" maxlength="40"><small data-stopn="${s.id}"></small><button type="button" data-delstop="${s.id}" aria-label="${esc(s.name)} löschen" ${state.stops.length < 2 ? 'disabled' : ''}>×</button></li>`).join('');
-    list.dataset.sig = sig;
-  }
-  for (const s of state.stops) { const el = list.querySelector(`[data-stopn="${s.id}"]`); if (el) el.textContent = `${state.items.filter(it => it.s === s.id).length} Beh.`; }
-  const P = PRESET(state.preset), wrap = $('#unloadToggleWrap');
-  wrap.hidden = G.units.length < 2;
-  $('#unloadRear').checked = state.unloadRear;
-  wrap.querySelector('span').textContent = P.durchlade
-    ? 'Anhänger zuerst entladen. Die Maschine wird danach durch den Anhänger entladen (Durchladezug), die Ware für den ersten Markt kommt also in den Anhänger.'
-    : 'Anhänger zuerst entladen: Die Ware für den ersten Markt kommt in den Anhänger.';
-  for (const b of document.querySelectorAll('#colorSeg button')) b.setAttribute('aria-pressed', String(b.dataset.color === state.colorBy));
 }
 function meter(v, max, warnAt) {
   const pct = Math.max(0, Math.min(1, v / max));
@@ -2126,7 +2058,7 @@ function planSvg(U, st) {
   const vw = Lp + pad * 2, vh = W + pad * 2 + 8;
   const X = x => pad + Lp - x * sc;            // Stirnwand rechts, Tür links: wie in der Seitenansicht
   const Y = y => pad + y * sc;
-  const o = stopOrder(), u = st.units[U.id];
+  const u = st.units[U.id];
   let s = `<svg class="plan" viewBox="0 0 ${vw.toFixed(1)} ${vh.toFixed(1)}" data-plan="${U.id}" role="img" aria-label="Stellplatzplan ${U.label}, Tür links, Stirnwand rechts">`;
   s += `<rect x="${pad}" y="${pad}" width="${Lp.toFixed(1)}" height="${W.toFixed(1)}" rx="2" fill="rgba(255,255,255,.03)" stroke="rgba(127,227,255,.45)" stroke-width="1"/>`;
   for (let r = 1; r <= U.rows; r++) if (r * SLOT_D < U.L - 0.01) s += `<line x1="${X(r * SLOT_D).toFixed(1)}" y1="${pad}" x2="${X(r * SLOT_D).toFixed(1)}" y2="${(pad + W).toFixed(1)}" stroke="rgba(127,227,255,.14)"/>`;
@@ -2135,12 +2067,10 @@ function planSvg(U, st) {
   s += `<text x="${(pad + Lp).toFixed(1)}" y="${(vh - 2).toFixed(1)}" text-anchor="end" font-size="8.5" fill="#67718b">STIRNWAND</text><text x="${pad}" y="${(vh - 2).toFixed(1)}" font-size="8.5" fill="#67718b">TÜR</text>`;
   for (const it of u.its) {
     const k = dims(it), c = CT[it.t];
-    const so = state.stops.find(x => x.id === it.s) || state.stops[0];
-    const fill = state.colorBy === 'stop' ? stopColor(so) : c.color;
     const x = X(it.x + k.d), y = Y(it.y), w = k.d * sc, h = k.w * sc;
-    const isSel = view.selected === it.id, isBlk = st.blocked.has(it.id);
-    s += `<g data-item="${it.id}"><rect x="${(x + 0.8).toFixed(1)}" y="${(y + 0.8).toFixed(1)}" width="${(w - 1.6).toFixed(1)}" height="${(h - 1.6).toFixed(1)}" rx="2" fill="${fill}" stroke="${isSel ? '#7fe3ff' : isBlk ? '#ffb454' : 'rgba(0,0,0,.45)'}" stroke-width="${isSel || isBlk ? 2.2 : 0.8}"/>`;
-    s += `<circle cx="${(x + w / 2).toFixed(1)}" cy="${(y + h / 2).toFixed(1)}" r="6" fill="${stopColor(so)}" stroke="#0b0f1a" stroke-width="1.2"/><text x="${(x + w / 2).toFixed(1)}" y="${(y + h / 2 + 3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="#fff">${(o[so.id] ?? 0) + 1}</text></g>`;
+    const isSel = view.selected === it.id, light = c.id === 'iso' || c.id === 'hyg' || c.id === 'ep';
+    s += `<g data-item="${it.id}"><title>${esc(c.name)} · ${fmt(it.kg, 0)} kg</title><rect x="${(x + 0.8).toFixed(1)}" y="${(y + 0.8).toFixed(1)}" width="${(w - 1.6).toFixed(1)}" height="${(h - 1.6).toFixed(1)}" rx="2" fill="${c.color}" stroke="${isSel ? '#7fe3ff' : 'rgba(0,0,0,.45)'}" stroke-width="${isSel ? 2.4 : 0.8}"/>`;
+    s += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + h / 2 + 2.6).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="600" fill="${light ? '#0b0f1a' : '#fff'}">${c.short}</text></g>`;
   }
   if (u.cogX != null) { const cx = X(u.cogX), cy = Y(U.W / 2 + u.cogZ); s += `<g aria-hidden="true"><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="none" stroke="#7fe3ff" stroke-width="2"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.6" fill="#7fe3ff"/></g>`; }
   if (u.n && U.L - u.end > 0.05) s += `<line x1="${X(u.end).toFixed(1)}" y1="${(pad - 3).toFixed(1)}" x2="${X(u.end).toFixed(1)}" y2="${(pad + W + 3).toFixed(1)}" stroke="#7fe3ff" stroke-width="1.6"/>`;
@@ -2150,11 +2080,10 @@ function renderSelbar() {
   const bar = $('#selbar');
   const it = state.items.find(i => i.id === view.selected);
   if (!it) { bar.hidden = true; return; }
-  const c = CT[it.t], o = stopOrder();
+  const c = CT[it.t];
   bar.hidden = false;
   bar.innerHTML = `
     <div class="sel-h"><div><b>${esc(c.name)}</b><small>${esc(c.vlabel)} · ${esc(posText(it))}</small></div><button class="btn small" type="button" data-selclose aria-label="Auswahl schließen">✕</button></div>
-    <div class="chips">${state.stops.map(s => `<button class="chip" type="button" data-setstop="${s.id}" aria-pressed="${s.id === it.s}"><span class="dot" style="background:${stopColor(s)}">${(o[s.id] ?? 0) + 1}</span>${esc(s.name)}</button>`).join('')}</div>
     <div class="sel-row">
       <label for="selKg">Gewicht brutto <input id="selKg" type="number" inputmode="numeric" min="0" max="${c.max}" step="5" value="${it.kg}"> kg</label>
       <button class="btn small" type="button" data-rotate>Drehen <kbd>T</kbd></button>
@@ -2164,20 +2093,21 @@ function renderSelbar() {
 function renderArmed() {
   const b = $('#armedBanner');
   if (!view.armed) { b.hidden = true; return; }
-  const c = CT[view.armed], s = state.stops.find(x => x.id === state.activeStop);
+  const c = CT[view.armed];
   b.hidden = false;
-  b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${esc(c.name)}${s ? ' für ' + esc(s.name) : ''}: auf den Ladeboden tippen</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
+  b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${esc(c.name)}: auf den Ladeboden tippen</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
 }
+// Ladeliste je Einheit: Anzahl je Ladungsträger, Gewicht, belegte Stellplätze
 function renderList() {
-  $('#loadList').innerHTML = state.stops.map((s, i) => {
-    const its = state.items.filter(it => it.s === s.id);
-    const per = G.units.concat([G.ramp]).map(U => {
-      const n = its.filter(it => it.u === U.id);
-      if (!n.length) return '';
-      return `${U.label}: ` + CARRIERS().map(c => { const k = n.filter(it => it.t === c.id).length; return k ? `${k} ${c.short}` : ''; }).filter(Boolean).join(', ');
-    }).filter(Boolean).join(' · ');
+  const st = lastStats;
+  const units = G.units.map(U => ({ U, its:itemsIn(U.id), u:st.units[U.id] }));
+  const ramp = itemsIn('r');
+  if (ramp.length) units.push({ U:G.ramp, its:ramp, u:null });
+  $('#loadList').innerHTML = units.map(({ U, its, u }) => {
+    const counts = CARRIERS().map(c => { const k = its.filter(it => it.t === c.id).length; return k ? `${k} ${c.name}` : ''; }).filter(Boolean).join(', ');
     const kg = its.reduce((a, it) => a + it.kg, 0);
-    return `<li><span class="dot" style="background:${stopColor(s)}">${i + 1}</span><span><b>${esc(s.name)}</b> <span class="num">${its.length} Beh. · ${fmtT(kg)}</span><small>${per || 'noch nichts geladen'}</small></span></li>`;
+    const head = u ? `${its.length} Behälter · ${u.used}/${U.cap} Stellplätze · ${fmtT(kg)}` : `${its.length} Behälter · nicht geladen`;
+    return `<li><span><b class="${u ? '' : 'a'}">${U.label}</b> <span class="num" style="color:var(--mute)">${head}</span></span><small>${counts || 'leer'}</small></li>`;
   }).join('');
 }
 function renderHeader(st) {
@@ -2198,16 +2128,11 @@ function renderHeader(st) {
 function whySentence(st) {
   const hot = st.warns.find(w => (w.lvl === 'bad' || w.lvl === 'warn') && w.why);
   if (hot) return hot.why;
-  if (!st.total.n) return 'Der Laderaum ist leer. Unten einen Ladungsträger antippen und auf den Boden tippen, oder <b>Beispieltour</b> laden.';
-  const o = stopOrder();
-  const firstStop = state.stops[0], lastStop = state.stops[state.stops.length - 1];
-  const where = s => { const its = state.items.filter(it => it.s === s.id && it.u !== 'r'); const us = [...new Set(its.map(it => unitG(it.u).label))]; return us.length ? us.join(' und ') : null; };
+  if (!st.total.n) return 'Der Laderaum ist leer. Unten einen Ladungsträger antippen und auf den Boden tippen, oder <b>Beispielladung</b> laden.';
   const free = st.total.cap - st.total.used;
-  const w1 = firstStop && where(firstStop), w2 = lastStop && lastStop !== firstStop && where(lastStop);
-  let s = '';
-  if (w1) s += `<b class="c">${esc(firstStop.name)}</b> steht ${G.units.length > 1 ? `im ${w1 === 'Anhänger' ? 'Anhänger' : w1}` : ''} an der Tür und kommt zuerst raus. `;
-  if (w2) s += `<b class="c">${esc(lastStop.name)}</b> wartet vorn an der Stirnwand. `;
-  s += free > 0 ? `Noch <b>${free} ${free === 1 ? 'Stellplatz' : 'Stellplätze'}</b> frei, ` : 'Alle Stellplätze sind belegt, ';
+  const parts = G.units.map(U => { const u = st.units[U.id]; return `<b>${U.label}</b> <b class="c">${u.used}/${U.cap}</b>`; });
+  let s = parts.join(', ') + ' Stellplätze belegt. ';
+  s += free > 0 ? `Noch <b>${free} ${free === 1 ? 'Platz' : 'Plätze'}</b> frei, ` : 'Alles voll, ';
   s += `<b>${fmtT(Math.max(0, st.total.limit - st.total.gross))}</b> Luft bis ${fmt(st.total.limit / 1000, 0)} t.`;
   return s;
 }
@@ -2321,18 +2246,7 @@ function bind() {
     else if (d.explode != null) { stopTour(); setExploded(d.explode === '1'); }
     else if ('nextview' in d) { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); }
     else if ('tour' in d) view.tour ? stopTour() : startTour();
-    else if (d.delstop) {
-      const id = +d.delstop; if (state.stops.length < 2) return;
-      pushUndo();
-      state.stops = state.stops.filter(s => s.id !== id);
-      const fb = state.stops[0].id;
-      for (const it of state.items) if (it.s === id) it.s = fb;
-      if (state.activeStop === id) state.activeStop = fb;
-      update();
-    }
-    else if (d.setstop) { const it = state.items.find(i => i.id === view.selected); if (it && it.s !== +d.setstop) { pushUndo(); it.s = +d.setstop; update(); } }
     else if (d.temp) { const u = state.units.find(x => x.id === d.temp); if (u) { u.temp = Math.max(-25, Math.min(15, u.temp + +d.dt)); update(); } }
-    else if (d.color) { state.colorBy = d.color; update(); }
     else if ('selclose' in d) select(null);
     else if ('rotate' in d) rotateSelected();
     else if ('delete' in d) deleteSelected();
@@ -2349,10 +2263,6 @@ function bind() {
     const pad = 12, sc = PLAN_W / (U.L + 0.4), Lp = U.L * sc;
     placeAt(uid, (pad + Lp - p.x) / sc, (p.y - pad) / sc);
   });
-  document.addEventListener('input', e => {
-    const d = e.target.dataset;
-    if (d.stopname) { const s = state.stops.find(x => x.id === +d.stopname); if (s) { s.name = e.target.value.slice(0, 40) || 'Markt'; renderDock(); renderList(); renderArmed(); renderHeader(lastStats); save(); } }
-  });
   document.addEventListener('change', e => {
     const t = e.target, d = t.dataset;
     if (d.kg) {
@@ -2365,22 +2275,21 @@ function bind() {
     else if (t.id === 'selKg') {
       const it = state.items.find(i => i.id === view.selected); if (!it) return;
       pushUndo(); it.kg = Math.max(0, Math.min(CT[it.t].max, Math.round(+t.value || 0))); update();
-    } else if (t.id === 'unloadRear') { state.unloadRear = t.checked; update(); }
-    else if (t.id === 'presetSel') switchPreset(t.value);
-    else if (t.id === 'newStop') { state.activeStop = +t.value; renderArmed(); save(); }
+    } else if (t.id === 'presetSel') switchPreset(t.value);
     else if (d.len) { setUnitLength(d.len, +t.value); $('#specsBody').innerHTML = specsHtml(); }
   });
   $('#btnAuto').addEventListener('click', () => { state.sample = false; autoLoad(); });
   $('#btnCompact').addEventListener('click', () => { pushUndo(); for (const U of G.units) compact(U.id); update(); toast('Nachgerückt: alles steht bündig nach vorn'); });
   $('#btnUndo').addEventListener('click', undo);
   $('#btnClear').addEventListener('click', () => { if (!state.items.length) return; pushUndo(); state.items = []; view.selected = null; state.sample = false; update(); toast('Geleert. Rückgängig holt die Ladung zurück.'); });
-  $('#btnAddStop').addEventListener('click', () => { if (state.stops.length >= 12) return; pushUndo(); const id = state.nextStop++; state.stops.push({ id, name:`Markt ${state.stops.length + 1}` }); state.activeStop = id; update(); const inp = $(`#stop-${id}`); if (inp) { inp.focus(); inp.select(); } });
   $('#btnSample').addEventListener('click', () => { pushUndo(); loadSample(); });
   $('#btnCopy').addEventListener('click', copyList);
   $('#btnView').addEventListener('click', () => { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); });
   $('#btnTour').addEventListener('click', () => (view.tour ? stopTour() : startTour()));
   $('#btnHelp').addEventListener('click', () => openModal('helpModal'));
   $('#btnHelp2').addEventListener('click', () => openModal('helpModal'));
+  const fsOk = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (fsOk) { $('#btnFull').hidden = false; $('#btnFull').addEventListener('click', toggleFullscreen); }
   $('#btnSpecs').addEventListener('click', () => { $('#specsBody').innerHTML = specsHtml(); openModal('specsModal'); });
   $('#btnShowUI').addEventListener('click', toggleUI);
   for (const m of document.querySelectorAll('.modal')) m.addEventListener('click', e => { if (e.target === m) closeModals(); });
@@ -2424,8 +2333,16 @@ function onKey(e) {
   else if (k === 'r') { view.cam = 0; if (view.exploded) setExploded(false); setFocus('zug'); }
   else if (k === 'h' || k === '/') { e.preventDefault(); toggleUI(); }
   else if (k === 't') rotateSelected();
+  else if (k === 'f') { if (!$('#btnFull').hidden) toggleFullscreen(); }
   else if (k === 'delete' || k === 'backspace') { if (view.selected != null) { e.preventDefault(); deleteSelected(); } }
   else if (k === '?') openModal('helpModal');
+}
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (r && r.catch) r.catch(() => toast('Vollbild ist hier nicht erlaubt.')); }
+  } catch (e) { toast('Vollbild ist hier nicht erlaubt.'); }
 }
 function toggleUI() {
   view.uiOff = !view.uiOff;
@@ -2453,47 +2370,46 @@ function switchPreset(id) {
 }
 function loadSample() {
   const p = PRESET(state.preset);
-  state.stops = [{ id:1, name:'Markt Nordstadt' }, { id:2, name:'Markt Am Ring' }, { id:3, name:'Markt Südfeld' }];
-  state.nextStop = 4; state.activeStop = 1; state.items = []; state.nextId = 1;
-  const plan = SAMPLE[p.id] || SAMPLE['221'];
-  for (const [sid, list] of plan) for (const [t, n] of list) for (let i = 0; i < n; i++) {
+  state.items = []; state.nextId = 1;
+  for (const [t, n] of SAMPLE[p.id] || SAMPLE['221']) for (let i = 0; i < n; i++) {
     const id = state.nextId++;
     const j = ((id * 37) % 11 - 5) / 5;            // feste Streuung um den Durchschnitt
     const kg = Math.max(CT[t].tare, Math.round((state.kg[t] + j * state.kg[t] * 0.18) / 5) * 5);
-    state.items.push({ id, t, s:sid, kg, u:'r', x:0, y:0, r:0 });
+    state.items.push({ id, t, kg, u:'r', x:0, y:0, r:0 });
   }
   state.sample = true;
   bulk = true; autoLoad(true, true); bulk = false;
-  toast('Beispieltour geladen: drei Märkte, nach Tour sortiert');
+  toast('Beispielladung geladen und automatisch verteilt');
 }
-// [Markt, [[Typ, Anzahl], …]]
+// Beispielladung je Fahrzeug: [Typ, Anzahl]
 const SAMPLE = {
-  '221':    [[1, [['rbh', 15], ['hyg', 2], ['iso', 2], ['ep', 2]]], [2, [['rbh', 12], ['i2', 1], ['iso', 2], ['hyg', 2], ['ch3', 1]]], [3, [['rbh', 11], ['hyg', 2], ['iso', 1], ['ep', 1]]]],
-  '219s':   [[1, [['rbh', 13], ['hyg', 2], ['iso', 2], ['ep', 1]]], [2, [['rbh', 10], ['i2', 1], ['iso', 2], ['ch3', 1]]], [3, [['rbh', 9], ['hyg', 2], ['iso', 1], ['ep', 1]]]],
-  '219k':   [[1, [['rbh', 13], ['hyg', 2], ['iso', 2], ['ep', 1]]], [2, [['rbh', 10], ['i2', 1], ['iso', 2], ['ch3', 1]]], [3, [['rbh', 9], ['hyg', 2], ['iso', 1], ['ep', 1]]]],
-  '219h':   [[1, [['rbh', 13], ['hyg', 2], ['iso', 2], ['ep', 1]]], [2, [['rbh', 10], ['i2', 1], ['iso', 2], ['ch3', 1]]], [3, [['rbh', 9], ['hyg', 2], ['iso', 1], ['ep', 1]]]],
-  'hz60':   [[1, [['rbh', 14], ['hyg', 2], ['iso', 2], ['ep', 2]]], [2, [['rbh', 12], ['i2', 1], ['iso', 2], ['hyg', 1]]], [3, [['rbh', 11], ['hyg', 2], ['iso', 1], ['ep', 1]]]],
-  'solo33': [[1, [['rbh', 9], ['hyg', 1], ['iso', 1], ['ep', 1]]], [2, [['rbh', 8], ['i2', 1], ['iso', 1]]], [3, [['rbh', 6], ['hyg', 1]]]],
-  'solo30': [[1, [['rbh', 9], ['hyg', 1], ['iso', 1]]], [2, [['rbh', 7], ['i2', 1], ['iso', 1]]], [3, [['rbh', 6], ['hyg', 1]]]],
-  'anh30':  [[1, [['rbh', 10], ['hyg', 1], ['iso', 1]]], [2, [['rbh', 8], ['iso', 1]]], [3, [['rbh', 5], ['hyg', 1]]]],
+  '221':    [['rbh', 38], ['hyg', 6], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
+  '219s':   [['rbh', 32], ['hyg', 4], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
+  '219h':   [['rbh', 32], ['hyg', 4], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
+  '219k':   [['rbh', 32], ['hyg', 4], ['iso', 5], ['ep', 3], ['i2', 1], ['ch3', 1]],
+  'hz60':   [['rbh', 37], ['hyg', 5], ['iso', 5], ['ep', 3], ['i2', 1]],
+  'solo33': [['rbh', 23], ['hyg', 2], ['iso', 2], ['ep', 1], ['i2', 1]],
+  'solo30': [['rbh', 22], ['hyg', 2], ['iso', 2], ['i2', 1]],
+  'anh30':  [['rbh', 23], ['hyg', 2], ['iso', 2]],
 };
 function copyList() {
-  const P = PRESET(state.preset), st = lastStats, o = stopOrder();
+  const P = PRESET(state.preset), st = lastStats;
   const lines = [`LADEPLAN ${P.name} · ${P.type} · ${new Date().toLocaleDateString('de-DE')}`, ''];
   for (const U of G.units) {
     const u = st.units[U.id];
     lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${fmtT(u.kg)}, Soll ${fmtTemp(u.temp)}`);
     for (let r = 0; r < U.rows + 2; r++) {
       const row = u.its.filter(it => Math.floor((it.x + dims(it).d / 2) / SLOT_D) === r).sort((a, b) => a.y - b.y);
-      if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}: ${row.map(it => `${CT[it.t].short} (${(o[it.s] ?? 0) + 1})`).join(', ')}`);
+      if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}: ${row.map(it => CT[it.t].short).join(', ')}`);
     }
+    const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} ${c.short}` : ''; }).filter(Boolean).join(', ');
+    if (counts) lines.push(`  Summe: ${counts}`);
     lines.push('');
   }
   const ramp = itemsIn('r');
   if (ramp.length) lines.push(`RAMPE (nicht geladen): ${ramp.length} Behälter`, '');
-  lines.push('MÄRKTE');
-  state.stops.forEach((s, i) => { const its = state.items.filter(it => it.s === s.id); lines.push(`  ${i + 1}. ${s.name}: ${its.length} Behälter, ${fmtT(its.reduce((a, it) => a + it.kg, 0))}`); });
-  lines.push('', `Gesamt: ${fmtT(st.total.gross)} von ${fmtT(st.total.limit)}`);
+  lines.push(`Gesamt: ${st.total.used} von ${st.total.cap} Stellplätzen, ${fmtT(st.total.gross)} von ${fmtT(st.total.limit)}`);
+  lines.push('RBH Rollbehälter · HYG Hygiene-RBH · ISO TK-Isotainer · I2 Fleisch · EP Euro-Palette · CH3 CHEP-Palette');
   const warn = st.warns.filter(w => w.lvl === 'bad' || w.lvl === 'warn');
   if (warn.length) { lines.push('', 'HINWEISE'); for (const w of warn) lines.push('  - ' + w.txt); }
   const text = lines.join('\n');
@@ -2530,6 +2446,8 @@ function start() {
   window.ladeplan = { get state() { return state; }, stats:() => lastStats, autoLoad, geometry:() => G, setFocus, setExploded, setVariant, view, CT };
 }
 start();
+// Offline-Cache, nur auf einer echten Website (http/https) und nicht in eingebetteten Vorschauen
+/* web:sw */ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 })();
 </script>
 </body>
