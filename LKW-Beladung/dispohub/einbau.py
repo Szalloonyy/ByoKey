@@ -21,13 +21,17 @@ Was passiert:
   5. mit --version: APP_VERSION / APP_VERSION_LABEL setzen (z. B. 9.7)
 
 Jeder Schritt ist wiederholbar: Was schon drin ist, bleibt unverändert. Findet
-das Skript eine Stelle nicht (DispoHub stark umgebaut), bricht es mit einer
-Meldung ab, ohne halbe Änderungen an dieser Datei zu schreiben.
+das Skript eine Stelle nicht (DispoHub stark umgebaut), fehlt eine Quelldatei
+oder wäre eine PHP-Datei danach fehlerhaft (Prüfung mit php -l, falls PHP
+installiert ist), bricht es ab, bevor irgendetwas geschrieben wird.
+Windows-Zeilenenden (CRLF) bleiben erhalten.
 """
 import os
 import re
 import shutil
+import subprocess
 import sys
+import tempfile
 
 HIER = os.path.dirname(os.path.abspath(__file__))
 PLANER = os.path.dirname(HIER)
@@ -43,9 +47,53 @@ def lesen(pfad):
 
 
 def schreiben(pfad, text):
+    """Erst in eine Nachbardatei schreiben, dann ersetzen: nie eine halb geschriebene Datei."""
     os.makedirs(os.path.dirname(pfad), exist_ok=True)
-    with open(pfad, 'w', encoding='utf-8', newline='') as f:
-        f.write(text)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(pfad), prefix='.einbau-')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='') as f:
+            f.write(text)
+        if os.path.exists(pfad):
+            shutil.copymode(pfad, tmp)
+        os.replace(tmp, pfad)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
+def kopieren(quelle, ziel):
+    with open(quelle, 'rb') as f:
+        daten = f.read()
+    os.makedirs(os.path.dirname(ziel), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ziel), prefix='.einbau-')
+    with os.fdopen(fd, 'wb') as f:
+        f.write(daten)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, ziel)
+
+
+def mit_komma(innen):
+    """Listeninhalt so abschließen, dass ein weiterer Eintrag folgen darf (PHP-Array)."""
+    innen = innen.rstrip()
+    return innen if innen.endswith((',', '[')) or not innen else innen + ','
+
+
+def php_pruefen(rel, text):
+    """Geänderte PHP-Datei mit php -l prüfen, falls PHP da ist. Fehler = nichts schreiben."""
+    php = shutil.which('php')
+    if not php:
+        return
+    fd, tmp = tempfile.mkstemp(suffix='.php')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='') as f:
+            f.write(text)
+        r = subprocess.run([php, '-l', tmp], capture_output=True, text=True)
+        if r.returncode != 0:
+            zeilen = [z for z in (r.stdout + r.stderr).splitlines() if 'error:' in z.lower()] or ['Syntaxfehler']
+            raise Fehlt(f'{rel}: nach dem Einbau kein gültiges PHP ({zeilen[0].replace(tmp, rel).strip()})')
+    finally:
+        os.unlink(tmp)
 
 
 def ersetzen(text, muster, ersatz, was, flags=re.S):
@@ -59,7 +107,7 @@ def ersetzen(text, muster, ersatz, was, flags=re.S):
 # 1. Vorlage aus der Website-Fassung
 # ---------------------------------------------------------------------------
 def vorlage():
-    t = lesen(os.path.join(PLANER, 'index.html'))
+    t = lesen(os.path.join(PLANER, 'index.html')).replace('\r\n', '\n')
     t = ersetzen(t, r'<!-- web:start -->.*?<!-- web:end -->',
                  '<link rel="stylesheet" href="{{FONTS_CSS}}">', 'index.html: <!-- web:start -->')
     t = ersetzen(t, r'<!-- web:scripts:start -->.*?<!-- web:scripts:end -->',
@@ -146,9 +194,13 @@ def kern(root, version):
 
     def datei(rel, fn):
         alt = lesen(os.path.join(root, rel))
-        neu = fn(alt)
-        if neu != alt:
-            geaendert[rel] = neu
+        crlf = '\r\n' in alt                      # Windows-Zeilenenden (z. B. FTP im Textmodus): intern mit \n arbeiten
+        text = alt.replace('\r\n', '\n') if crlf else alt
+        neu = fn(text)
+        if neu != text:
+            if rel.endswith('.php'):
+                php_pruefen(rel, neu)
+            geaendert[rel] = neu.replace('\n', '\r\n') if crlf else neu
 
     # functions.php: Modul-Registry (+ Version)
     def functions(t):
@@ -156,7 +208,7 @@ def kern(root, version):
         if not m:
             raise Fehlt('includes/functions.php: modules_registry()')
         if "'lkw' =>" not in m.group(1):
-            t = t[:m.end(1)] + '\n' + REGISTRY.rstrip('\n') + t[m.end(1):]
+            t = t[:m.start(1)] + mit_komma(m.group(1)) + '\n' + REGISTRY.rstrip('\n') + t[m.end(1):]
         if version:
             t = ersetzen(t, r"define\('APP_VERSION', '[^']*'\);", f"define('APP_VERSION', 'beta-{version}');",
                          'includes/functions.php: APP_VERSION')
@@ -209,7 +261,7 @@ def kern(root, version):
             raise Fehlt('404.php: $startDateien')
         if "'lkw'" in m.group(1):
             return t
-        innen = m.group(1).rstrip() + "\n    'lkw'       => 'lkw.php',\n"
+        innen = mit_komma(m.group(1)) + "\n    'lkw'       => 'lkw.php',\n"
         return t[:m.start(1)] + innen + t[m.end(1):]
     datei('404.php', seite404)
 
@@ -248,7 +300,7 @@ def main():
     version = None
     if '--version' in args:
         i = args.index('--version')
-        version = args[i + 1]
+        version = args[i + 1] if i + 1 < len(args) else ''
         del args[i:i + 2]
         if not re.fullmatch(r'\d+(\.\d+)*', version):
             sys.exit('--version erwartet eine Zahl wie 9.7')
@@ -258,23 +310,30 @@ def main():
     if not os.path.isfile(os.path.join(root, 'includes', 'functions.php')):
         sys.exit(f'{root} ist kein DispoHub-Ordner (includes/functions.php fehlt).')
 
+    # Alle Quelldateien vorab: fehlt eine, bricht das Skript ab, bevor irgendetwas geschrieben wird.
+    kopien = [(os.path.join(PLANER, 'vendor', n), os.path.join('assets', 'lkw', n))
+              for n in ('three.min.js', 'OrbitControls.js', 'LICENSE-three.txt')]
+    schriften = os.path.join(PLANER, 'fonts')
+    kopien += [(os.path.join(schriften, n), os.path.join('assets', 'lkw', 'fonts', n))
+               for n in (sorted(os.listdir(schriften)) if os.path.isdir(schriften) else [])]
+    kopien += [(os.path.join(HIER, n), n) for n in ('lkw.php', 'lkw-app.php')]
+    fehlend = [q for q, _ in kopien if not os.path.isfile(q)]
+    if fehlend or not any(z.endswith('.woff2') for _, z in kopien):
+        sys.exit('Quelldateien fehlen: ' + (', '.join(os.path.relpath(q, PLANER) for q in fehlend) or 'fonts/*.woff2')
+                 + '. Nichts geändert.')
+
     try:
         html = vorlage()
         geaendert = kern(root, version)
     except Fehlt as f:
-        sys.exit(f'Stelle nicht gefunden: {f}. Nichts geändert. Bitte von Hand einbauen (siehe README.md).')
+        sys.exit(f'Einbau nicht möglich: {f}. Nichts geändert. Bitte von Hand einbauen (siehe README.md).')
 
+    # Erst die neuen Dateien, zuletzt der Kern: Der Menüpunkt erscheint nie vor seiner Seite.
+    for quelle, rel in kopien:
+        kopieren(quelle, os.path.join(root, rel))
+    schreiben(os.path.join(root, 'includes', 'lkw-planer.html'), html)
     for rel, text in geaendert.items():
         schreiben(os.path.join(root, rel), text)
-    schreiben(os.path.join(root, 'includes', 'lkw-planer.html'), html)
-    ziel = os.path.join(root, 'assets', 'lkw')
-    os.makedirs(os.path.join(ziel, 'fonts'), exist_ok=True)
-    for name in ('three.min.js', 'OrbitControls.js', 'LICENSE-three.txt'):
-        shutil.copyfile(os.path.join(PLANER, 'vendor', name), os.path.join(ziel, name))
-    for name in sorted(os.listdir(os.path.join(PLANER, 'fonts'))):
-        shutil.copyfile(os.path.join(PLANER, 'fonts', name), os.path.join(ziel, 'fonts', name))
-    for name in ('lkw.php', 'lkw-app.php'):
-        shutil.copyfile(os.path.join(HIER, name), os.path.join(root, name))
 
     print('Fertig. Neu oder aktualisiert: lkw.php, lkw-app.php, includes/lkw-planer.html, assets/lkw/')
     print('Angepasst: ' + (', '.join(geaendert) if geaendert else 'nichts, war schon eingebaut'))

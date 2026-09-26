@@ -520,7 +520,7 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }, 250);
 }
-const shapeKey = s => JSON.stringify([s.preset, s.units.map(u => [u.kind, u.L]), s.variant]);
+const shapeKey = s => JSON.stringify([s.preset, s.units.map(u => [u.kind, u.L, u.chamber ? [u.chamber.rows, u.chamber.on, u.chamber.temp] : 0]), s.variant]);
 function pushUndo() {
   undoStack.push(JSON.stringify(state));
   if (undoStack.length > 60) undoStack.shift();
@@ -737,12 +737,11 @@ function autoLoad(silent, noUndo) {
   update();
   if (!silent) toast(rest.length ? `Verteilt. ${rest.length} ${rest.length === 1 ? 'Behälter passt' : 'Behälter passen'} nicht mehr und ${rest.length === 1 ? 'bleibt' : 'bleiben'} auf der Rampe` : (G.units.length > 1 ? 'Verteilt: Paletten vorn, erst die Maschine, dann der Anhänger' : 'Verteilt: Paletten vorn, Rollware dahinter'));
 }
-// TK-Kennzeichen folgt dem Platz: Wer in der TK-Kammer steht, ist TK-Ware. Bei hochgeklappter
-// Trennwand bleibt das Kennzeichen, damit die Ware beim Zurückklappen wieder in die Kammer kommt.
+// TK-Kennzeichen folgt dem Platz: Wer in der TK-Kammer steht, ist TK-Ware. Überall sonst (Anhänger,
+// hochgeklappte Wand, Rampe, anderes Fahrzeug) bleibt es, damit die Ware später wieder in die Kammer kommt.
 function markZone(it) {
   const U = unitG(it.u);
   if (U && U.wall) it.tk = zoneAt(U, it.x, dims(it).d) === 'tk';
-  else if (it.u !== 'r' && !(state.units.find(x => x.id === it.u) || {}).chamber) it.tk = false;
 }
 function toRamp(list) {
   const R = G.ramp;
@@ -754,12 +753,14 @@ function toRamp(list) {
     else { it.x = 0; it.y = 0; it.r = 0; }
   }
 }
+// Nachrücken: jede Spur bündig nach vorn. Beim Kammer-Auto rückt jede Zone für sich, nichts wandert durch die Trennwand.
 function compact(uid) {
+  const U = unitG(uid);
   const list = itemsIn(uid).sort((a, b) => a.x - b.x || a.y - b.y);
   const done = [];
   for (const it of list) {
     const k = dims(it);
-    let x = 0;
+    let x = U && U.wall && zoneAt(U, it.x, k.d) === 'fr' ? U.wall.end : 0;
     for (const b of done) if (it.y < b.y + b.w - EPS && it.y + k.w > b.y + EPS) x = Math.max(x, b.x + b.d);
     it.x = Math.min(x, it.x);
     done.push({ x:it.x, y:it.y, d:k.d, w:k.w });
@@ -767,8 +768,10 @@ function compact(uid) {
 }
 function hasChamber() { return G.units.some(U => U.wall); }
 function placeNew(type, preferUnit) {
-  const order = preferUnit ? [preferUnit] : G.units.map(g => g.id);
   const zone = hasChamber() ? state.newZone : null;
+  // Ziel TK-Kammer, aber der Blick liegt auf dem Anhänger: dann in die Einheit mit Kammer
+  if (preferUnit && zone === 'tk' && !unitG(preferUnit).wall) preferUnit = null;
+  const order = preferUnit ? [preferUnit] : G.units.map(g => g.id);
   for (const uid of order) {
     const U = unitG(uid);
     if (zone === 'tk' && !U.wall) continue;
@@ -865,9 +868,15 @@ function computeStats() {
     const fresh = frIts.filter(it => CT[it.t].need !== 'tk').length;
     if (u.temp < 0 && fresh) add('bad', `${where}: Sollwert ${fmtTemp(u.temp)} liegt unter 0 °C. ${fresh} Behälter mit Frischware würden anfrieren.`,
       `Die <b>${where}</b> kühlt auf <b class="r">${fmtTemp(u.temp)}</b>. Frischware friert an, TK fährt ohnehin im Isotainer.`);
-    const folded = !U.wall && (state.units.find(x => x.id === U.id) || {}).chamber ? u.its.filter(it => it.tk && CT[it.t].need !== 'tk').length : 0;
-    if (folded && u.temp > -18) add('warn', `${U.label}: Trennwand hochgeklappt, ${folded} × TK-Ware fährt bei ${fmtTemp(u.temp)} mit der Frische. Trennwand setzen oder TK im Isotainer.`,
-      `Die Trennwand ist <b>hochgeklappt</b>. <b class="a">${folded} × TK-Ware</b> fährt bei ${fmtTemp(u.temp)} mit der Frische.`);
+    // TK-Ware außerhalb einer TK-Kammer (nur bei Fahrzeugen mit Kammer, sonst gibt es keine TK-Kennzeichen)
+    const loose = !U.wall && state.units.some(x => x.chamber) ? u.its.filter(it => it.tk && CT[it.t].need !== 'tk').length : 0;
+    if (loose && u.temp > -18) {
+      const folded = (state.units.find(x => x.id === U.id) || {}).chamber;
+      add('warn', folded ? `${U.label}: Trennwand hochgeklappt, ${loose} × TK-Ware fährt bei ${fmtTemp(u.temp)} mit der Frische. Trennwand setzen oder TK im Isotainer.`
+                         : `${U.label}: ${loose} × TK-Ware ohne TK-Kammer bei ${fmtTemp(u.temp)}. In die TK-Kammer der Maschine stellen.`,
+        folded ? `Die Trennwand ist <b>hochgeklappt</b>. <b class="a">${loose} × TK-Ware</b> fährt bei ${fmtTemp(u.temp)} mit der Frische.`
+               : `Im <b>${U.label}</b> stehen <b class="a">${loose} × TK-Ware</b> bei ${fmtTemp(u.temp)}, dort gibt es keine TK-Kammer.`);
+    }
     if (U.wall) {
       const kt = U.wall.temp;
       const meat = u.tkIts.filter(it => CT[it.t].need === 'kalt').length;
@@ -1877,7 +1886,6 @@ function placeAt(uid, x, y) {
   if (!s) { toast('Hier ist kein Platz. Die Vorschau leuchtet cyan, wo der Behälter passt.'); return; }
   pushUndo();
   const it = newItem(view.armed, { u:uid, x:s.x, y:s.y, r });
-  if (uid === 'r') it.tk = false;
   view.selected = null; state.sample = false;
   update(); hideGhost();
   toast(`${c.name} · ${posText(it)}`);
@@ -1954,9 +1962,10 @@ function deleteSelected() {
 function rotateSelected() {
   const it = state.items.find(i => i.id === view.selected); if (!it) return;
   const U = unitG(it.u), k = dims(it);
-  const s = snapSpot(U, itemsIn(it.u, it.id).map(box), k.w, k.d, it.x + k.d / 2, it.y + k.w / 2);
+  const boxes = itemsIn(it.u, it.id).map(box).concat(zoneBlockers(U, zoneAt(U, it.x, k.d)));   // nicht durch die Trennwand springen
+  const s = snapSpot(U, boxes, k.w, k.d, it.x + k.d / 2, it.y + k.w / 2);
   if (!s) { toast('Gedreht passt der Behälter hier nicht hin.'); return; }
-  pushUndo(); it.r = 1 - it.r; it.x = s.x; it.y = s.y; update();
+  pushUndo(); it.r = 1 - it.r; it.x = s.x; it.y = s.y; markZone(it); update();
 }
 function setVariant(type, key) {
   const b = CARRIER_BASE.find(x => x.id === type); if (!b) return;
@@ -1989,8 +1998,13 @@ function setChamber(uid, change) {
 }
 function setUnitLength(uid, L) {
   const u = state.units.find(x => x.id === uid); if (!u) return;
+  const wallBefore = unitG(uid).wall ? unitG(uid).wall.x : null;
   pushUndo(); u.L = Math.round(Math.max(3, Math.min(13.6, L)) * 100) / 100;
-  rebuildVehicle(); update(); moveCamera(true);
+  rebuildVehicle();
+  const U = unitG(uid);
+  if (u.chamber && U.wall) u.chamber.rows = U.wall.rows;              // Kammer passt nicht mehr ganz: gemerkte Größe angleichen
+  if ((U.wall ? U.wall.x : null) !== wallBefore) { bulk = true; autoLoad(true, true); bulk = false; }   // Trennwand steht woanders: Zonen neu belegen
+  update(); moveCamera(true);
 }
 
 /* =====================================================================
@@ -2287,7 +2301,7 @@ function bind() {
     else if ('nextview' in d) { stopTour(); view.cam = (view.cam + 1) % VIEWS.length; renderViewControls(); moveCamera(); }
     else if ('tour' in d) view.tour ? stopTour() : startTour();
     else if (d.temp) { const u = state.units.find(x => x.id === d.temp); if (u) { u.temp = Math.max(-25, Math.min(15, u.temp + +d.dt)); update(); } }
-    else if (d.chtemp) { const u = state.units.find(x => x.id === d.chtemp); if (u && u.chamber) { u.chamber.temp = Math.max(-30, Math.min(15, u.chamber.temp + +d.dt)); update(); } }
+    else if (d.chtemp) { const u = state.units.find(x => x.id === d.chtemp); if (u && u.chamber) { u.chamber.temp = Math.max(-30, Math.min(15, u.chamber.temp + +d.dt)); const W = unitG(u.id).wall; if (W) W.temp = u.chamber.temp; update(); } }
     else if (d.chrows) setChamber(d.chrows, { rows:+d.dr });
     else if (d.walloff) setChamber(d.walloff, { on:false });
     else if (d.wallon) setChamber(d.wallon, { on:true });
@@ -2431,7 +2445,7 @@ function copyList() {
     lines.push(`${U.label.toUpperCase()} (${U.cap} Stellplätze, ${fmt(U.L, 2)} m): ${u.used} belegt, ${u.n} Behälter, ${U.wall ? 'Frische' : 'Kühlung'} Soll ${fmtTemp(u.temp)}`);
     if (U.wall) lines.push(`  TK-Kammer vorn: Reihe 1–${U.wall.rows} (${u.tkCap} Stellplätze, ${u.tkUsed} belegt), Soll ${fmtTemp(U.wall.temp)}; Trennwand dahinter`);
     for (let r = 0; r < U.rows; r++) {
-      const row = u.its.filter(it => rowOf(U, it.x + dims(it).d / 2) === r).sort((a, b) => a.y - b.y);
+      const row = u.its.filter(it => rowOf(U, it.x) === r).sort((a, b) => a.y - b.y);
       if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}${U.wall && r < U.wall.rows ? ' TK' : '   '}: ${row.map(it => CT[it.t].short).join(', ')}`);
     }
     const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} ${c.short}` : ''; }).filter(Boolean).join(', ');
