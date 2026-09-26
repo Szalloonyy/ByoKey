@@ -77,7 +77,8 @@ Ein Bild, das jemand im Datenblatt selbst lädt, hat Vorrang.
   - „Hochklappen“ nimmt die Wand heraus, dann gibt es 33 Plätze in einem Raum. TK-Ware bleibt markiert und kommt beim Zurückklappen wieder in die Kammer.
   - Unten wählt man „Frische“ oder „TK-Kammer“ für neue Behälter. „Automatisch verteilen“ stellt TK-Ware in die Kammer.
 - **Ladungsträger:** Rollbehälter blau, Hygiene-Rollbehälter, TK-Isotainer (TKT-Thermobehälter, hellblau), I2 Fleisch (Isotainer silber), Euro-Palette und CH3-Palette (CHEP). Isotainer, I2, CH3 und Hygiene-RBH haben umschaltbare Formate.
-- **Hubwagen an Bord:** Der Elektro-Hubwagen Jungheinrich EJE C20 (173 × 72 cm, 555 kg) steht mit den Gabeln unter einem Rollbehälter, Isotainer oder einer Palette, Antrieb und Deichsel zur Tür. Er belegt keinen Stellplatz und zählt nicht als Behälter. Der Planer stellt ihn unter den hintersten Behälter, hinter dem noch Platz für den Antrieb ist (nie in der TK-Kammer). Zum Versetzen den gelben Antrieb auf einen anderen Behälter ziehen oder den Hubwagen wählen und einen Behälter antippen; er fährt mit seinem Behälter mit. Die Beispielladungen haben je einen; weitere mit +.
+- **Hubwagen an Bord:** Der Elektro-Hubwagen Jungheinrich EJE C20 (173 × 72 cm, 555 kg) steht mit den Gabeln unter einem Rollbehälter, Isotainer oder einer Palette, Antrieb und Deichsel zur Tür. Er belegt keinen Stellplatz und zählt nicht als Behälter. Der Planer stellt ihn unter den hintersten Behälter, hinter dem noch Platz für den Antrieb ist (nie in der TK-Kammer). Zum Versetzen den gelben Antrieb auf einen anderen Behälter ziehen oder den Hubwagen antippen und dann den Behälter; dann bleibt er dort und fährt mit dem Behälter mit, auch in die andere Einheit. Die Beispielladungen haben je einen; weitere mit +.
+- **Querstangen:** Jede Einheit hat 3 Querstangen in der Deckenschiene, die Maschine (auch solo) wie der Anhänger; die Anzahl steht im Datenblatt. Der Planer setzt Querstange 1 direkt hinter die Ladung, 1,45 m hoch und damit über die Deichsel des Hubwagens (höchstens 1,31 m) hinweg, und je eine weitere hinter jeden abgetrennten Ladeblock, beim Kammer-Auto auch in der TK-Kammer, wenn vor der Trennwand Luft ist. Die übrigen bleiben oben geparkt und werden nach einer Teilentladung nachgesetzt. 3D-Bild, Stellplatzplan, Druckblatt (Q1, Q2 …) und Ladeliste zeigen sie; fehlt eine, warnt der Planer.
 - **Setzen, Ziehen, Drehen**
   - Behälter werden per Tippen gesetzt. Die Vorschau rastet in Spuren und Reihen ein.
   - Behälter lassen sich ziehen, auch von der Maschine in den Anhänger oder auf die Rampe.
@@ -86,7 +87,7 @@ Ein Bild, das jemand im Datenblatt selbst lädt, hat Vorrang.
 - **Auswertung**
   - belegte und freie Stellplätze
   - „passt noch“ für Rollbehälter und Europaletten
-  - Ladungsfront und Sperrbalken
+  - Ladungsfront und Querstangen
   - Kühlung je Einheit, beim Kammer-Auto getrennt für TK-Kammer und Frische
   - Gewichte rechnet der Planer bewusst nicht, weil die Ware immer anders gepackt ist.
 - **Ansichten**

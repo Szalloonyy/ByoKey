@@ -183,6 +183,7 @@ select.pick option{background:#111727;color:var(--ink)}
 .sel-h b{font:700 18px/1.1 var(--font-display);letter-spacing:.03em;text-transform:uppercase}
 .sel-h small{display:block;font:400 11.5px/1.3 var(--font-mono);color:var(--mute);margin-top:2px}
 .sel-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sel-tip{font-size:12.5px;color:var(--mute);flex:1 1 180px}
 .sel-row label{font-size:12px;color:var(--mute);display:flex;gap:6px;align-items:center}
 .sel-row input{width:78px;border:1px solid var(--edge);border-radius:7px;background:var(--fill);padding:4px 7px;font:500 12.5px/1.3 var(--font-mono)}
 .toast{position:fixed;left:50%;top:60px;transform:translateX(-50%);z-index:40;background:rgba(9,13,22,.92);border:1px solid var(--edge);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:600;box-shadow:0 18px 50px -20px #000;max-width:calc(100% - 32px);text-align:center}
@@ -242,7 +243,7 @@ tr:last-child td{border-bottom:0}
 .p-stats small{font-size:6.5pt;letter-spacing:.1em;text-transform:uppercase;color:#555}
 .p-stats .p-warnbox{border-color:#c0392b;color:#c0392b}
 .p-fig{break-inside:avoid}
-.p-svg{display:block;width:100%;height:auto;max-height:54mm}
+.p-svg{display:block;width:100%;height:auto;max-height:50mm}
 .p-dir{font:600 21px var(--font-body);fill:#333}
 .p-cab{fill:#eef0f2;stroke:#555;stroke-width:2}
 .p-glass{fill:#aab5bf}
@@ -259,7 +260,9 @@ tr:last-child td{border-bottom:0}
 .p-it.tk{stroke:#0b63b6;stroke-width:3.4}
 .p-lbl{font:700 17px var(--font-display)}
 .p-tkl{font:700 12px var(--font-mono)}
-.p-sperr{stroke:#e0892b;stroke-width:5;stroke-dasharray:14 8}
+.p-q{stroke:#e0892b;stroke-width:6;stroke-linecap:round}.p-q.miss{stroke:#c0392b;stroke-dasharray:14 8}
+.p-rail{stroke:#8d969e;stroke-width:4}.p-qarm{stroke:#8d969e;stroke-width:3}
+.p-qdot{fill:#e0892b;stroke:#6a3a08;stroke-width:2}.p-qpark{fill:#c6ccd2;stroke:#6b737a;stroke-width:1.5}
 .p-small{font:500 15px var(--font-body);fill:#444}
 .p-or{fill:#c26a12;font-weight:700}
 .p-bl{fill:#0b63b6;font-weight:700}
@@ -278,7 +281,7 @@ tr:last-child td{border-bottom:0}
 .p-notes{break-inside:avoid}
 .p-notes ul{margin:0;padding-left:15px}
 .p-notes li{margin:1px 0;font-size:9pt}
-.p-warn{color:#c0392b}
+.p-warn{color:#c0392b}text.p-warn{fill:#c0392b;font-weight:700}
 .p-own{margin-top:5px;padding:5px 8px;border:1.5px solid #111;border-radius:6px;font-size:10pt;overflow-wrap:anywhere;word-break:break-word}
 .p-shot{break-inside:avoid}
 .p-shot img{display:block;max-width:100%;max-height:80mm;border-radius:6px}
@@ -296,6 +299,8 @@ tr:last-child td{border-bottom:0}
 .p-rows tr.tk td{background:#e6f1fc}
 .p-rows small{color:#0b63b6;font-weight:700}
 .p-rows .p-wallrow td{background:#4f86c2;color:#fff;font-size:7.5pt;padding:1px 5px}
+.p-rows .p-qrow td{background:#fbe3c8;color:#6a3a08;font-size:7.5pt;font-weight:700;padding:1px 5px;border-top:2px solid #e0892b}
+.p-rows .p-qrow.miss td{background:#f6d2cd;color:#8a1f12;border-top-color:#c0392b}
 .p-free{color:#aaa}
 .p-foot{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #999;margin-top:8px;padding-top:3px;font-size:7.5pt;color:#666}
 .p-copy{font-size:7pt;color:#777}
@@ -462,13 +467,14 @@ tr:last-child td{border-bottom:0}
         <li><b>Automatisch verteilen</b> stellt alles neu: Paletten nach vorn an die Stirnwand, dann die Rollware. Gefüllt wird erst die Maschine, dann der Anhänger.</li>
         <li><b>Nachrücken</b> schiebt alle Behälter bündig nach vorn, ohne sie umzusortieren.</li>
         <li>Was nicht passt, bleibt auf der Rampe hinter dem Fahrzeug stehen.</li>
-        <li>Der <b>Hubwagen</b> (Jungheinrich EJE C20) fährt mit: Er steht mit den Gabeln unter einem Rollbehälter, Isotainer oder einer Palette, Antrieb und Deichsel zur Tür. Er belegt keinen Stellplatz und zählt nicht als Behälter. Der Planer stellt ihn unter den hintersten Behälter; zum Versetzen den gelben Antrieb auf einen anderen Behälter ziehen. Er fährt mit seinem Behälter mit.</li>
+        <li>Der <b>Hubwagen</b> (Jungheinrich EJE C20) fährt mit: Er steht mit den Gabeln unter einem Rollbehälter, Isotainer oder einer Palette, Antrieb und Deichsel zur Tür. Er belegt keinen Stellplatz und zählt nicht als Behälter. Der Planer stellt ihn unter den hintersten Behälter, hinter dem Antrieb und Deichsel Platz haben (nie in der TK-Kammer). Zum Versetzen den gelben Antrieb auf einen anderen Behälter ziehen, oder den Hubwagen antippen und dann den Behälter: Dann bleibt er dort und fährt mit dem Behälter mit.</li>
+        <li><b>Querstangen</b>: Jede Einheit hat 3 in der Deckenschiene, die Maschine (auch solo) wie der Anhänger. Der Planer setzt Querstange 1 direkt hinter die Ladung, 1,45 m hoch über den Hubwagen hinweg, und je eine weitere hinter jeden abgetrennten Ladeblock. Die übrigen bleiben oben geparkt und werden nach einer Teilentladung nachgesetzt. Die Anzahl steht im Datenblatt.</li>
       </ul>
       <h3>Was die Zahlen bedeuten</h3>
       <ul>
         <li><b>Stellplätze</b> sind die belegten Rasterfelder, eines je Rollbehälter. Eine Europalette längs belegt zwei Felder und ein Stück vom dritten: drei Paletten hintereinander brauchen so viel Platz wie fünf Rollbehälter.</li>
         <li><b>Passt noch</b> zählt, wie viele Rollbehälter oder Europaletten der Planer auf den freien Boden noch stellen kann.</li>
-        <li>Die <b>Ladungsfront</b> ist die leuchtende Ebene hinter der letzten Reihe. Dort gehört der Sperrbalken hin.</li>
+        <li>Die <b>Ladungsfront</b> ist die leuchtende Ebene hinter der letzten Reihe. Dort kommt Querstange 1 hin.</li>
         <li><b>Kühlung</b>: Fleisch und Hygiene-Ware brauchen höchstens +4 °C. Tiefkühlware fährt im vorgekühlten Isotainer mit, im Kammer-Auto in der TK-Kammer.</li>
       </ul>
       <h3>Kammer-Auto (211 und 213)</h3>
@@ -573,6 +579,10 @@ const CARRIER_BASE = [
 CARRIER_BASE.push({ id:'hw', name:'Hubwagen', tile:'Hub\u00adwagen', short:'HW', color:'#F2B705', need:'egal', equip:true,
   variants:[{ key:'ejec20', label:'Jungheinrich EJE C20', sub:'173 × 72 × 130 cm · 555 kg · steht unter einem Behälter', d:1.734, w:0.72, h:1.30, model:'hw' }] });
 const HW_FORK = 1.15;                                     // Gabellänge EJE C20; der Rest (0,58 m) ist Antrieb mit Deichsel
+// Querstangen (Sperrbalken in Deckenschienen): je Einheit 3 an Bord, auf der Maschine (auch solo) wie auf dem Anhänger.
+// Gesetzt in 1,45 m Höhe: über der Deichsel des Hubwagens (höchstens 1,31 m), unter der Oberkante aller Behälter (ab 1,50 m).
+// Nicht gebraucht, bleiben sie oben in der Deckenschiene geparkt.
+const Q_H = 1.45, Q_DEFAULT = 3, Q_MAX = 6;
 const CT = {};                                           // wirksame Daten je Typ (Grundwerte + gewählte Variante)
 const TYPE_ORDER = ['ep', 'ch3', 'i2', 'iso', 'hyg', 'rbh', 'hw'];   // Ladefolge beim automatischen Verteilen: Paletten zuerst, dann Rollware
 function rebuildCT() {
@@ -619,7 +629,7 @@ let undoStack = [];
 
 function unitsFor(p) {
   const ids = p.units.length === 1 ? [p.units[0].kind === 'trailer' ? 'a' : p.units[0].kind === 'semi' ? 's' : 'm'] : ['m', 'a'];
-  return p.units.map((u, i) => ({ id:ids[i], kind:u.kind, L:u.L, temp:3, no:u.no || '', chamber:u.chamber ? Object.assign({}, u.chamber) : null }));
+  return p.units.map((u, i) => ({ id:ids[i], kind:u.kind, L:u.L, temp:3, no:u.no || '', chamber:u.chamber ? Object.assign({}, u.chamber) : null, bars:u.bars != null ? u.bars : Q_DEFAULT }));
 }
 function freshState(presetId) {
   const p = PRESET(presetId || '221');
@@ -639,6 +649,7 @@ function loadSaved() {
     s.items = s.items.filter(it => known.has(it.t) && typeof it.x === 'number' && typeof it.y === 'number');
     if (!PRESETS.some(p => p.id === s.preset)) return null;
     s.variant = Object.assign(Object.fromEntries(CARRIER_BASE.map(b => [b.id, b.variants[0].key])), s.variant || {});
+    for (const u of s.units) if (!Number.isInteger(u.bars) || u.bars < 0 || u.bars > Q_MAX) u.bars = Q_DEFAULT;   // Querstangen: neu seit Oktober 2026
     // Bis Ende September 2026 stand der TK-Isotainer 82,5 cm quer (Variante c580). Jetzt 73,5 cm quer: einmal neu verteilen.
     if (s.variant.iso === 'c580' || s.variant.iso === 'e1070') { s.variant.iso = 'a580'; s.repack = true; }
     return s;
@@ -854,7 +865,7 @@ function autoLoad(silent, noUndo) {
   for (const it of list.filter(isEquip)) {
     if (!G.units.some(U => U.id === it.u)) it.u = G.units.slice().reverse().map((U, i) => ({ U, i })).sort((a, b) => (eqCount[a.U.id] || 0) - (eqCount[b.U.id] || 0) || a.i - b.i)[0].U.id;
     eqCount[it.u] = (eqCount[it.u] || 0) + 1;
-    it.under = null;
+    it.under = null; it.pin = false;
   }
   for (const it of list.filter(it => !isEquip(it))) {
     let placed = false;
@@ -904,8 +915,37 @@ function compact(uid) {
   }
 }
 function hasChamber() { return G.units.some(U => U.wall); }
-// Freie Abschnitte für den Sperrbalken hinter der Ladung: ohne den Bereich, in dem an dieser Stelle ein Hubwagen steht.
-// Liste von [y0, y1], jeder Abschnitt mindestens 30 cm breit; leer = kein Platz für einen Balken.
+// Abschnitte der Ladungsfront (leuchtende Ebene hinter der Ladung): ohne den Bereich, in dem dort ein Hubwagen steht.
+// Liste von [y0, y1], jeder Abschnitt mindestens 30 cm breit.
+// Querstangen je Einheit: Ladeblöcke je Bereich (TK-Kammer, Frische) aus den Behältern; ein Block endet, wo quer über alle
+// Spuren mehr als 10 cm frei sind. Hinter jeden Block mit Luft nach hinten (zur Tür, zur Trennwand oder zum nächsten Block)
+// gehört eine Querstange. Nummern von hinten: Querstange 1 an der Ladung, die der Tür am nächsten steht.
+function planBars(U, u) {
+  const su = state.units.find(x => x.id === U.id), have = su && Number.isInteger(su.bars) ? su.bars : Q_DEFAULT;
+  const regions = U.wall ? [{ zone:'tk', b:U.wall.x }, { zone:'fr', b:U.L }] : [{ zone:null, b:U.L }];
+  const lane = U.W / 3, need = [];
+  for (const R of regions) {
+    const its = u.cargo.filter(it => !U.wall || zoneAt(U, it.x, dims(it).d) === R.zone);
+    const iv = its.map(it => [it.x, it.x + dims(it).d]).sort((a, b) => a[0] - b[0]);
+    const blocks = [];
+    for (const [a, b] of iv) { const B = blocks[blocks.length - 1]; if (B && a < B[1] + 0.1) B[1] = Math.max(B[1], b); else blocks.push([a, b]); }
+    blocks.forEach((B, i) => {
+      const next = i + 1 < blocks.length ? blocks[i + 1][0] : R.b;
+      if (next - B[1] <= 0.1) return;                      // bündig an Tür, Trennwand oder nächstem Block: keine Stange nötig
+      // Spuren, in denen nichts an der Stange anliegt (mehr als 15 cm Luft)
+      const free = ['links', 'in der Mitte', 'rechts'].filter((nm, l) => !its.some(it => {
+        const k = dims(it), back = it.x + k.d;
+        return back <= B[1] + EPS && back >= B[1] - 0.15 && Math.min((l + 1) * lane, it.y + k.w) - Math.max(l * lane, it.y) > 0.1;
+      }));
+      need.push({ x:B[1] + 0.03, end:B[1], door:R.zone !== 'tk' && i === blocks.length - 1, zone:R.zone, row:rowOf(U, B[1] - 0.05), free });
+    });
+  }
+  need.sort((a, b) => b.x - a.x);
+  need.forEach((b, i) => { b.n = i < have ? i + 1 : 0; });
+  const used = Math.min(have, need.length);
+  return { have, need, used, spare:have - used, missing:need.length - used };
+}
+const barWhere = (U, b) => `${b.zone === 'tk' ? 'in der TK-Kammer ' : ''}hinter Reihe ${b.row + 1}${b.door ? ` (${fmt(U.L - b.end, 2)} m bis zur Tür)` : ''}`;
 function barSpans(U, u) {
   const x = u.end + 0.04; let spans = [[0, U.W]];
   for (const it of u.its.filter(isEquip)) {
@@ -919,59 +959,94 @@ function barSpans(U, u) {
 const isEquip = it => !!(CT[it.t] && CT[it.t].equip);
 const solid = (uid, exceptId) => itemsIn(uid, exceptId).filter(it => !isEquip(it));   // was Boden belegt: alles außer dem Hubwagen
 const carrierOf = it => it.under != null ? state.items.find(x => x.id === it.under && x.u === it.u && !isEquip(x)) : null;
-// Behälter an einer Stelle (für Setzen und Ziehen des Hubwagens), sonst der nächste in dieser Einheit
+const inTk = (U, it) => !!(U && U.wall && zoneAt(U, it.x, dims(it).d) === 'tk');
+// Behälter an einer Stelle (für Setzen und Ziehen des Hubwagens), sonst der nächste in dieser Einheit; nie einer in der TK-Kammer
 function carrierAt(uid, x, y) {
-  const list = solid(uid);
+  const U = unitG(uid), list = solid(uid).filter(it => !inTk(U, it));
   const hit = list.find(it => { const b = box(it); return x >= b.x && x <= b.x + b.d && y >= b.y && y <= b.y + b.w; });
   if (hit) return hit;
   let best = null, bd = Infinity;
   for (const it of list) { const b = box(it), dd = Math.hypot(b.x + b.d / 2 - x, b.y + b.w / 2 - y); if (dd < bd) { bd = dd; best = it; } }
   return best;
 }
-// Hubwagen: steht immer unter einem Behälter, Gabeln darunter, Antrieb und Deichsel zur Tür. Ohne feste Wahl kommt er
-// unter den hintersten Behälter, hinter dem Antrieb und Deichsel noch Platz haben (rechts zuerst, nie in der TK-Kammer).
-// Belegt keinen Stellplatz.
-function attachEquip() {
-  const taken = new Set(), count = {};
-  for (const it of state.items.filter(isEquip)) {
-    it.r = 0; it.tk = false;
-    let U = it.u !== 'r' && unitG(it.u);
-    if (!U) {                                                 // gehört aufs Fahrzeug: in die hinterste Einheit mit den wenigsten
-      U = G.units.slice().reverse().map((V, i) => ({ V, i, n:count[V.id] || 0 })).sort((a, b) => a.n - b.n || a.i - b.i)[0].V;
-      it.u = U.id; it.under = null;
-    }
-    count[U.id] = (count[U.id] || 0) + 1;
-    const c = CT[it.t];
-    let C = carrierOf(it);
-    if (!C || taken.has(C.id)) {
-      const back = x => +(x.x + dims(x).d).toFixed(2);
-      const cands = solid(U.id).filter(x => !taken.has(x.id) && !(U.wall && zoneAt(U, x.x, dims(x).d) === 'tk'))
-        .map(x => ({ x, room:driveFree(U, c, x) }));
-      cands.sort((a, b) => b.room - a.room || back(b.x) - back(a.x) || b.x.y - a.x.y);   // hinten, wo Antrieb und Deichsel noch Platz haben
-      C = cands.length ? cands[0].x : null;
-    }
-    if (!C) { it.under = null; it.x = Math.max(0, U.L - c.d); it.y = U.W - c.w; continue; }   // leerer Laderaum: frei an der Tür
-    taken.add(C.id); it.under = C.id;
-    const k = dims(C);
-    it.x = Math.max(0, Math.min(C.x + k.d - HW_FORK, U.L - c.d));
-    it.y = Math.max(0, Math.min(U.W - c.w, C.y + k.w / 2 - c.w / 2));
-  }
+// Stelle des Hubwagens unter Behälter C: Gabeln darunter, Antrieb und Deichsel zur Tür. Vorn nie über die Stirnwand oder
+// die Trennwand hinaus, hinten nie über die Tür; null, wenn C nicht in Frage kommt (TK-Kammer, Rampe, Frische zu kurz).
+function hwSpot(U, c, C) {
+  if (!U || !C || C.u !== U.id || isEquip(C) || inTk(U, C)) return null;
+  const k = dims(C), lo = U.wall ? U.wall.end : 0;
+  const x = Math.max(lo, Math.min(C.x + k.d - HW_FORK, U.L - c.d));
+  if (x + c.d > U.L + EPS) return null;
+  return { x, y:Math.max(0, Math.min(U.W - c.w, C.y + k.w / 2 - c.w / 2)) };
 }
-// Antrieb und Deichsel (58 cm) stehen hinter dem Behälter: ist dort frei? Fehlt der Platz, ist das nur ein Hinweis.
-function driveFree(U, c, C) {
-  const k = dims(C);
-  return fitsAt(U, solid(U.id, C.id).map(box), C.x + k.d, Math.max(0, Math.min(U.W - c.w, C.y + k.w / 2 - c.w / 2)), c.d - HW_FORK, c.w);
+// Hat der Antrieb hinter dem Behälter Platz? Nur für die Wahl und einen Hinweis, wird nicht gespeichert.
+const equipRoom = new Map();
+const lexLess = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i]; return false; };
+// Hubwagen: steht immer unter einem Behälter und belegt keinen Stellplatz.
+// Vom Nutzer gesetzt oder gezogen (pin): bleibt unter diesem Behälter und fährt mit ihm, auch in die andere Einheit.
+// Sonst wählt der Planer bei jeder Änderung neu: den hintersten Behälter außerhalb der TK-Kammer, hinter dem Antrieb und
+// Deichsel Platz haben; die eigene Einheit zuerst, dann die übrigen von hinten; rechts vor links.
+// Gibt es keinen Behälter, steht er frei an der Tür (ein zweiter daneben), passt auch das nicht, auf der Rampe.
+function attachEquip() {
+  equipRoom.clear();
+  const hws = state.items.filter(isEquip);
+  if (!hws.length) return;
+  const taken = new Set(), drives = {}, sol = {};
+  const solidB = uid => sol[uid] || (sol[uid] = solid(uid).map(x => Object.assign(box(x), { id:x.id })));
+  const hwB = uid => drives[uid] || (drives[uid] = []);
+  // auch gegen den eigenen Behälter: steht der an der Tür, rückt der Hubwagen nach vorn und der Antrieb stünde in ihm
+  const roomAt = (U, c, C, sp) => fitsAt(U, solidB(U.id).concat(hwB(U.id)), sp.x + HW_FORK, sp.y, c.d - HW_FORK, c.w);
+  const put = (it, U, C, sp, room) => {
+    const c = CT[it.t];
+    Object.assign(it, { u:U.id, under:C ? C.id : null, x:sp.x, y:sp.y, r:0, tk:false });
+    if (C) taken.add(C.id);
+    hwB(U.id).push(C ? { x:sp.x + HW_FORK, y:sp.y, d:c.d - HW_FORK, w:c.w } : { x:sp.x, y:sp.y, d:c.d, w:c.w });
+    equipRoom.set(it.id, room);
+  };
+  const auto = [];
+  for (const it of hws) {
+    const C = it.pin && it.under != null ? state.items.find(x => x.id === it.under && !isEquip(x)) : null;
+    const U = C && C.u !== 'r' ? unitG(C.u) : null;
+    const sp = U && !taken.has(C.id) ? hwSpot(U, CT[it.t], C) : null;
+    if (sp) put(it, U, C, sp, roomAt(U, CT[it.t], C, sp));
+    else { it.pin = false; auto.push(it); }
+  }
+  const rear = G.units.slice().reverse();
+  for (const it of auto) {
+    const c = CT[it.t], own = G.units.find(U => U.id === it.u);
+    let best = null;
+    rear.forEach((U, ui) => {
+      for (const C of solid(U.id)) {
+        if (taken.has(C.id)) continue;
+        const sp = hwSpot(U, c, C); if (!sp) continue;
+        const room = roomAt(U, c, C, sp);
+        const cand = { U, C, sp, room, key:[room ? 0 : 1, U === own ? 0 : 1, ui, -(+(C.x + dims(C).d).toFixed(2)), -C.y] };
+        if (!best || lexLess(cand.key, best.key)) best = cand;
+      }
+    });
+    if (best) { put(it, best.U, best.C, best.sp, best.room); continue; }
+    // kein Behälter frei: frei an der Tür, sonst weiter vorn; nicht auf einen anderen Hubwagen, nicht durch die Trennwand
+    let free = null;
+    for (const U of own ? [own].concat(rear.filter(V => V !== own)) : rear) {
+      const lo = U.wall ? U.wall.end : 0, boxes = solidB(U.id).concat(hwB(U.id));
+      for (let x = U.L - c.d; x >= lo - EPS && !free; x -= 0.05)
+        for (const y of [U.W - c.w, 0, (U.W - c.w) / 2]) if (fitsAt(U, boxes, x, y, c.d, c.w)) { free = { U, sp:{ x, y } }; break; }
+      if (free) break;
+    }
+    if (free) put(it, free.U, null, free.sp, true);
+    else { it.u = 'r'; it.under = null; it.pin = false; it.r = 0; it.tk = false; toRamp([it]); }
+  }
 }
 function wallSide(U, it) {
   const k = dims(it), cz = it.y + k.w / 2;
   if (it.y + k.w >= U.W - 0.05) return 'rechts'; if (it.y <= 0.05) return 'links';
   return cz < U.W / 3 ? 'links' : cz > 2 * U.W / 3 ? 'rechts' : 'in der Mitte';
 }
-// Wo der Hubwagen steht, in Worten: „unter RBH in Reihe 11 rechts“
+// Wo der Hubwagen steht, in Worten: „unter RBH in Reihe 11 rechts“, ohne Behälter „frei an der Tür rechts“
 function equipWhere(U, it) {
   const C = carrierOf(it);
   if (C) return `unter ${CT[C.t].short} in Reihe ${rowOf(U, C.x + dims(C).d / 2) + 1} ${wallSide(U, C)}`;
-  return `frei an der Tür ${wallSide(U, it)}`;
+  const k = dims(it);
+  return `frei ${it.x + k.d >= U.L - 0.1 ? 'an der Tür' : `in Reihe ${rowOf(U, it.x + k.d / 2) + 1}`} ${wallSide(U, it)}`;
 }
 function placeNew(type, preferUnit) {
   if (CT[type].equip) {
@@ -1066,6 +1141,8 @@ function computeStats() {
   const add = (lvl, txt, why) => W.push({ lvl, txt, why:why || null });
   if (st.ramp) add('bad', `${st.ramp} ${st.ramp === 1 ? 'Behälter steht' : 'Behälter stehen'} noch auf der Rampe. Platz schaffen oder auf eine Einheit ziehen.`,
     `<b class="a">${st.ramp} ${st.ramp === 1 ? 'Behälter passt' : 'Behälter passen'}</b> nicht mehr rein und ${st.ramp === 1 ? 'steht' : 'stehen'} auf der Rampe.`);
+  if (st.rampEq) add('warn', 'Der Hubwagen passt nirgends hin: kein Behälter außerhalb der TK-Kammer und kein freier Platz. Er steht auf der Rampe.',
+    'Der <b class="a">Hubwagen</b> passt nirgends hin und steht auf der Rampe.');
   for (const U of G.units) {
     const u = st.units[U.id];
     if (!u.n) continue;
@@ -1110,22 +1187,35 @@ function computeStats() {
       }
       if (a.x - front > 0.15) { gaps++; gapRows.add(rowOf(U, a.x) + 1); }
     }
-    if (gaps) add('warn', `${U.label}: ${gaps} ${gaps === 1 ? 'Behälter steht' : 'Behälter stehen'} mit Lücke nach vorn (Reihe ${[...gapRows].sort((a, b) => a - b).slice(0, 6).join(', ')}). Nachrücken oder mit Sperrbalken sichern.`,
-      `In der <b>${U.label}</b> ${gaps === 1 ? 'steht' : 'stehen'} <b class="a">${gaps} ${gaps === 1 ? 'Behälter' : 'Behälter'}</b> mit Lücke nach vorn. Rollbehälter rutschen: nachrücken oder Sperrbalken setzen.`);
+    if (gaps) add('warn', `${U.label}: ${gaps} ${gaps === 1 ? 'Behälter steht' : 'Behälter stehen'} mit Lücke nach vorn (Reihe ${[...gapRows].sort((a, b) => a - b).slice(0, 6).join(', ')}). Nachrücken oder mit einer Querstange sichern.`,
+      `In der <b>${U.label}</b> ${gaps === 1 ? 'steht' : 'stehen'} <b class="a">${gaps} ${gaps === 1 ? 'Behälter' : 'Behälter'}</b> mit Lücke nach vorn. Rollbehälter rutschen: nachrücken oder eine Querstange setzen.`);
   }
   if (st.total.n && !W.some(w => w.lvl === 'bad' || w.lvl === 'warn')) W.unshift({ lvl:'ok', txt:'Kühlung und Ladungssicherung passen.', why:null });
   if (!st.total.n && !st.ramp) { add('info', 'Noch leer. Unten einen Ladungsträger wählen oder die Beispielladung laden.'); W[W.length - 1].ui = true; }
   for (const U of G.units) {
     const u = st.units[U.id];
-    // Sperrbalken nur, wo neben einem Hubwagen noch Platz für einen Balken ist
-    u.bar = u.n && U.L - u.end > 0.1 ? barSpans(U, u) : [];
-    if (u.bar.length) add('info', `${U.label}: Sperrbalken hinter Reihe ${rowOf(U, u.end - 0.05) + 1} setzen (${fmt(U.L - u.end, 2)} m frei bis zur Tür${u.bar.length > 1 || u.bar[0][1] - u.bar[0][0] < U.W - 0.05 ? ', neben dem Hubwagen' : ''}).`);
-    else if (u.n && U.L - u.end > 0.1) add('info', `${U.label}: Hinter der Ladung steht der Hubwagen, kein Platz für einen Sperrbalken. Ladung und Hubwagen mit Spanngurten sichern.`);
+    // Ladungsfront (leuchtende Ebene): nicht durch einen Hubwagen dahinter
+    u.front = u.n && U.L - u.end > 0.1 ? barSpans(U, u) : [];
+    // Querstangen: eine hinter jeden Ladeblock mit Luft nach hinten, Querstange 1 an die Ladung, die der Tür am nächsten steht
+    const q = u.q = planBars(U, u);
+    if (u.n) {
+      if (q.missing) add('warn', `${U.label}: ${q.need.length} Querstangen nötig, ${q.have ? `nur ${q.have}` : 'keine'} an Bord. Lücken schließen (Nachrücken) oder mit Spanngurten sichern.`,
+        `In der <b>${U.label}</b> braucht die Ladung <b class="a">${q.need.length} Querstangen</b>, an Bord ${q.have === 1 ? 'ist' : 'sind'} ${q.have}.`);
+      const set = q.need.filter(b => b.n);
+      const overHw = set.some(b => u.its.some(h => isEquip(h) && b.x >= h.x + HW_FORK - EPS && b.x <= h.x + dims(h).d + EPS));
+      const park = q.spare ? ` ${q.spare === 1 ? 'Eine Querstange bleibt' : `${q.spare} Querstangen bleiben`} oben in der Deckenschiene; nach einer Teilentladung nachsetzen.` : '';
+      if (set.length) add('info', `${U.label}: ${set.map(b => `Querstange ${b.n} ${barWhere(U, b)}`).join(', ')}, ${set.length > 1 ? 'je ' : ''}${fmt(Q_H, 2)} m hoch${overHw ? ', über den Hubwagen hinweg' : ''}.${park}`);
+      else if (!q.need.length) add('info', `${U.label}: Ladung steht bündig bis zur Tür, keine Querstange nötig.${park}`);
+      for (const b of set) if (b.free.length) {
+        const touch = ['links', 'in der Mitte', 'rechts'].filter(l => !b.free.includes(l));
+        add('info', `${U.label}: Querstange ${b.n} liegt nur ${touch.join(' und ')} an, ${b.free.join(' und ')} ist Luft bis zur Stange. Dort mit Spanngurt sichern oder die Reihe auffüllen.`);
+      }
+    }
     if (u.eq) { add('info', `${U.label}: Hubwagen mit Spanngurt sichern (555 kg).`); W[W.length - 1].hw = true; }
-    if (u.its.some(h => isEquip(h) && carrierOf(h) && !driveFree(U, CT[h.t], carrierOf(h))))
-      add('info', `${U.label}: Hinter dem Behälter mit dem Hubwagen fehlt Platz für Antrieb und Deichsel (58 cm).`);
+    const tight = u.its.filter(h => isEquip(h) && carrierOf(h) && equipRoom.get(h.id) === false);
+    if (tight.length) add('info', `${U.label}: Hinter dem Behälter mit dem Hubwagen fehlt Platz für Antrieb und Deichsel (58 cm). ${tight.some(h => h.pin) ? 'Den Hubwagen unter einen hinteren Behälter ziehen.' : 'Hinter keinem Behälter ist dafür Platz.'}`);
   }
-  if (st.total.n && !G.units.some(U => st.units[U.id].eq)) { add('info', 'Kein Hubwagen an Bord. Unten bei „Hubwagen“ auf + tippen, er kommt unter den hintersten Behälter.'); W[W.length - 1].ui = true; }
+  if (st.total.n && !st.rampEq && !G.units.some(U => st.units[U.id].eq)) { add('info', 'Kein Hubwagen an Bord. Unten bei „Hubwagen“ auf + tippen, er kommt unter den hintersten Behälter.'); W[W.length - 1].ui = true; }
   return st;
 }
 
@@ -1258,7 +1348,9 @@ function initThree() {
   M.chep = std('#2E6CC7', 0.55, 0.05);
   M.crate = std('#ffffff', 0.55, 0.05);
   M.crateDark = std('#7f211c', 0.6);
-  M.bar = std('#e0892b', 0.45, 0.3);
+  M.qBar = std('#c6ccd2', 0.32, 0.75);                   // Querstange: Aluminium
+  M.qSleeve = std('#e9c318', 0.62, 0.05);                // gelbe Schutzhülsen
+  M.qRail = std('#98a1a9', 0.4, 0.7);                    // Deckenschienen
   M.cyanLine = new T.LineBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.9 });
   M.front = new T.MeshBasicMaterial({ color:0x7fe3ff, transparent:true, opacity:0.1, depthWrite:false, side:T.DoubleSide });
   M.frontBad = new T.MeshBasicMaterial({ color:0xffb454, transparent:true, opacity:0.12, depthWrite:false, side:T.DoubleSide });
@@ -2379,18 +2471,30 @@ function buildUnit(U) {
   }
   for (const [mat, gs] of parts) ch.add(mesh(merge(gs), mat, !mat.isMeshBasicMaterial && mat !== M.grille));
   grp.add(ch);
-  // Sperrbalken
-  const bar = new T.Group(), seg = new T.Group();       // zwei Abschnitte: links und rechts eines Hubwagens in der Mitte
-  seg.add(mesh(bx(0.06, 0.08, W - 0.02, 0, 1.0, 0), M.bar));
-  for (const z of [-1, 1]) seg.add(mesh(bx(0.1, 0.12, 0.05, 0, 1.0, z * (W / 2 - 0.03)), M.steel));
-  bar.add(seg, seg.clone());
-  bar.visible = false; grp.add(bar); three.bars[U.id] = bar;
-  // Ladungsfront: die leuchtende Ebene hinter der letzten Reihe
+  // Querstangen in der Deckenschiene: zwei Schienen unter der Decke an den Seitenwänden; je Stange ein Alurohr mit vier
+  // gelben Schutzhülsen, Endstücken und Schwenkarmen. Gesetzt hängt sie an den Armen in Q_H Höhe, sonst liegt sie oben geparkt.
+  const zr = W / 2 - 0.045, arm = H - 0.035 - Q_H;
+  grp.add(mesh(merge([-1, 1].map(z => bx(L, 0.035, 0.05, -L / 2, H - 0.018, z * zr))), M.qRail, false));
+  const tubeG = cyl(0.021, W - 0.1, 0, 0, 0, 'z', 12);
+  const sleeveG = merge([1, 3, 5, 7].map(f => cyl(0.031, 0.3, 0, 0, -W / 2 + f * W / 8, 'z', 12)));
+  const fitG = merge([-1, 1].map(z => bx(0.07, 0.07, 0.06, 0, 0, z * zr)));
+  const armG = merge([-1, 1].map(z => bx(0.04, arm, 0.018, 0, arm / 2, z * (zr - 0.02))));
+  three.qbars[U.id] = Array.from({ length:Q_MAX }, () => {
+    const g = new T.Group(), armM = mesh(armG, M.qBar);
+    g.add(mesh(tubeG, M.qBar), mesh(sleeveG, M.qSleeve), mesh(fitG, M.dark, false), armM);
+    g.visible = false; g.userData.arm = armM; grp.add(g);
+    return g;
+  });
+  // Ladungsfront: die leuchtende Ebene hinter der letzten Reihe, in Abschnitten neben einem Hubwagen
   const fr = new T.Group();
   const fh = H * 0.92;
-  const plane = new T.Mesh(new T.PlaneGeometry(W - 0.04, fh), M.front); plane.rotation.y = Math.PI / 2; plane.position.y = fh / 2;
-  const rect = new T.LineLoop(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 0, -W / 2 + 0.02), new T.Vector3(0, fh, -W / 2 + 0.02), new T.Vector3(0, fh, W / 2 - 0.02), new T.Vector3(0, 0, W / 2 - 0.02)]), M.frontLine);
-  fr.add(plane, rect); fr.visible = false; fr.userData = { plane, rect }; grp.add(fr); three.fronts[U.id] = fr;
+  const frParts = Array.from({ length:3 }, () => {
+    const plane = new T.Mesh(new T.PlaneGeometry(W - 0.04, fh), M.front); plane.rotation.y = Math.PI / 2; plane.position.y = fh / 2;
+    const rect = new T.LineLoop(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 0, -W / 2 + 0.02), new T.Vector3(0, fh, -W / 2 + 0.02), new T.Vector3(0, fh, W / 2 - 0.02), new T.Vector3(0, 0, W / 2 - 0.02)]), M.frontLine);
+    const g = new T.Group(); g.add(plane, rect); fr.add(g);
+    return { g, plane, rect };
+  });
+  fr.visible = false; fr.userData = { parts:frParts }; grp.add(fr); three.fronts[U.id] = fr;
   grp.userData = { unit:U.id };
   return grp;
 }
@@ -2466,7 +2570,7 @@ function rebuildVehicle() {
   if (three.vehicle) { scene.remove(three.vehicle); disposeTree(three.vehicle); }
   if (three.unitGroups.r) { scene.remove(three.unitGroups.r); disposeTree(three.unitGroups.r); }
   three.walls = []; three.floors = []; three.doors = []; three.flaps = []; three.unitGroups = {};
-  three.bars = {}; three.leds = {}; three.fronts = {}; three.grids = {}; three.skins = [];
+  three.qbars = {}; three.leds = {}; three.fronts = {}; three.grids = {}; three.skins = [];
   const veh = new T.Group();
   const head = new T.Group();
   if (G.cab || G.tractor) {
@@ -2774,22 +2878,31 @@ function syncItems(st) {
   }
   for (const U of G.units) {
     const u = st && st.units[U.id];
-    const bar = three.bars[U.id], fr = three.fronts[U.id];
-    if (!bar) continue;
-    const spans = u ? u.bar : [];
-    bar.visible = spans.length > 0; bar.position.x = -((u ? u.end : 0) + 0.04);
-    bar.children.forEach((g, i) => {
-      const sp = spans[i]; g.visible = !!sp;
-      if (sp) { g.scale.z = (sp[1] - sp[0]) / U.W; g.position.z = (sp[0] + sp[1]) / 2 - U.W / 2; }
+    const qs = three.qbars[U.id], fr = three.fronts[U.id];
+    if (!qs) continue;
+    // Querstangen: gesetzte an ihre Stelle heruntergeschwenkt, die übrigen vorn unter der Decke geparkt
+    const su = state.units.find(x => x.id === U.id), have = u && u.q ? u.q.have : su ? su.bars : Q_DEFAULT;
+    const set = u && u.q ? u.q.need.filter(b => b.n) : [], lo = U.wall ? U.wall.end : 0;
+    let park = 0;
+    qs.forEach((g, i) => {
+      g.visible = i < have;
+      if (!g.visible) return;
+      const b = set.find(x => x.n === i + 1);
+      if (b) g.position.set(-b.x, Q_H, 0);
+      else g.position.set(-(lo + 0.14 + 0.12 * park++), U.H - 0.075, 0);
+      g.userData.arm.visible = !!b;
     });
     fr.visible = !!(u && u.n);
     if (fr.visible) {
       fr.position.x = -Math.min(U.L, u.end + 0.01);
-      const fs = spans.length ? spans.reduce((a, b) => (b[1] - b[0] > a[1] - a[0] ? b : a)) : [0, U.W];   // nicht durch den Hubwagen
-      fr.scale.z = (fs[1] - fs[0]) / U.W; fr.position.z = (fs[0] + fs[1]) / 2 - U.W / 2;
+      const spans = u.front.length ? u.front : [[0, U.W]];      // nicht durch den Hubwagen
       const bad = st.warns.some(w => w.lvl === 'bad' && w.txt.startsWith(U.label));
-      fr.userData.plane.material = bad ? M.frontBad : M.front;
-      fr.userData.rect.material = bad ? M.frontLineBad : M.frontLine;
+      fr.userData.parts.forEach((p, i) => {
+        const sp = spans[i]; p.g.visible = !!sp;
+        if (sp) { p.g.scale.z = (sp[1] - sp[0]) / U.W; p.g.position.z = (sp[0] + sp[1]) / 2 - U.W / 2; }
+        p.plane.material = bad ? M.frontBad : M.front;
+        p.rect.material = bad ? M.frontLineBad : M.frontLine;
+      });
     }
   }
   requestRender();
@@ -3182,12 +3295,12 @@ function onUp(e) {
   const p = ptr; ptr = null;
   if (p.item != null) {
     if (p.moved && drag) dragEnd();
-    else if (!p.moved) select(p.item);
+    else if (!p.moved) tapItem(p.item);
     controls.enabled = true; return;
   }
   if (!p.moved && !p.multi && performance.now() - p.t < 700) {
     if (view.armed) placeArmed(e);
-    else select(pickItem(e));
+    else tapItem(pickItem(e));
   }
 }
 function onCancel(e) { if (ptr && e.pointerId === ptr.id) { ptr = null; cancelDrag(); controls.enabled = true; } }
@@ -3209,25 +3322,36 @@ function pickCarrier(e) {
   for (const h of raycaster.intersectObjects(three.hit, false)) {
     if (!shownObj(h.object.parent)) continue;
     const it = state.items.find(x => x.id === h.object.userData.itemId);
-    if (it && !isEquip(it) && it.u !== 'r') return { u:it.u, C:it };
+    if (it && !isEquip(it) && it.u !== 'r' && !inTk(unitG(it.u), it)) return { u:it.u, C:it };   // nie unter TK-Ware
   }
   const f = pickFloor(e);
   return f ? { u:f.u, C:f.u !== 'r' ? carrierAt(f.u, f.x, f.y) : null } : null;
 }
-// Der Behälter leuchtet, darunter kommt der Hubwagen; ohne Behälter die freie Stelle an der Tür
+// Der ganze Behälter leuchtet, darunter kommt der Hubwagen (orange: dort passt er nicht hin); ohne Behälter die Tür
 function equipGhost(p) {
   if (!p || p.u === 'r') { hideGhost(); return null; }
   const U = unitG(p.u), c = CT.hw;
-  if (p.C) { const b = box(p.C); showGhost(p.u, b.x, b.y, b.d, b.w, 0.2, true); }
-  else showGhost(p.u, Math.max(0, U.L - c.d), U.W - c.w, c.d, c.w, 0.2, true);
+  if (p.C) { const b = box(p.C); showGhost(p.u, b.x - 0.02, b.y - 0.02, b.d + 0.04, b.w + 0.04, CT[p.C.t].h + 0.06, !!hwSpot(U, c, p.C)); }
+  else showGhost(p.u, Math.max(U.wall ? U.wall.end : 0, U.L - c.d), U.W - c.w, c.d, c.w, 0.2, true);
   return p.C;
+}
+// Der Nutzer stellt den Hubwagen unter Behälter C: dort bleibt er (pin). Stand dort schon einer, sucht der sich einen anderen.
+function claimCarrier(it, C) {
+  if (C) for (const o of state.items) if (o !== it && isEquip(o) && o.under === C.id) { o.under = null; o.pin = false; }
+  it.under = C ? C.id : null; it.pin = !!C;
+}
+function equipToast(it, C) {
+  const U = unitG(it.u);
+  if (!U || it.u === 'r') toast('Der Hubwagen passt nirgends hin und steht auf der Rampe.');
+  else if (C && it.under !== C.id) toast(`Unter diesem Behälter hat der Hubwagen keinen Platz · jetzt ${U.label}, ${equipWhere(U, it)}`);
+  else toast(`Hubwagen · ${U.label} · ${equipWhere(U, it)}`);
 }
 function placeEquip(uid, C) {
   if (uid === 'r') { toast('Der Hubwagen gehört auf das Fahrzeug, unter einen Behälter.'); return; }
   pushUndo();
   const it = newItem(view.armed, { u:uid, x:0, y:0, r:0 });
-  it.under = C ? C.id : null; view.selected = null; state.sample = false;
-  update(); hideGhost(); toast(`Hubwagen · ${unitG(uid).label} · ${equipWhere(unitG(uid), it)}`);
+  claimCarrier(it, C); view.selected = null; state.sample = false;
+  update(); hideGhost(); equipToast(it, C);
 }
 function placeAt(uid, x, y) {
   if (CT[view.armed].equip) { placeEquip(uid, uid !== 'r' ? carrierAt(uid, x, y) : null); return; }
@@ -3249,8 +3373,10 @@ function dragMove(e) {
   const it = state.items.find(i => i.id === ptr.item); if (!it) return;
   if (!drag) { drag = { id:it.id, target:null }; view.selected = it.id; syncItems(lastStats); renderSelbar(); }
   if (isEquip(it)) {                                          // Hubwagen: unter den Behälter, auf den er gezogen wird
-    const p = pickCarrier(e), C = equipGhost(p);
+    const g = three.meshes.get(it.id);
+    const p = pickCarrier(e), C = equipGhost(p), sp = C ? hwSpot(unitG(p.u), CT[it.t], C) : null;
     drag.target = p && p.u !== 'r' ? { u:p.u, under:C ? C.id : null } : null;
+    if (sp && g) placeMesh(g, Object.assign({}, it, { u:p.u, x:sp.x, y:sp.y, r:0 }));
     requestRender(); return;
   }
   const f = pickFloor(e), g = three.meshes.get(it.id);
@@ -3272,7 +3398,12 @@ function dragMove(e) {
 function dragEnd() {
   const it = state.items.find(i => i.id === drag.id), t = drag.target;
   drag = null; hideGhost();
-  if (it && t) { pushUndo(); Object.assign(it, t); if (t.u !== 'r') markZone(it); state.sample = false; update(); toast(isEquip(it) ? `Hubwagen · ${unitG(it.u).label} · ${equipWhere(unitG(it.u), it)}` : `Versetzt · ${posText(it)}`); }
+  if (it && t && isEquip(it)) {
+    pushUndo();
+    const C = t.under != null ? state.items.find(x => x.id === t.under) : null;
+    it.u = t.u; claimCarrier(it, C); state.sample = false; update(); equipToast(it, C);
+  }
+  else if (it && t) { pushUndo(); Object.assign(it, t); if (t.u !== 'r') markZone(it); state.sample = false; update(); toast(`Versetzt · ${posText(it)}`); }
   else if (it) { const g = three.meshes.get(it.id); if (g) placeMesh(g, it); requestRender(); }
 }
 function cancelDrag() {
@@ -3285,6 +3416,16 @@ function cancelDrag() {
 /* =====================================================================
    Aktionen
    ===================================================================== */
+// Ist der Hubwagen gewählt, stellt ihn ein Tipp auf einen Behälter darunter (statt den Behälter zu wählen)
+function tapItem(id) {
+  const hw = state.items.find(i => i.id === view.selected && isEquip(i));
+  const C = hw && id != null ? state.items.find(i => i.id === id && !isEquip(i)) : null;
+  if (C && C.u !== 'r') {
+    if (inTk(unitG(C.u), C)) { toast('Der Hubwagen kommt nicht in die TK-Kammer.'); return; }
+    pushUndo(); hw.u = C.u; claimCarrier(hw, C); state.sample = false; update(); equipToast(hw, C); return;
+  }
+  select(id);
+}
 function select(id) {
   view.selected = id == null ? null : id;
   if (view.selected != null && view.outside) setOutside(false);
@@ -3304,6 +3445,7 @@ function addOne(type) {
   const it = newItem(type, placeNew(type, pref));
   state.sample = false;
   update();
+  if (isEquip(it)) { equipToast(it, null); return; }
   toast(it.u === 'r' ? `${CT[type].name} passt nicht mehr und steht auf der Rampe` : `${CT[type].name} · ${posText(it)}`);
 }
 function removeOne(type) {
@@ -3318,8 +3460,9 @@ function removeOne(type) {
 function deleteSelected() {
   if (view.selected == null) return;
   pushUndo();
+  const gone = state.items.find(it => it.id === view.selected);
   state.items = state.items.filter(it => it.id !== view.selected);
-  view.selected = null; update(); toast('Behälter gelöscht');
+  view.selected = null; update(); toast(gone && isEquip(gone) ? 'Hubwagen entfernt' : 'Behälter gelöscht');
 }
 function rotateSelected() {
   const it = state.items.find(i => i.id === view.selected); if (!it) return;
@@ -3358,6 +3501,13 @@ function setChamber(uid, change) {
   bulk = false;
   const G2 = unitG(uid);
   toast(G2.wall ? `TK-Kammer: ${G2.wall.rows} ${G2.wall.rows === 1 ? 'Reihe' : 'Reihen'} (${G2.wall.rows * 3} Stellplätze), Frische ${G2.cap - G2.wall.rows * 3}` : `Trennwand hochgeklappt: ${G2.cap} Stellplätze in einem Raum`);
+}
+function setUnitBars(uid, n) {
+  const u = state.units.find(x => x.id === uid); if (!u) return;
+  n = Math.max(0, Math.min(Q_MAX, Math.round(n) || 0));
+  if (u.bars === n) return;
+  pushUndo(); u.bars = n; update();
+  toast(`${unitG(uid).label}: ${n} ${n === 1 ? 'Querstange' : 'Querstangen'} an Bord`);
 }
 function setUnitLength(uid, L) {
   const u = state.units.find(x => x.id === uid); if (!u) return;
@@ -3425,7 +3575,7 @@ function renderDock() {
     const armed = view.armed === c.id;
     tiles.querySelector(`[data-type="${c.id}"]`).dataset.armed = String(armed);
     tiles.querySelector(`[data-arm="${c.id}"]`).setAttribute('aria-pressed', String(armed));
-    tiles.querySelector(`[data-arm="${c.id}"]`).title = `${c.name} (${c.vlabel}) setzen: antippen, dann auf den Ladeboden tippen`;
+    tiles.querySelector(`[data-arm="${c.id}"]`).title = c.equip ? `${c.name} (${c.vlabel}): antippen, dann auf einen Behälter tippen; + stellt ihn unter den hintersten` : `${c.name} (${c.vlabel}) setzen: antippen, dann auf den Ladeboden tippen`;
     const g = tiles.querySelector(`[data-glyph="${c.id}"]`); if (g.dataset.v !== c.vkey) { g.innerHTML = glyph(c); g.dataset.v = c.vkey; }   // neu bei Variantenwechsel
     tiles.querySelector(`[data-sub="${c.id}"]`).textContent = c.equip ? 'unter RBH, ISO oder Palette' : `${Math.floor(c.d * 100 + 0.01)}×${Math.floor(c.w * 100 + 0.01)} · ${slotEq(c)}`;
   }
@@ -3439,6 +3589,7 @@ function renderStats(st) {
       <div class="cells" style="grid-template-columns:repeat(${U.rows},1fr);grid-auto-flow:column;grid-template-rows:repeat(3,7px)" role="img" aria-label="${u.used} von ${U.cap} Stellplätzen belegt">${cells}</div>
       <dl class="kv">
         <dt>Behälter</dt><dd>${u.n}</dd>${u.eq ? `<dt>Hubwagen</dt><dd>${u.its.filter(isEquip).map(it => equipWhere(U, it)).join(' · ')}</dd>` : ''}
+        <dt>Querstangen</dt><dd>${u.q.missing ? `${u.q.need.length} nötig, ${u.q.have} an Bord` : u.q.used ? `${u.q.used} gesetzt, ${u.q.spare} oben` : `${u.q.have} oben geparkt`}</dd>
         <dt>Belegt bis</dt><dd>${fmtM(u.end)} von ${fmtM(U.L)}</dd>
         <dt>Passt noch</dt><dd>${u.fitRbh} RBH oder ${u.fitEp} EP</dd>
       </dl>
@@ -3491,6 +3642,12 @@ function planSvg(U, st) {
     s += `<g data-item="${it.id}"><title>${esc(c.name)}</title><rect x="${(x + 0.8).toFixed(1)}" y="${(y + 0.8).toFixed(1)}" width="${(w - 1.6).toFixed(1)}" height="${(h - 1.6).toFixed(1)}" rx="2" fill="${c.color}" stroke="${isSel ? '#7fe3ff' : 'rgba(0,0,0,.45)'}" stroke-width="${isSel ? 2.4 : 0.8}"/>`;
     s += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + h / 2 + 2.6).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="600" fill="${light ? '#0b0f1a' : '#fff'}">${c.short}</text></g>`;
   }
+  // Querstangen quer über die Ladefläche, Nummer oben; eine fehlende rot gestrichelt. Darüber der Hubwagen.
+  for (const b of u.q.need) {
+    const bx = X(b.x).toFixed(1), col = b.n ? '#f0a04b' : '#ff6b6b';
+    s += `<line x1="${bx}" y1="${(pad - 2).toFixed(1)}" x2="${bx}" y2="${(pad + W + 2).toFixed(1)}" stroke="${col}" stroke-width="2"${b.n ? '' : ' stroke-dasharray="3 2"'}><title>${b.n ? `Querstange ${b.n}, ${fmt(Q_H, 2)} m hoch` : 'Querstange fehlt'}</title></line>`;
+    s += `<text x="${bx}" y="${(pad - 3.5).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="700" fill="${col}">${b.n ? 'Q' + b.n : '!'}</text>`;
+  }
   // Hubwagen: Gabeln gestrichelt unter dem Behälter, Antrieb mit Deichsel gelb dahinter (nur der ist greifbar)
   for (const it of u.its.filter(isEquip)) {
     const k = dims(it), c = CT[it.t], zc = it.y + k.w / 2, isSel = view.selected === it.id;
@@ -3499,19 +3656,18 @@ function planSvg(U, st) {
     s += `<g data-item="${it.id}"><title>${esc(c.name)} ${esc(equipWhere(U, it))}</title><rect x="${(x + 0.8).toFixed(1)}" y="${(y + 0.8).toFixed(1)}" width="${(w - 1.6).toFixed(1)}" height="${(h - 1.6).toFixed(1)}" rx="2" fill="${c.color}" stroke="${isSel ? '#7fe3ff' : 'rgba(0,0,0,.45)'}" stroke-width="${isSel ? 2.4 : 0.8}"/>`;
     s += `<text x="${(x + w / 2).toFixed(1)}" y="${(y + h / 2 + 2.6).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="600" fill="#0b0f1a">${c.short}</text></g>`;
   }
-  if (u.n && U.L - u.end > 0.05) s += `<line x1="${X(u.end).toFixed(1)}" y1="${(pad - 3).toFixed(1)}" x2="${X(u.end).toFixed(1)}" y2="${(pad + W + 3).toFixed(1)}" stroke="#7fe3ff" stroke-width="1.6"/>`;
   return s + `</svg>`;
 }
 function renderSelbar() {
   const bar = $('#selbar');
   const it = state.items.find(i => i.id === view.selected);
   if (!it) { bar.hidden = true; return; }
-  const c = CT[it.t];
+  const c = CT[it.t], U = unitG(it.u), hw = isEquip(it) && it.u !== 'r';
   bar.hidden = false;
   bar.innerHTML = `
-    <div class="sel-h"><div><b>${esc(c.name)}</b><small>${esc(c.vlabel)} · ${esc(posText(it))}</small></div><button class="btn small" type="button" data-selclose aria-label="Auswahl schließen">✕</button></div>
+    <div class="sel-h"><div><b>${esc(c.name)}</b><small>${esc(c.vlabel)} · ${esc(hw ? `${U.label}, ${equipWhere(U, it)}` : posText(it))}</small></div><button class="btn small" type="button" data-selclose aria-label="Auswahl schließen">✕</button></div>
     <div class="sel-row">
-      <button class="btn small" type="button" data-rotate>Drehen <kbd>T</kbd></button>
+      ${isEquip(it) ? '<span class="sel-tip">Auf einen Behälter tippen, dann steht er darunter.</span>' : '<button class="btn small" type="button" data-rotate>Drehen <kbd>T</kbd></button>'}
       <button class="btn small" type="button" data-delete>Löschen <kbd>Entf</kbd></button>
     </div>`;
 }
@@ -3520,7 +3676,7 @@ function renderArmed() {
   if (!view.armed) { b.hidden = true; return; }
   const c = CT[view.armed];
   b.hidden = false;
-  b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${esc(c.name)}: auf den Ladeboden tippen${hasChamber() ? ' (in der TK-Kammer = TK-Ware)' : ''}</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
+  b.innerHTML = `<span class="sw" style="background:${c.color}"></span><span>${c.equip ? `${esc(c.name)}: auf einen Rollbehälter, Isotainer oder eine Palette tippen, er kommt darunter` : `${esc(c.name)}: auf den Ladeboden tippen${hasChamber() ? ' (in der TK-Kammer = TK-Ware)' : ''}`}</span><button class="btn small" type="button" data-disarm>Fertig <kbd>Esc</kbd></button>`;
 }
 // Ladeliste je Einheit: Anzahl je Ladungsträger und belegte Stellplätze
 function renderList() {
@@ -3588,6 +3744,7 @@ function specsHtml() {
   const P = PRESET(state.preset);
   const unitRows = G.units.map(U => `<tr><td><b>${U.label}</b><br><small>${U.long}${U.wall ? ` · Kammer-Auto, Trennwand ${fmt(U.wall.d * 100, 0)} cm` : ''}</small></td><td class="n">${fmt(U.L, 2)} × ${fmt(U.W, 2)} × ${fmt(U.H, 2)} m</td><td class="n">${fmt(U.extL, 2)} m</td><td class="n">${U.wall ? `${U.wall.rows} × 3 TK + ${U.rows - U.wall.rows} × 3 = ${U.cap}` : `${U.rows} × 3 = ${U.cap}`}</td><td class="n">${countFit(U, [], 'ep')}</td></tr>`).join('');
   const lens = G.units.map(U => `<label for="len-${U.id}"><span>${U.label} · Innenlänge in m<small>${U.rows} Reihen à 72 cm · ${U.cap} Stellplätze${U.wall ? `, davon ${U.wall.rows * 3} in der TK-Kammer` : ''}</small></span><input id="len-${U.id}" data-len="${U.id}" type="number" min="3" max="13.6" step="0.01" value="${U.L.toFixed(2)}"></label>`).join('');
+  const barsEd = G.units.map(U => { const su = state.units.find(x => x.id === U.id); return `<label for="bars-${U.id}"><span>${U.label} · Querstangen<small>in der Deckenschiene, gesetzt ${fmt(Q_H, 2)} m hoch</small></span><input id="bars-${U.id}" data-bars="${U.id}" type="number" min="0" max="${Q_MAX}" step="1" value="${su ? su.bars : Q_DEFAULT}"></label>`; }).join('');
   const carrierRows = CARRIER_BASE.map(b => {
     const c = CT[b.id];
     const sel = b.variants.length > 1 ? `<select class="pick" data-variant="${b.id}" aria-label="Format ${esc(b.name)}">${b.variants.map(v => `<option value="${v.key}" ${v.key === c.vkey ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>` : `<small>${esc(c.vlabel)}</small>`;
@@ -3600,6 +3757,9 @@ function specsHtml() {
     <h3>Eure Koffer sind anders lang?</h3>
     <p>Innenlänge eintragen. Der Planer rechnet Reihen und Stellplätze neu; was nicht mehr passt, stellt er auf die Rampe.</p>
     <div class="edit-units">${lens}</div>
+    <h3>Querstangen</h3>
+    <p>Die Querstangen laufen in Deckenschienen. Der Planer setzt Querstange 1 direkt hinter die Ladung, ${fmt(Q_H, 2)} m hoch und damit über den Hubwagen hinweg, und je eine weitere hinter jeden abgetrennten Ladeblock. Die übrigen bleiben oben geparkt. Bei euch fahren je 3 mit, auf der Maschine (auch solo) wie auf dem Anhänger.</p>
+    <div class="edit-units">${barsEd}</div>
     <h3>Seitenbild auf dem Koffer</h3>
     <p>Ohne eigenes Bild zeigt der Planer ein neutrales Obst-und-Gemüse-Motiv. Ihr könnt ein Foto oder die Grafik eurer Fahrzeugbeschriftung laden, am besten im Querformat (etwa 3 : 1). Das Bild bleibt nur in diesem Browser. Zu sehen ist es in der Ansicht <b>Außen</b> (Taste A).</p>
     <div class="livery">
@@ -3638,6 +3798,8 @@ const FACTS = `
   <ul>
     <li>Ein Kammer-Auto (Mehrkammer- oder Multitemperatur-Koffer) teilt den Kühlkoffer mit einer isolierten Trennwand. Jede Kammer hat einen eigenen Verdampfer und hält ihre eigene Temperatur, typisch TK −18 bis −24 °C und Frische 0 bis +4 °C. ${conf('hoch')}</li>
     <li>Quertrennwände gibt es fest, verschiebbar an Decken- und Bodenschienen oder zur Decke hochklappbar (Kiesling Cool Slide/Cool Flap, KRESS FLEXWALL, Schmitz Cargobull). Eingerastet sichern sie zugleich die Ladung. ${conf('hoch')}</li>
+    <li><b>Querstangen</b> (Sperrbalken in Deckenschienen) werden im Laderaum verschoben, nach jeder Teilentladung nach hinten nachgesetzt und nicht gebraucht unter der Decke geparkt. Bei euch fahren 3 je Einheit mit. ${conf('hoch')}</li>
+    <li>Höhe im Planer <b>1,45 m</b>: über der Deichsel des EJE C20 (höchstens 1,31 m), unter der Oberkante aller Behälter (ab 1,50 m). Welche Höhe eure Fahrer wirklich setzen und welche Blockierkraft auf dem Etikett der Stange steht (VDI 2700 Blatt 3.2), bitte prüfen. ${conf('mittel')}</li>
     <li>Warum 211 nur 30 Plätze hat: 11 Reihen brauchen 7,96 m, der Koffer hat 8,08 m. Die 12 cm Rest reichen nicht für Trennwand, Dichtung und Spiel. Mit Wand passen 10 Reihen. Der Planer rechnet die Wand mit <b>12 cm</b>. ${conf('mittel')}</li>
     <li>TK-Kammer im Planer: vorn an der Stirnwand, <b>3 Reihen = 2,17 m = 9 Stellplätze</b>, dahinter 7 Reihen Frische mit 21 Plätzen. Einstellbar von 1 bis 9 Reihen, die Wand lässt sich hochklappen. Wie groß eure Kammer wirklich ist, bitte an der Bodenschiene nachmessen. ${conf('niedrig')}</li>
   </ul>
@@ -3674,6 +3836,7 @@ const FACTS = `
     <li><a href="https://www.ewers-online.de/produkte/verfuegbare-fahrzeuge/iveco-s-way-as260s46yfs-mit-tandem-anhaenger-18-t-auftr-van-11804696/" target="_blank" rel="noopener">Iveco S-Way AS260S46Y/FS mit Tandem-Anhänger (20 + 18 EP)</a></li>
     <li><a href="https://www.gesetze-im-internet.de/stvzo_2012/__32.html" target="_blank" rel="noopener">StVZO § 32: Abmessungen</a> · <a href="https://www.gesetze-im-internet.de/stvzo_2012/__34.html" target="_blank" rel="noopener">§ 34: Achslast und Gesamtgewicht</a></li>
     <li>TKT-Thermobehälter: <a href="https://www.maschinensucher.at/tkt-c-720/i-4116672" target="_blank" rel="noopener">C-720</a> · <a href="https://www.maschinensucher.at/tkt-c-780/i-4116669" target="_blank" rel="noopener">C-780</a> · <a href="https://www.tkt-usa.com/" target="_blank" rel="noopener">TKT USA (Maße in Zoll)</a> · <a href="https://de.airliquide.com/ueber-uns/medien/news-blog/perfekt-gekuhlt-den-supermarkt" target="_blank" rel="noopener">Air Liquide: Carbofresh mit TKT</a> · <a href="https://www.frischelogistik.com/kuehl-triple-fuer-edeka/" target="_blank" rel="noopener">Isotainer im TK-Lager Neumünster</a></li>
+    <li><a href="https://www.ladungssicherung.eu/ratgeber/systemloesungen-fuer-kofferfahrzeuge/" target="_blank" rel="noopener">LasiProfi: Sperrbalken in Deckenschienen für Kofferfahrzeuge</a> · <a href="https://specs.lectura.de/de/type/gabelstapler/e-geh-niederhubwagen-jungheinrich/eje-c20-1149105" target="_blank" rel="noopener">Jungheinrich EJE C20, technische Daten</a></li>
     <li><a href="https://www.kiesling.de/de/kuehlfahrzeuge/ausstattung/trennwandsysteme/" target="_blank" rel="noopener">Kiesling: Trennwandsysteme für Kühlaufbauten</a> · <a href="https://www.kress.eu/en/products/kress-innovations/flexwall-partition-system.html" target="_blank" rel="noopener">KRESS: FLEXWALL</a> · <a href="https://www.cargobull.com/de/einsatz/kuehltransport/m-ko-cool" target="_blank" rel="noopener">Schmitz Cargobull: M.KO COOL</a></li>
     <li><a href="https://www.hubwagen.de/Rollbehaelter-2-seitig-Rollplatte-aus-Kunststoff-724-x-815-x-1630-mm-500-kg-Nutzhoehe-1440-mm-Enzianblau" target="_blank" rel="noopener">Rollbehälter 724 × 815 × 1630 mm, 500 kg</a></li>
     <li><a href="https://www.allda.eu/product_info.php?info=p140_thermocontainer--c580--.html" target="_blank" rel="noopener">TKT-Thermocontainer C-580</a> · <a href="https://www.frischelogistik.com/kuehl-triple-fuer-edeka/" target="_blank" rel="noopener">Edeka Nord: 1.900 Isotainer am Tag</a></li>
@@ -3710,7 +3873,7 @@ function bind() {
     else if ('disarm' in d) arm(null);
     else if ('close' in d) closeModals();
     else if ('liveryReset' in d) resetLivery();
-    else if (d.item && t.closest('svg.plan') && !(view.armed && CT[view.armed].equip)) select(+d.item);
+    else if (d.item && t.closest('svg.plan') && !(view.armed && CT[view.armed].equip)) tapItem(+d.item);
   });
   $('#unitCards').addEventListener('click', e => {
     if (!view.armed || (e.target.closest('[data-item]') && !CT[view.armed].equip)) return;   // Hubwagen: Klick auf einen Behälter setzt ihn darunter
@@ -3726,6 +3889,7 @@ function bind() {
     if (d.variant) { setVariant(d.variant, t.value); $('#specsBody').innerHTML = specsHtml(); }
     else if (t.id === 'presetSel') switchPreset(t.value);
     else if (d.len) { setUnitLength(d.len, +t.value); $('#specsBody').innerHTML = specsHtml(); }
+    else if (d.bars) { setUnitBars(d.bars, +t.value); $('#specsBody').innerHTML = specsHtml(); }
     else if ('livery' in d) { loadLiveryFile(t.files && t.files[0]); t.value = ''; }
     else if (d.popt) { printOpt[d.popt] = t.checked; if (d.popt === 'shot') printShot = t.checked ? takeShot() : ''; renderPrintPreview(); }
   });
@@ -3917,11 +4081,11 @@ function printTopSvg(st) {
       s += `<rect x="${(xa + 2).toFixed(1)}" y="${(y + 2).toFixed(1)}" width="${(wa - 4).toFixed(1)}" height="${(hh - 4).toFixed(1)}" rx="5" fill="${c.color}" class="p-it"/>`;
       s += `<text x="${(xa + wa / 2).toFixed(1)}" y="${(y + hh / 2 + 6).toFixed(1)}" text-anchor="middle" class="p-lbl" fill="${inkOn(c.color)}">${c.short}</text>`;
     }
-    // Sperrbalken hinter der letzten Reihe
-    if (u.bar.length) {                                          // wie im Hinweis: nur wo neben einem Hubwagen Platz ist
-      const bx = S.X(U.X0 - u.end - 0.04);
-      for (const sp of u.bar) s += `<line x1="${bx}" y1="${Y(sp[0] > 0.01 ? sp[0] : -0.12)}" x2="${bx}" y2="${Y(sp[1] < U.W - 0.01 ? sp[1] : U.W + 0.12)}" class="p-sperr"/>`;
-      s += `<text x="${bx}" y="${Y(U.W) + 72}" text-anchor="middle" class="p-small p-or">Sperrbalken</text>`;
+    // Querstangen quer über die Ladefläche (über den Hubwagen hinweg), Nummer darunter: Q1 = Querstange 1
+    for (const b of u.q.need) {
+      const bx = S.X(U.X0 - b.x);
+      s += `<line x1="${bx}" y1="${Y(-0.12)}" x2="${bx}" y2="${Y(U.W + 0.12)}" class="p-q${b.n ? '' : ' miss'}"/>`;
+      s += `<text x="${bx}" y="${Y(U.W) + 72}" text-anchor="middle" class="p-small ${b.n ? 'p-or' : 'p-warn'}">${b.n ? `Q${b.n}` : 'Q fehlt'}</text>`;
     }
     s += `<text x="${xr}" y="${Y(U.W) + 44}" class="p-small">Tür</text><text x="${xf}" y="${Y(U.W) + 44}" text-anchor="end" class="p-small">Stirnwand</text>`;
     s += `<text x="${xr}" y="28" class="p-unit">${esc(U.label)}</text>`;
@@ -3959,9 +4123,7 @@ function printSideSvg(st) {
       s += `<rect x="${S.X(U.X0 - U.wall.end)}" y="${Z(fy + U.H)}" width="${U.wall.d * 100}" height="${U.H * 100}" class="p-wall"/>`;
     }
     // hinten die linke Spur (blass), vorn die rechte: so sieht man von rechts in den offenen Koffer.
-    // Der Sperrbalken kommt vor der rechten Spur dran, damit ein Hubwagen dort ihn verdeckt.
     for (const lane of [0, 1, 2]) {
-      if (lane === 2 && u.bar.length) { const bx = S.X(U.X0 - u.end - 0.04); s += `<line x1="${bx}" y1="${Z(fy) - 4}" x2="${bx}" y2="${Z(fy + U.H) + 4}" class="p-sperr"/>`; }
       for (const it of u.cargo.filter(i => laneOf(U, i) === lane)) {
         const c = CT[it.t], p = itemWorld(U, it), x = S.X(p.x0), ww = p.k.d * 100, hh = c.h * 100;
         s += `<rect x="${(x + 2).toFixed(1)}" y="${Z(fy) - hh}" width="${(ww - 4).toFixed(1)}" height="${hh}" rx="4" fill="${c.color}" class="p-it p-l${lane}${it.tk && U.wall ? ' tk' : ''}"/>`;
@@ -3976,8 +4138,16 @@ function printSideSvg(st) {
       }
     }
     s += `<line x1="${xr}" y1="${Z(fy + U.H)}" x2="${xf}" y2="${Z(fy + U.H)}" class="p-hline"/><text x="${xr + 8}" y="${Z(fy + U.H) + 20}" class="p-small">innen ${fmt(U.H, 2)} m hoch · ${fmt(U.L, 2)} m lang</text>`;
+    // Querstangen von der Seite: Deckenschiene, Schwenkarm, Stange als Punkt in Q_H Höhe; geparkte oben vorn
+    const lo = U.wall ? U.wall.end : 0, top = Z(fy + U.H) + 3;
+    s += `<line x1="${xr}" y1="${top}" x2="${xf}" y2="${top}" class="p-rail"/>`;
+    for (const b of u.q.need.filter(q => q.n)) {
+      const bx = S.X(U.X0 - b.x), by = Z(fy + Q_H);
+      s += `<line x1="${bx}" y1="${top}" x2="${bx}" y2="${by}" class="p-qarm"/><circle cx="${bx}" cy="${by}" r="8" class="p-qdot"/><text x="${bx - 12}" y="${by + 6}" text-anchor="end" class="p-small p-or">Q${b.n}</text>`;
+    }
+    for (let i = 0; i < u.q.spare; i++) s += `<circle cx="${S.X(U.X0 - (lo + 0.14 + 0.12 * i))}" cy="${Z(fy + U.H - 0.075)}" r="6" class="p-qpark"/>`;
   });
-  s += `<text x="8" y="${base + 38}" class="p-small">Von rechts gesehen. Vorn die rechte Spur, dahinter blass Mitte und links.</text>`;
+  s += `<text x="8" y="${base + 38}" class="p-small">Von rechts gesehen. Vorn die rechte Spur, dahinter blass Mitte und links. Q1, Q2 … = Querstangen, gesetzt in ${fmt(Q_H, 2)} m Höhe; geparkte oben unter der Decke.</text>`;
   return s + `</svg>`;
 }
 // Ladeliste Reihe für Reihe: Spalten links, Mitte, rechts
@@ -4005,14 +4175,20 @@ function printRowsHtml(U, u) {
     const main = a.filter(x => x[0] !== '('), show = main.length ? main : a;
     return show.length ? esc(show.join(' + ')) : u.cells[r * 3 + l] ? '<span class="p-free">belegt</span>' : '<span class="p-free">frei</span>';
   };
+  // Querstangen als eigene Zeile hinter der Reihe, an der sie anliegen
+  const barsAt = {};
+  for (const b of u.q.need) { const r = b.end > lastEnd + 0.01 ? U.rows : rowOf(U, b.end - 0.05); (barsAt[r] = barsAt[r] || []).push(b); }
+  const barRows = r => (barsAt[r] || []).map(b => `<tr class="p-qrow${b.n ? '' : ' miss'}"><td colspan="4">${b.n ? `Querstange ${b.n} · ${fmt(Q_H, 2)} m hoch` : 'Querstange fehlt'}</td></tr>`).join('');
   let h = `<table class="p-rows"><thead><tr><th>Reihe</th><th>links</th><th>Mitte</th><th>rechts</th></tr></thead><tbody>`;
   rows.forEach((row, r) => {
     if (r === U.rows) {
       if (row.some(a => a.some(x => x[0] !== '('))) h += `<tr><td>hinten</td>${row.map(a => `<td>${a.filter(x => x[0] !== '(').length ? esc(a.filter(x => x[0] !== '(').join(' + ')) : '–'}</td>`).join('')}</tr>`;
+      h += barRows(r);
       return;
     }
     const tk = U.wall && r < U.wall.rows;
     h += `<tr class="${tk ? 'tk' : ''}"><td>${r + 1}${tk ? ' <small>TK</small>' : ''}</td>${row.map((a, l) => `<td>${cellHtml(a, r, l)}</td>`).join('')}</tr>`;
+    h += barRows(r);
     if (U.wall && r === U.wall.rows - 1) h += `<tr class="p-wallrow"><td colspan="4">Trennwand · dahinter Frische ${fmtTemp(u.temp)}</td></tr>`;
   });
   return h + `</tbody></table>`;
@@ -4026,7 +4202,7 @@ function printNotes(st) {
   }
   if (!st.total.n) out.push('Fahrzeug leer, keine Ladung geplant.');
   for (const U of G.units) for (const it of st.units[U.id].its.filter(isEquip)) {
-    out.push(`<b>Hubwagen ${esc(CT[it.t].vlabel)}:</b> ${esc(U.label)}, ${equipWhere(U, it)}, Deichsel zur Tür. Belegt keinen Stellplatz. Beim Entladen fährt er den Behälter zuerst heraus; mit Spanngurt sichern.`);
+    out.push(`<b>Hubwagen ${esc(CT[it.t].vlabel)}:</b> ${esc(U.label)}, ${equipWhere(U, it)}, Deichsel zur Tür. Belegt keinen Stellplatz. ${carrierOf(it) ? 'Beim Entladen fährt er den Behälter zuerst heraus' : 'Kein Behälter außerhalb der TK-Kammer frei: beim Entladen zuerst heraus, zuletzt wieder hinein'}; mit Spanngurt sichern.`);
   }
   if (st.total.n && !G.units.some(U => st.units[U.id].eq)) out.push('Kein Hubwagen an Bord.');
   for (const w of st.warns) if (w.lvl !== 'ok' && !w.ui && !w.hw) out.push((w.lvl === 'bad' || w.lvl === 'warn' ? '<b class="p-warn">Achtung:</b> ' : '') + esc(w.txt));
@@ -4089,6 +4265,8 @@ function copyList() {
       const row = u.cargo.filter(it => rowOf(U, it.x + dims(it).d / 2) === r).sort((a, b) => a.y - b.y);
       if (row.length) lines.push(`  Reihe ${String(r + 1).padStart(2)}${U.wall && r < U.wall.rows ? ' TK' : '   '}: ${row.map(it => CT[it.t].short + (hwUnder.has(it.id) ? ' + HW darunter' : '')).join(', ')}`);
     }
+    for (const b of u.q.need) lines.push(`  ${b.n ? `Querstange ${b.n}` : 'QUERSTANGE FEHLT'}: ${barWhere(U, b)}${b.n ? `, ${fmt(Q_H, 2)} m hoch` : ''}`);
+    if (u.q.spare) lines.push(`  Querstangen oben geparkt: ${u.q.spare}`);
     for (const it of u.its.filter(isEquip)) lines.push(`  Hubwagen ${CT[it.t].vlabel}: ${equipWhere(U, it)}, Deichsel zur Tür`);
     const counts = CARRIERS().map(c => { const k = u.its.filter(it => it.t === c.id).length; return k ? `${k} ${c.short}` : ''; }).filter(Boolean).join(', ');
     if (counts) lines.push(`  Summe: ${counts}`);
@@ -4134,7 +4312,7 @@ function start() {
   bulk = false;
   moveCamera(true);
   if (!saved && !reduced && renderer) setTimeout(() => { if (!view.armed && view.selected == null && !ptr) startTour(); }, 900);
-  window.ladeplan = { get state() { return state; }, stats:() => lastStats, autoLoad, geometry:() => G, setFocus, setExploded, setVariant, view, CT,
+  window.ladeplan = { get state() { return state; }, stats:() => lastStats, autoLoad, update, printNotes:() => printNotes(lastStats), geometry:() => G, setFocus, setExploded, setVariant, view, CT,
     // Kamera für Tests und Bildschirmfotos: ladeplan.look([x, y, z], [zx, zy, zz])
     look:(pos, target) => { stopTour(); camera.position.set(...pos); controls.target.set(...target); controls.update(); requestRender(); },
     // Außenhaut und Seitenbild ohne Bedienung umschalten (Tests)
