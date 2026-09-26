@@ -44,4 +44,5 @@ Was schon eingebaut ist, bleibt unverändert. Findet das Skript eine Stelle nich
   - Ohne Anmeldung wechselt das ganze Fenster zur Anmeldeseite, nicht nur der Rahmen.
   - Ruft man `lkw-app.php` direkt auf, leitet es zu `lkw.php` weiter.
 - **Keine fremden Server, keine Datenbank-Änderung.** Der Ladeplan wird nur im Browser gespeichert.
+- **Seitenbild für alle:** `assets/lkw/seitenbild.jpg` (oder `.png`/`.webp`) per FTP ablegen. Es erscheint in der Außenansicht (Taste A) auf den Koffern. Ein Bild, das jemand im Datenblatt selbst lädt, hat Vorrang.
 - **Bedienung:** Die Tastenkürzel des Planers wirken sofort, weil der Rahmen beim Laden den Fokus bekommt. Vollbild und „Ladeliste kopieren“ sind im Rahmen erlaubt.

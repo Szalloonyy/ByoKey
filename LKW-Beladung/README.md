@@ -40,6 +40,16 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
   - Der Ladeplan wird nur im Browser des Nutzers gespeichert (`localStorage`) und nie übertragen.
 - **Lizenzen:** three.js steht unter MIT (`vendor/LICENSE-three.txt`), die Schriften unter der SIL Open Font License (`fonts/LICENSE-*.txt`).
 
+### Seitenbild für alle
+
+Wer den Planer auf eine Website stellt und allen dasselbe Seitenbild zeigen will, legt das Bild in den Ordner (z. B. `seitenbild.jpg`, Querformat etwa 3 : 1) und trägt es in `index.html` ein:
+
+```html
+<meta name="ladeplan-seitenbild" content="seitenbild.jpg">
+```
+
+Ein Bild, das jemand im Datenblatt selbst lädt, hat Vorrang.
+
 ### Dateien
 
 | Datei | Zweck |
@@ -66,7 +76,7 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
   - Die Kammer ist 3 Reihen lang (2,17 m, 9 Stellplätze) und steht auf −22 °C. Größe (1 bis 9 Reihen) und Temperatur lassen sich einstellen.
   - „Hochklappen“ nimmt die Wand heraus, dann gibt es 33 Plätze in einem Raum. TK-Ware bleibt markiert und kommt beim Zurückklappen wieder in die Kammer.
   - Unten wählt man „Frische“ oder „TK-Kammer“ für neue Behälter. „Automatisch verteilen“ stellt TK-Ware in die Kammer.
-- **Ladungsträger:** Rollbehälter blau, Hygiene-Rollbehälter, TK-Isotainer, I2 Fleisch (E2-Kisten), Euro-Palette und CH3-Palette (CHEP). Isotainer, I2, CH3 und Hygiene-RBH haben umschaltbare Formate.
+- **Ladungsträger:** Rollbehälter blau, Hygiene-Rollbehälter, TK-Isotainer (TKT-Thermobehälter, hellblau), I2 Fleisch (Isotainer silber), Euro-Palette und CH3-Palette (CHEP). Isotainer, I2, CH3 und Hygiene-RBH haben umschaltbare Formate.
 - **Setzen, Ziehen, Drehen**
   - Behälter werden per Tippen gesetzt. Die Vorschau rastet in Spuren und Reihen ein.
   - Behälter lassen sich ziehen, auch von der Maschine in den Anhänger oder auf die Rampe.
@@ -79,6 +89,7 @@ Den Ordner bei Netlify („Deploy manually“, Ordner hineinziehen) oder Cloudfl
   - Kühlung je Einheit, beim Kammer-Auto getrennt für TK-Kammer und Frische
   - Gewichte rechnet der Planer bewusst nicht, weil die Ware immer anders gepackt ist.
 - **Ansichten**
+  - A zeigt den LKW von außen: Koffer geschlossen, mit Seitenbild. Ohne eigenes Bild ist es ein neutrales Obst-und-Gemüse-Motiv. Ein eigenes Bild (z. B. ein Foto eurer Beschriftung) lässt sich im Datenblatt laden.
   - Tasten 1, 2 und 3 wählen Maschine, Anhänger oder den ganzen Zug.
   - X klappt den Aufbau auf: Dach und Wände heben sich, die Maschine fährt vor, die Stirnklappe wird zur Brücke.
   - V wechselt die Kamera: Übersicht, Seite, Draufsicht, Heck an der Rampe, über der Stirnwand.
@@ -93,13 +104,14 @@ Die Maße und Hersteller stehen im Datenblatt der App, mit Quellen und Einstufun
 
 - „Wülhordt“ ist Wüllhorst Fahrzeugbau aus Selm-Bork, „Rohraufbau“ ist ROHR Spezialfahrzeuge aus Straubing.
 - ROHR nennt für den Durchladezug DLE31 bei EDEKA 20 + 18 Europaletten oder 33 + 30 Rollcontainer.
+- TK-Isotainer: TKT-Thermobehälter A-580, außen 735 × 825 × 1770 mm, Tür auf der 735-mm-Seite. Mit der Tür nach hinten passen 3 nebeneinander, eine Reihe ist 825 mm tief. C-720 und C-780 (955 mm tief) sind wählbar.
 - Rollbehälter 724 × 815 mm, Gitterseite quer: 3 je Reihe, Reihe 724 mm tief. 8,08 m innen ergeben 33 Stellplätze, 7,30 m ergeben 30, 6,10 m ergeben 24.
 - Kammer-Auto: 11 Reihen brauchen 7,96 m, im 8,08-m-Koffer bleiben 12 cm. Das reicht für keine Trennwand mit Dichtung, deshalb hat 211 nur 30 Plätze.
 - Offene Annahmen, die vor dem Einsatz zu prüfen sind:
   - Lage der Trennwand und Größe der TK-Kammer im Kammer-Auto 211
   - Innenlänge des 24er-Anhängers von LKW 213 (im Planer 6,10 m)
   - CH3 als CHEP-Palette
-  - I2 als E2-Kisten
+  - I2 als Isotainer (silber oder blau, gleiches Maß wie TK)
   - Innenmaße eurer Koffer
 
 Inoffizielles Planungswerkzeug, nicht von EDEKA, IVECO, ROHR oder Wüllhorst. Alle Werte ohne Gewähr. Maßgeblich sind Fahrzeugpapiere, Waage und die Vorgaben der Niederlassung.
